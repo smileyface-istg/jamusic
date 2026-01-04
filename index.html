@@ -177,12 +177,53 @@
             right: 0;
         }
 
+        /* Display Name Modal (re-usable) */
+        #displayname-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #displayname-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .displayname-modal {
+            width: 420px;
+            max-width: 92%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.06);
+            transform: translateY(12px) scale(.98);
+            opacity: 0;
+            transition: all .28s cubic-bezier(.2,.9,.2,1);
+            box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+        }
+        .displayname-modal.show {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        .dn-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+
+        .dn-input { width:100%; padding:10px 12px; background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px; color:inherit; }
+
+        .dn-error { color:#ffb3b3; font-size:13px; margin-top:8px; }
+
         /* prevent page zoom weirdness small screens */
         @media (max-width: 640px) {
             #settings-sidebar { width: 92%; }
+            .displayname-modal { width: 92%; }
         }
 
         .no-scroll { overflow: hidden !important; }
+
     </style>
 </head>
 <body class="selection:bg-blue-500/30">
@@ -280,11 +321,18 @@
                             <p id="dropdown-email" class="text-xs text-slate-400 truncate">email@example.com</p>
                         </div>
                         <div class="space-y-1">
-                            <!-- Give this button a specific id so JS can hook it reliably -->
+                            <!-- NEW: Display name button -->
+                            <button id="display-name-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all">
+                                <svg class="w-4 h-4 text-slate-500 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Display name
+                            </button>
+
+                            <!-- Account Settings -->
                             <button id="account-settings-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all group">
                                 <svg class="w-4 h-4 text-slate-500 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                 Account Settings
                             </button>
+
                             <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-400 text-sm transition-all">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                                 Log Out
@@ -393,6 +441,34 @@
                 <p class="font-semibold text-sm text-slate-400 mb-2">Page Zoom</p>
                 <input type="range" id="settings-zoom-slider" min="0.6" max="1.4" step="0.05" value="1" class="w-full">
                 <p class="text-xs text-slate-500 mt-2">Adjust the page scale for readability on mobile or desktop.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- DISPLAY NAME MODAL -->
+    <div id="displayname-overlay" aria-hidden="true">
+        <div id="displayname-modal" class="displayname-modal" role="dialog" aria-modal="true">
+            <!-- WARNING VIEW -->
+            <div id="dn-warning-view">
+                <h3 class="text-lg font-bold mb-2">Hmm...</h3>
+                <p class="text-slate-300">It looks like you're using an email as your display name. That could lead to possible vulnerabilities (phishing, accidental exposure). Do you want to change it?</p>
+                <div class="dn-actions">
+                    <button id="dn-no" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10">No</button>
+                    <button id="dn-yes" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white">Yes</button>
+                </div>
+            </div>
+
+            <!-- INPUT VIEW -->
+            <div id="dn-input-view" style="display:none;">
+                <h3 class="text-lg font-bold mb-2">Choose a display name</h3>
+                <p class="text-slate-400 text-sm mb-4">No special characters allowed. Use letters, numbers, spaces, underscores or hyphens.</p>
+                <input id="dn-input" class="dn-input" placeholder="Put your display name here" maxlength="30" />
+                <div id="dn-error" class="dn-error" style="display:none;">Invalid characters detected. Try letters, numbers, spaces, underscores or hyphens only.</div>
+
+                <div class="dn-actions">
+                    <button id="dn-cancel" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10">Cancel</button>
+                    <button id="dn-submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white">Save</button>
+                </div>
             </div>
         </div>
     </div>
@@ -588,8 +664,18 @@
             const themeLightBtn = document.getElementById('theme-light-btn');
             const themeDarkBtn = document.getElementById('theme-dark-btn');
 
-            // Guard checks (if any element is missing, don't throw)
-            function safeGet(el){ return el ? el : null; }
+            // DISPLAY NAME ELEMENTS
+            const displayNameBtn = document.getElementById('display-name-btn');
+            const dnOverlay = document.getElementById('displayname-overlay');
+            const dnModal = document.getElementById('displayname-modal');
+            const dnWarningView = document.getElementById('dn-warning-view');
+            const dnInputView = document.getElementById('dn-input-view');
+            const dnYes = document.getElementById('dn-yes');
+            const dnNo = document.getElementById('dn-no');
+            const dnCancel = document.getElementById('dn-cancel');
+            const dnSubmit = document.getElementById('dn-submit');
+            const dnInput = document.getElementById('dn-input');
+            const dnError = document.getElementById('dn-error');
 
             // Open / Close helpers
             function openSettings() {
@@ -607,6 +693,9 @@
             if (accountBtn) accountBtn.addEventListener('click', (ev) => {
                 ev.stopPropagation();
                 openSettings();
+                // ensure dropdown closed to avoid overlap
+                const dd = document.getElementById('profile-dropdown');
+                if (dd) dd.classList.remove('active');
             });
 
             // Overlay click closes
@@ -669,19 +758,136 @@
                     document.body.style.backgroundColor = 'var(--bg-dark)';
                     document.body.style.color = '#f8fafc';
                 }
+                // save theme
+                try { localStorage.setItem('jamusic_theme', theme); } catch(e){}
             }
             if (themeLightBtn) themeLightBtn.addEventListener('click', () => setTheme('light'));
             if (themeDarkBtn) themeDarkBtn.addEventListener('click', () => setTheme('dark'));
 
+            // Restore saved theme and zoom if any
+            try {
+                const savedTheme = localStorage.getItem('jamusic_theme');
+                if (savedTheme) setTheme(savedTheme);
+                const savedZoom = localStorage.getItem('jamusic_zoom');
+                if (savedZoom) document.body.style.zoom = savedZoom;
+            } catch(e){}
+
             // Wire settings-close inside dropdown to also close the dropdown (if open)
-            // (safe guard)
             const profileDropdown = document.getElementById('profile-dropdown');
             if (accountBtn && profileDropdown) {
                 accountBtn.addEventListener('click', () => profileDropdown.classList.remove('active'));
             }
 
-            // Make the settings behave nicely if elements are missing
-            // (we already guarded each attach)
+            // ------------- DISPLAY NAME FLOW ----------------
+            function showDNOverlay() {
+                if (dnOverlay) dnOverlay.classList.add('show');
+                if (dnModal) dnModal.classList.add('show');
+                document.body.classList.add('no-scroll');
+            }
+            function hideDNOverlay() {
+                if (dnOverlay) dnOverlay.classList.remove('show');
+                if (dnModal) dnModal.classList.remove('show');
+                document.body.classList.remove('no-scroll');
+                // reset views after closing
+                dnInputView.style.display = 'none';
+                dnWarningView.style.display = 'block';
+                dnError.style.display = 'none';
+                dnInput.value = '';
+            }
+
+            // simple email-like detector (contains @ or looks like user@domain)
+            function isEmailLike(name) {
+                if (!name) return false;
+                name = name.trim();
+                // treat as email if contains @ and a dot after it
+                return /@.+\./.test(name);
+            }
+
+            // Open display name flow when clicking the dropdown button
+            if (displayNameBtn) displayNameBtn.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                // close dropdown to avoid overlap
+                if (profileDropdown) profileDropdown.classList.remove('active');
+
+                // get current name from dropdown or localStorage fallback
+                let currentName = '';
+                const ddName = document.getElementById('dropdown-name');
+                if (ddName) currentName = ddName.innerText || '';
+                else {
+                    try {
+                        const su = localStorage.getItem('jamusic_user');
+                        if (su) currentName = JSON.parse(su).name || '';
+                    } catch(e){}
+                }
+
+                // detect email-like
+                if (isEmailLike(currentName)) {
+                    // show warning view first
+                    dnWarningView.style.display = 'block';
+                    dnInputView.style.display = 'none';
+                } else {
+                    // show input view immediately
+                    dnWarningView.style.display = 'none';
+                    dnInputView.style.display = 'block';
+                }
+
+                showDNOverlay();
+            });
+
+            // warning buttons
+            if (dnNo) dnNo.addEventListener('click', () => { hideDNOverlay(); });
+            if (dnYes) dnYes.addEventListener('click', () => {
+                // transition to input view
+                dnWarningView.style.display = 'none';
+                dnInputView.style.display = 'block';
+                dnError.style.display = 'none';
+                dnInput.value = '';
+            });
+
+            // cancel & overlay click close behavior
+            if (dnCancel) dnCancel.addEventListener('click', () => hideDNOverlay());
+            if (dnOverlay) dnOverlay.addEventListener('click', (e) => {
+                if (e.target === dnOverlay) hideDNOverlay();
+            });
+
+            // validation: only letters, numbers, spaces, underscores, hyphens
+            const validRegex = /^[A-Za-z0-9 _-]{2,30}$/;
+
+            if (dnSubmit) dnSubmit.addEventListener('click', () => {
+                const val = (dnInput.value || '').trim();
+                if (!validRegex.test(val)) {
+                    dnError.style.display = 'block';
+                    return;
+                }
+                // success: update UI and localStorage
+                const userDisplay = document.getElementById('user-display');
+                const ddName = document.getElementById('dropdown-name');
+
+                if (userDisplay) userDisplay.innerText = val;
+                if (ddName) ddName.innerText = val;
+
+                // persist if jamusic_user exists
+                try {
+                    const su = localStorage.getItem('jamusic_user');
+                    if (su) {
+                        const obj = JSON.parse(su);
+                        obj.name = val;
+                        localStorage.setItem('jamusic_user', JSON.stringify(obj));
+                    } else {
+                        // if no saved user, create minimal entry
+                        localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
+                    }
+                } catch(e){}
+
+                // nice success animation (brief)
+                dnModal.classList.remove('show');
+                setTimeout(() => hideDNOverlay(), 220);
+            });
+
+            // prevent clicks inside modal from closing accidentally
+            if (dnModal) dnModal.addEventListener('click', (e) => e.stopPropagation());
+
+            // ------------- end display name flow -------------
         });
     </script>
 </body>
