@@ -1,1178 +1,763 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>JaMusic v2 | Premium Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JaMusic v2 | Premium Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg-dark:#020617;
+      --accent:#38bdf8;
+      --accent-glow: rgba(56,189,248,0.3);
+      --card-bg: rgba(15,23,42,0.6);
+      --sidebar-width:280px;
+    }
+    html,body{height:100%}
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark);
+      color: #f8fafc;
+      margin: 0;
+      overflow-x: hidden;
+    }
 
-    <style>
-        :root {
-            --bg-dark: #020617;
-            --accent: #38bdf8;
-            --accent-glow: rgba(56, 189, 248, 0.3);
-            --card-bg: rgba(15, 23, 42, 0.6);
-            --sidebar-width: 280px;
-        }
+    /* Ensure text inputs show text */
+    input[type="text"], input[type="email"], input[type="password"], textarea {
+      color: inherit;
+      caret-color: var(--accent);
+    }
+    ::placeholder { color: rgba(255,255,255,0.5); }
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-dark);
-            color: #f8fafc;
-            margin: 0;
-            overflow-x: hidden;
-        }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-        /* Fix input text visibility & placeholder color (ensure search text appears) */
-        input[type="text"],
-        input[type="email"],
-        input[type="password"],
-        textarea {
-          color: inherit;
-          caret-color: var(--accent);
-        }
-        ::placeholder {
-          color: rgba(255,255,255,0.5);
-        }
+    .glass {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-dark); }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    .nav-active {
+      background: linear-gradient(90deg, rgba(56,189,248,0.15) 0%, rgba(56,189,248,0) 100%);
+      color: var(--accent);
+      border-left: 3px solid var(--accent);
+    }
 
-        .glass {
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
+    /* Animations */
+    @keyframes fadeIn { from {opacity:0; transform:translateY(10px)} to {opacity:1; transform:translateY(0)} }
+    .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
 
-        .nav-active {
-            background: linear-gradient(90deg, rgba(56, 189, 248, 0.15) 0%, rgba(56, 189, 248, 0) 100%);
-            color: var(--accent);
-            border-left: 3px solid var(--accent);
-        }
+    .music-card {
+      transition: all 0.4s cubic-bezier(0.23,1,0.32,1);
+      position: relative;
+      z-index: 10;
+    }
+    .music-card:hover { transform: translateY(-10px) scale(1.02); background: rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    .play-btn-float { opacity: 0; transform: translateY(20px); transition: all 0.3s ease; }
+    .music-card:hover .play-btn-float { opacity: 1; transform: translateY(0); }
 
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out forwards;
-        }
+    #auth-overlay {
+      position: fixed; inset:0; z-index:10000;
+      background: radial-gradient(circle at top right, #0f172a, #020617);
+      display:flex; align-items:center; justify-content:center; transition: opacity .5s ease;
+    }
+    #main-app.hidden-state { pointer-events:none; user-select:none; filter: blur(15px); opacity:0; }
 
-        .music-card {
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            position: relative;
-            z-index: 10;
-        }
+    input[type=range] { -webkit-appearance:none; background:transparent; }
+    input[type=range]::-webkit-slider-runnable-track { width:100%; height:4px; background:#334155; border-radius:2px; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; height:12px; width:12px; border-radius:50%; background:var(--accent); cursor:pointer; margin-top:-4px; box-shadow:0 0 10px var(--accent-glow); }
 
-        .music-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            background: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        }
+    .visualizer-bar { transition:height 0.1s ease; }
 
-        .play-btn-float {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s ease;
-        }
+    .tab-btn { border-bottom:2px solid transparent; transition: all .3s ease; font-weight:600; color:#cbd5e1; padding: .35rem .5rem; background:transparent; border-radius:.5rem; }
+    .tab-btn.active { border-color: var(--accent); color:white; }
 
-        .music-card:hover .play-btn-float {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .profile-dropdown { opacity:0; transform:translateY(-10px); pointer-events:none; transition: all .18s ease; }
+    .profile-dropdown.active { opacity:1; transform:translateY(0); pointer-events:auto; }
 
-        #auth-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 10000;
-            background: radial-gradient(circle at top right, #0f172a, #020617);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s ease;
-        }
+    /* Settings */
+    #settings-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index:980; opacity:0; pointer-events:none; transition: opacity .2s; }
+    #settings-overlay.show { opacity:1; pointer-events:auto; }
+    #settings-sidebar { position: fixed; top:0; right:-420px; height:100%; width:340px; z-index:990; transition:right .33s cubic-bezier(.2,.9,.2,1); display:flex; flex-direction:column; gap:12px; padding:18px; }
+    #settings-sidebar.open { right: 0; }
 
-        #main-app.hidden-state {
-            pointer-events: none;
-            user-select: none;
-            filter: blur(15px);
-            opacity: 0;
-        }
+    /* Displayname modal */
+    #displayname-overlay { position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.5); opacity:0; pointer-events:none; display:flex; align-items:center; justify-content:center; transition:opacity .2s; }
+    #displayname-overlay.show { opacity:1; pointer-events:auto; }
+    .displayname-modal { width:420px; max-width:92%; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:20px; border-radius:16px; border:1px solid rgba(255,255,255,0.06); box-shadow:0 10px 30px rgba(2,6,23,0.6); transform: translateY(12px) scale(.98); opacity:0; transition: all .28s; }
+    .displayname-modal.show { transform: translateY(0) scale(1); opacity:1; }
+    .dn-input { width:100%; padding:10px 12px; background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px; color:inherit; }
+    .dn-error { color:#ffb3b3; font-size:13px; margin-top:8px; }
 
-        input[type=range] {
-            -webkit-appearance: none;
-            background: transparent;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            background: #334155;
-            border-radius: 2px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 12px;
-            width: 12px;
-            border-radius: 50%;
-            background: var(--accent);
-            cursor: pointer;
-            margin-top: -4px;
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
+    /* Inbox */
+    #inbox-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index:1500; opacity:0; pointer-events:none; transition:opacity .18s; }
+    #inbox-overlay.show { opacity:1; pointer-events:auto; }
+    #inbox-panel { position: fixed; right:-480px; top:0; height:100%; width:420px; max-width:calc(100% - 32px); padding:20px; background:var(--card-bg); z-index:1600; transition:right .28s; overflow:auto; }
+    #inbox-panel.open { right:0; }
 
-        .visualizer-bar {
-            transition: height 0.1s ease;
-        }
+    .email-item { padding:12px; border-radius:12px; background: rgba(255,255,255,0.02); cursor:pointer; transition:all .14s; display:flex; justify-content:space-between; gap:10px; }
+    .email-item:hover { transform:translateY(-4px); background: rgba(255,255,255,0.04); }
 
-        .tab-btn {
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s ease;
-            font-weight: 600;
-            color: #cbd5e1;
-            padding: .4rem .5rem;
-            background: transparent;
-            border-radius: .5rem;
-        }
-        .tab-btn.active {
-            border-color: var(--accent);
-            color: white;
-        }
+    /* read modal */
+    #read-overlay { position:fixed; inset:0; background: rgba(0,0,0,0.45); z-index:1700; opacity:0; pointer-events:none; display:flex; align-items:center; justify-content:center; transition:opacity .18s; }
+    #read-overlay.show { opacity:1; pointer-events:auto; }
+    .read-modal { width:640px; max-width:92%; background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); box-shadow:0 10px 40px rgba(0,0,0,0.6); }
 
-        /* Dropdown Styles */
-        .profile-dropdown {
-            opacity: 0;
-            transform: translateY(-10px);
-            pointer-events: none;
-            transition: all 0.2s ease;
-        }
-        .profile-dropdown.active {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
+    /* admin modal */
+    .admin-modal { width:640px; max-width:92%; background:var(--card-bg); padding:18px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); box-shadow:0 10px 40px rgba(0,0,0,0.6); transform: translateY(-6px); opacity:0; transition:all .2s; position:fixed; left:50%; top:12%; transform:translateX(-50%); z-index:2001; }
+    .admin-modal.show { transform:translateX(-50%) translateY(0); opacity:1; }
 
-        /* Settings Sidebar */
-        #settings-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.45);
-            z-index: 990;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity .25s ease;
-        }
-        #settings-overlay.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #settings-sidebar {
-            position: fixed;
-            top: 0;
-            right: -420px;
-            height: 100%;
-            width: 320px;
-            max-width: calc(100% - 24px);
-            z-index: 1000;
-            transition: right .35s cubic-bezier(.2,.9,.2,1);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        #settings-sidebar.open {
-            right: 0;
-        }
+    /* shiny notif */
+    .notif-bar {
+      position:relative; display:inline-flex; align-items:center; gap:14px; padding:12px 22px; border-radius:14px;
+      background: linear-gradient(90deg, #06a6ff 0%, #0369a1 60%);
+      box-shadow:0 14px 40px rgba(3,105,161,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+      -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); overflow:hidden; animation: notif-pop 2s ease-in-out infinite;
+    }
+    .notif-text { color:#fff; font-weight:800; font-style:italic; font-size:18px; letter-spacing:.6px; text-shadow:0 6px 20px rgba(3,105,161,0.25); }
+    @keyframes notif-pop { 0%{transform:translateY(0) scale(1)} 45%{transform:translateY(-4px) scale(1.02)} 100%{transform:translateY(0) scale(1)} }
+    .notif-bar::before{ content:""; position:absolute; top:-40%; left:-60%; width:220%; height:220%; background: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.85) 0 2%, transparent 8%), radial-gradient(circle at 50% 10%, rgba(255,255,255,0.45) 0 1%, transparent 3%); transform:rotate(28deg) translateX(-100%); mix-blend-mode:screen; opacity:0; filter: blur(6px); animation:notif-sparkle 2.2s linear infinite; pointer-events:none; }
+    @keyframes notif-sparkle{0%{transform:rotate(28deg) translateX(-110%); opacity:0}30%{opacity:0.85}60%{transform:rotate(28deg) translateX(10%);opacity:0.85}100%{transform:rotate(28deg) translateX(110%);opacity:0}}
+    .notif-bar::after{ content:""; position:absolute; right:8%; top:10%; width:18px; height:18px; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95) 0 10%, transparent 40%); transform: rotate(20deg) scale(.9); opacity:.9; filter:blur(.6px); animation: notif-glint 1.6s ease-in-out infinite; pointer-events:none; }
+    @keyframes notif-glint{0%{transform:rotate(10deg) scale(.9); opacity:.6}50%{transform:rotate(10deg) scale(1.15); opacity:1}100%{transform:rotate(10deg) scale(.9); opacity:.6}}
 
-        /* Display Name Modal (re-usable) */
-        #displayname-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 2000;
-            background: rgba(0,0,0,0.5);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity .2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #displayname-overlay.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        .displayname-modal {
-            width: 420px;
-            max-width: 92%;
-            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.06);
-            transform: translateY(12px) scale(.98);
-            opacity: 0;
-            transition: all .28s cubic-bezier(.2,.9,.2,1);
-            box-shadow: 0 10px 30px rgba(2,6,23,0.6);
-        }
-        .displayname-modal.show {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
-        .dn-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+    @media (max-width:640px){
+      #settings-sidebar{ width:92% }
+      .displayname-modal, #inbox-panel, .read-modal, .admin-modal { width:92% }
+    }
 
-        .dn-input { width:100%; padding:10px 12px; background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px; color:inherit; }
-
-        .dn-error { color:#ffb3b3; font-size:13px; margin-top:8px; }
-
-        /* Inbox & Admin UI */
-        #inbox-overlay, #admin-overlay {
-            position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index: 1500; opacity:0; pointer-events:none; transition:opacity .2s;
-        }
-        #inbox-overlay.show, #admin-overlay.show { opacity:1; pointer-events:auto; }
-
-        #inbox-panel {
-            position: fixed; right: -480px; top: 0; height: 100%; width: 420px; max-width: calc(100% - 32px); padding:20px; background:var(--card-bg); z-index:1600; transition:right .33s;
-        }
-        #inbox-panel.open { right: 0; }
-
-        .email-item { padding:12px; border-radius:12px; background: rgba(255,255,255,0.02); cursor:pointer; transition: all .18s; display:flex; justify-content:space-between; align-items:center; gap:10px; }
-        .email-item:hover { transform: translateY(-4px); background: rgba(255,255,255,0.04); }
-
-        /* read modal */
-        #read-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index:1700; opacity:0; pointer-events:none; transition:opacity .18s; display:flex; align-items:center; justify-content:center; }
-        #read-overlay.show { opacity:1; pointer-events:auto; }
-        .read-modal { width:640px; max-width:92%; background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-
-        /* admin modal */
-        .admin-modal { width:640px; max-width:92%; background:var(--card-bg); padding:18px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 40px rgba(0,0,0,0.6); transform: translateY(-6px); opacity:0; transition:all .2s; }
-        #admin-modal.show { transform: translateY(0); opacity:1; }
-
-        /* ---------- Shiny notification bar ---------- */
-        .notif-bar {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          gap: 14px;
-          padding: 12px 22px;
-          border-radius: 14px;
-          background: linear-gradient(90deg, #06a6ff 0%, #0369a1 60%);
-          box-shadow: 0 14px 40px rgba(3,105,161,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
-          -webkit-backdrop-filter: blur(6px);
-          backdrop-filter: blur(6px);
-          overflow: hidden;
-          transform-origin: center;
-          animation: notif-pop 2s ease-in-out infinite;
-        }
-
-        .notif-text {
-          color: #fff;
-          font-weight: 800;
-          font-style: italic;
-          font-size: 18px;
-          letter-spacing: 0.6px;
-          text-shadow: 0 6px 20px rgba(3,105,161,0.25);
-        }
-
-        @keyframes notif-pop {
-          0%   { transform: translateY(0) scale(1); filter: brightness(1); }
-          45%  { transform: translateY(-4px) scale(1.02); filter: brightness(1.08); }
-          100% { transform: translateY(0) scale(1); filter: brightness(1); }
-        }
-
-        .notif-bar::before {
-          content: "";
-          position: absolute;
-          top: -40%;
-          left: -60%;
-          width: 220%;
-          height: 220%;
-          background:
-            radial-gradient(circle at 10% 20%, rgba(255,255,255,0.85) 0 2%, transparent 8%),
-            radial-gradient(circle at 50% 10%, rgba(255,255,255,0.45) 0 1%, transparent 3%);
-          transform: rotate(28deg) translateX(-100%);
-          mix-blend-mode: screen;
-          opacity: 0;
-          filter: blur(6px);
-          animation: notif-sparkle 2.2s linear infinite;
-          pointer-events: none;
-        }
-
-        @keyframes notif-sparkle {
-          0%   { transform: rotate(28deg) translateX(-110%); opacity: 0; }
-          30%  { opacity: 0.85; }
-          60%  { transform: rotate(28deg) translateX(10%); opacity: 0.85; }
-          100% { transform: rotate(28deg) translateX(110%); opacity: 0; }
-        }
-
-        .notif-bar::after {
-          content: "";
-          position: absolute;
-          right: 8%;
-          top: 10%;
-          width: 18px;
-          height: 18px;
-          background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95) 0 10%, transparent 40%);
-          transform: rotate(20deg) scale(0.9);
-          opacity: .9;
-          filter: blur(.6px);
-          animation: notif-glint 1.6s ease-in-out infinite;
-          pointer-events: none;
-        }
-        @keyframes notif-glint {
-          0% { transform: rotate(10deg) scale(.9); opacity: .6; }
-          50% { transform: rotate(10deg) scale(1.15); opacity: 1; }
-          100% { transform: rotate(10deg) scale(.9); opacity: .6; }
-        }
-
-        /* prevent page zoom weirdness small screens */
-        @media (max-width: 640px) {
-            #settings-sidebar { width: 92%; }
-            .displayname-modal { width: 92%; }
-            #inbox-panel { width: 92%; }
-            .read-modal, .admin-modal { width: 92%; }
-        }
-
-        .no-scroll { overflow: hidden !important; }
-    </style>
+    .no-scroll{ overflow:hidden !important; }
+  </style>
 </head>
 <body class="selection:bg-blue-500/30">
 
-    <!-- AUTHENTICATION LAYER -->
-    <div id="auth-overlay">
-        <div class="w-full max-w-md p-8 animate-fade-in">
-            <div class="text-center mb-10">
-                <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-blue-600 mb-6 shadow-2xl shadow-blue-500/20">
-                    <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                    </svg>
-                </div>
-                <h1 class="text-4xl font-extrabold tracking-tight mb-2">JaMusic <span class="text-blue-500">v2</span></h1>
-                <p class="text-slate-400 font-medium">Experience sound in high definition.</p>
-            </div>
-
-            <div class="flex justify-center gap-8 mb-8 text-slate-500 font-bold border-b border-white/10 pb-2">
-                <button type="button" onclick="toggleAuthMode('login')" id="login-tab" class="tab-btn active">Login</button>
-                <button type="button" onclick="toggleAuthMode('signup')" id="signup-tab" class="tab-btn">Sign Up</button>
-            </div>
-
-            <div id="auth-form" class="space-y-4">
-                <div class="space-y-2">
-                    <label class="text-xs uppercase tracking-widest text-slate-500 font-bold px-2">Email Address</label>
-                    <input type="email" id="auth-email" placeholder="name@example.com" class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-6 focus:outline-none focus:border-blue-500/50 transition-all text-white" autocomplete="off">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-xs uppercase tracking-widest text-slate-500 font-bold px-2">Password</label>
-                    <input type="password" id="auth-pass" placeholder="••••••••" class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-6 focus:outline-none focus:border-blue-500/50 transition-all text-white" autocomplete="off">
-                </div>
-
-                <div class="flex items-center gap-3 px-2 py-2">
-                    <input type="checkbox" id="remember-me" checked class="w-4 h-4 rounded bg-white/5 border-white/10 text-blue-500 focus:ring-0">
-                    <label for="remember-me" class="text-sm text-slate-400 cursor-pointer">Remember Me (Auto-login)</label>
-                </div>
-
-                <button type="button" onclick="handleAuth()" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-95 cursor-pointer relative">
-                    Sign In
-                </button>
-                <p class="text-center text-[10px] text-slate-600 uppercase tracking-widest mt-4">Safe & Secure Native Environment</p>
-            </div>
+  <!-- AUTH -->
+  <div id="auth-overlay">
+    <div class="w-full max-w-md p-8 animate-fade-in">
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-blue-600 mb-6 shadow-2xl shadow-blue-500/20">
+          <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
         </div>
-    </div>
+        <h1 class="text-4xl font-extrabold tracking-tight mb-2">JaMusic <span class="text-blue-500">v2</span></h1>
+        <p class="text-slate-400 font-medium">Experience sound in high definition.</p>
+      </div>
 
-    <!-- MAIN APP INTERFACE -->
-    <div id="main-app" class="hidden-state transition-all duration-700">
-        
-        <!-- SIDEBAR -->
-        <aside class="fixed top-0 left-0 h-full w-[280px] glass hidden lg:flex flex-col z-50">
-            <div class="p-8 h-full flex flex-col">
-                <div class="flex items-center gap-3 mb-12">
-                    <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
-                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-                    </div>
-                    <span class="text-xl font-bold tracking-tighter">JaMusic</span>
-                </div>
+      <div class="flex justify-center gap-8 mb-8 text-slate-500 font-bold border-b border-white/10 pb-2">
+        <button type="button" onclick="toggleAuthMode('login')" id="login-tab" class="tab-btn active">Login</button>
+        <button type="button" onclick="toggleAuthMode('signup')" id="signup-tab" class="tab-btn">Sign Up</button>
+      </div>
 
-                <nav class="space-y-1 flex-1">
-                    <button type="button" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl nav-active font-semibold transition-all">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                        Discover
-                    </button>
-                    <button type="button" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-semibold transition-all">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                        Trending
-                    </button>
-                </nav>
-
-                <button type="button" onclick="logout()" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-red-400 hover:bg-red-500/10 font-semibold transition-all mt-auto">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                    Logout
-                </button>
-            </div>
-        </aside>
-
-        <!-- MAIN CONTENT AREA -->
-        <main class="lg:ml-[280px] min-h-screen p-6 lg:p-12 pb-48">
-            <header class="flex items-center justify-between gap-6 mb-16 relative">
-                <div class="relative w-full max-w-xl group">
-                    <input type="text" id="searchInput" onkeyup="handleSearch(event)" placeholder="Search native library..." class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:border-blue-500/50 transition-all text-white" autocomplete="off" spellcheck="false">
-                </div>
-
-                <!-- Account Icon & Dropdown + inbox + notif -->
-                <div class="relative flex items-center gap-4">
-                    <div id="notif-container" style="min-width:220px; text-align:right; font-size:14px;"></div>
-
-                    <button type="button" id="inbox-btn" title="Inbox" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6"/><path d="M16 13l-4 4-4-4"/></svg>
-                    </button>
-
-                    <div class="relative">
-                        <button type="button" onclick="toggleProfileMenu()" id="profile-trigger" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all text-slate-300 hover:text-white" aria-haspopup="true" aria-expanded="false">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        </button>
-
-                        <!-- Dropdown Menu -->
-                        <div id="profile-dropdown" class="profile-dropdown absolute right-0 mt-4 w-64 glass rounded-[1.5rem] p-4 shadow-2xl z-[60]" role="menu" aria-hidden="true">
-                            <div class="pb-4 mb-4 border-b border-white/10">
-                                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">Signed in as</p>
-                                <p id="dropdown-name" class="font-bold text-white truncate">Username</p>
-                                <p id="dropdown-email" class="text-xs text-slate-400 truncate">email@example.com</p>
-                            </div>
-                            <div class="space-y-1">
-                                <button id="display-name-btn" type="button" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all">
-                                    <svg class="w-4 h-4 text-slate-500 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                    Display name
-                                </button>
-
-                                <button id="account-settings-btn" type="button" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all group">
-                                    <svg class="w-4 h-4 text-slate-500 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                    Account Settings
-                                </button>
-
-                                <button id="admin-panel-btn" type="button" style="display:none" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all group">
-                                    <svg class="w-4 h-4 text-slate-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.9 6.5L22 9.3l-5 4.1L18.1 22 12 18.3 5.9 22 7 13.4 2 9.3l7.1-0.8z"/></svg>
-                                    Admin Panel
-                                </button>
-
-                                <button type="button" onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-400 text-sm transition-all">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                                    Log Out
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <section class="mb-16">
-                <div class="relative rounded-[2.5rem] overflow-hidden group">
-                    <div class="absolute inset-0 bg-gradient-to-r from-blue-900/90 via-blue-900/40 to-transparent z-10"></div>
-                    <img src="https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80&w=2000" class="w-full h-[300px] object-cover" alt="Banner">
-                    <div class="absolute inset-0 z-20 p-12 flex flex-col justify-center">
-                        <h2 class="text-5xl font-black mb-2">Welcome Back, <span id="user-display" class="text-blue-400">User</span></h2>
-                        <p class="text-slate-300 mb-6">Your personalized native playlist is ready.</p>
-                        <button type="button" onclick="playTrack(0)" class="px-8 py-4 bg-white text-black rounded-2xl font-black w-fit hover:bg-blue-400 transition-all active:scale-95 shadow-2xl relative z-30">
-                            Play Daily Mix
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <h3 class="text-3xl font-extrabold mb-10" id="gridTitle">Recommended</h3>
-                <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6" id="musicGrid">
-                    <!-- Tracks render here -->
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- PLAYER BAR -->
-    <div id="player-bar" class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-4 lg:p-6 z-[100] transform translate-y-full transition-transform duration-500">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            
-            <div class="flex items-center gap-4 w-full md:w-1/4">
-                <img id="player-img" src="" class="w-14 h-14 rounded-xl object-cover shadow-lg">
-                <div class="overflow-hidden">
-                    <h4 id="player-title" class="font-bold truncate text-white">Song Title</h4>
-                    <p id="player-artist" class="text-xs text-slate-400 truncate">Artist Name</p>
-                </div>
-            </div>
-
-            <div class="flex flex-col items-center gap-2 w-full md:w-2/4">
-                <div class="flex items-center gap-6">
-                    <button type="button" class="text-slate-400 hover:text-white transition-colors" onclick="prevTrack()">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-                    </button>
-
-                    <button id="play-pause-btn" type="button" onclick="togglePlay()" class="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:scale-110 transition-transform">
-                        <svg id="play-icon" class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        <svg id="pause-icon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                    </button>
-
-                    <button type="button" class="text-slate-400 hover:text-white transition-colors" onclick="nextTrack()">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-                    </button>
-
-                    <!-- Repeat toggle -->
-                    <button id="repeat-btn" type="button" onclick="toggleRepeat()" title="Toggle Repeat" class="text-slate-400 hover:text-white transition-colors">
-                        <svg id="repeat-icon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7v4h10V7l4 4-4 4v-4H5V7z"></path></svg>
-                    </button>
-
-                </div>
-                <div class="flex items-center gap-3 w-full max-w-md">
-                    <span id="curr-time" class="text-[10px] font-mono text-slate-500 w-8">0:00</span>
-                    <input type="range" id="seek-slider" value="0" step="1" class="flex-1 cursor-pointer">
-                    <span id="dur-time" class="text-[10px] font-mono text-slate-500 w-8">0:00</span>
-                </div>
-            </div>
-
-            <div class="hidden md:flex items-center justify-end gap-4 w-1/4">
-                <div class="flex items-end gap-1 h-8">
-                    <div class="visualizer-bar w-1 bg-blue-500/40 rounded-full" style="height: 20%"></div>
-                    <div class="visualizer-bar w-1 bg-blue-500/60 rounded-full" style="height: 60%"></div>
-                    <div class="visualizer-bar w-1 bg-blue-500 rounded-full" style="height: 40%"></div>
-                    <div class="visualizer-bar w-1 bg-blue-500/60 rounded-full" style="height: 80%"></div>
-                    <div class="visualizer-bar w-1 bg-blue-500/40 rounded-full" style="height: 30%"></div>
-                </div>
-                <input type="range" id="volume-slider" value="100" class="w-20">
-            </div>
-        </div>
-    </div>
-
-    <!-- SETTINGS OVERLAY + SIDEBAR -->
-    <div id="settings-overlay"></div>
-
-    <div id="settings-sidebar" class="glass p-6 rounded-l-2xl">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold">Account Settings</h2>
-            <button type="button" id="settings-close" class="text-white text-2xl leading-none">&times;</button>
-        </div>
-
-        <div class="flex gap-3 mb-4">
-            <button type="button" id="tab-general" class="tab-btn active">General</button>
-            <button type="button" id="tab-zoom" class="tab-btn">Zoom</button>
-        </div>
-
-        <div id="settings-content" class="flex-1 overflow-y-auto">
-            <div id="settings-general">
-                <p class="font-semibold text-sm text-slate-400 mb-2">Volume</p>
-                <input type="range" id="settings-volume" value="100" class="w-full">
-
-                <p class="font-semibold text-sm text-slate-400 mt-4 mb-2">Theme</p>
-                <div class="flex gap-4">
-                    <button type="button" id="theme-light-btn" class="px-4 py-2 bg-white text-black rounded-xl">Light</button>
-                    <button type="button" id="theme-dark-btn" class="px-4 py-2 bg-black text-white rounded-xl">Dark</button>
-                </div>
-            </div>
-
-            <div id="settings-zoom" class="hidden">
-                <p class="font-semibold text-sm text-slate-400 mb-2">Page Zoom</p>
-                <input type="range" id="settings-zoom-slider" min="0.6" max="1.4" step="0.05" value="1" class="w-full">
-                <p class="text-xs text-slate-500 mt-2">Adjust the page scale for readability on mobile or desktop.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- INBOX overlay + panel -->
-    <div id="inbox-overlay"></div>
-    <div id="inbox-panel">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xl font-bold">Inbox</h3>
-            <button type="button" id="inbox-close" class="text-white text-2xl leading-none">&times;</button>
-        </div>
-
-        <div id="inbox-list" style="flex:1; overflow:auto; padding-right:6px; display:flex; flex-direction:column; gap:10px;">
-            <!-- populated dynamically -->
-        </div>
-
-        <div style="padding-top:8px;">
-            <button type="button" id="inbox-refresh" class="px-3 py-2 bg-white/5 rounded-xl">Refresh</button>
-        </div>
-    </div>
-
-    <!-- READ EMAIL modal -->
-    <div id="read-overlay">
-        <div id="read-modal" class="read-modal">
-            <h3 id="read-title" class="text-xl font-bold mb-2"></h3>
-            <p id="read-sub" class="text-sm text-slate-400 mb-4"></p>
-            <div id="read-body" class="text-sm text-slate-200 mb-4"></div>
-            <div style="display:flex; gap:8px; justify-content:flex-end;">
-                <button type="button" id="read-dismiss" class="px-3 py-2 rounded-xl bg-white/5">Dismiss</button>
-                <button type="button" id="read-close" class="px-3 py-2 rounded-xl bg-blue-600 text-white">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ADMIN modal -->
-    <div id="admin-overlay"></div>
-    <div id="admin-modal" class="admin-modal" style="position:fixed; left:50%; top:12%; transform:translateX(-50%); z-index:2001;">
-        <h3 class="text-lg font-bold mb-2">Admin - Send Broadcast</h3>
+      <div id="auth-form" class="space-y-4">
         <div class="space-y-2">
-            <input id="admin-subject" placeholder="Subject" class="dn-input" />
-            <input id="admin-title" placeholder="Title" class="dn-input" />
-            <textarea id="admin-body" placeholder="Description / Body" class="dn-input" style="height:140px; resize:none;"></textarea>
-            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:6px;">
-                <button type="button" id="admin-cancel" class="px-3 py-2 rounded-xl bg-white/5">Cancel</button>
-                <button type="button" id="admin-send" class="px-3 py-2 rounded-xl bg-blue-600 text-white">Send</button>
-            </div>
+          <label class="text-xs uppercase tracking-widest text-slate-500 font-bold px-2">Email Address</label>
+          <input type="email" id="auth-email" placeholder="name@example.com" class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-6 focus:outline-none focus:border-blue-500/50 transition-all text-white" autocomplete="off" />
         </div>
+        <div class="space-y-2">
+          <label class="text-xs uppercase tracking-widest text-slate-500 font-bold px-2">Password</label>
+          <input type="password" id="auth-pass" placeholder="••••••••" class="w-full bg-white/5 border border-white/10 rounded-xl py-4 px-6 focus:outline-none focus:border-blue-500/50 transition-all text-white" autocomplete="off" />
+        </div>
+
+        <div class="flex items-center gap-3 px-2 py-2">
+          <input type="checkbox" id="remember-me" checked class="w-4 h-4 rounded bg-white/5 border-white/10 text-blue-500 focus:ring-0" />
+          <label for="remember-me" class="text-sm text-slate-400 cursor-pointer">Remember Me (Auto-login)</label>
+        </div>
+
+        <button type="button" onclick="handleAuth()" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-95 cursor-pointer relative">Sign In</button>
+        <p class="text-center text-[10px] text-slate-600 uppercase tracking-widest mt-4">Safe & Secure Native Environment</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main-app" class="hidden-state transition-all duration-700">
+
+    <!-- SIDEBAR -->
+    <aside class="fixed top-0 left-0 h-full w-[280px] glass hidden lg:flex flex-col z-50">
+      <div class="p-8 h-full flex flex-col">
+        <div class="flex items-center gap-3 mb-12">
+          <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/30">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+          </div>
+          <span class="text-xl font-bold tracking-tighter">JaMusic</span>
+        </div>
+
+        <nav class="space-y-1 flex-1">
+          <button type="button" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl nav-active font-semibold transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            Discover
+          </button>
+          <button type="button" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-semibold transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            Trending
+          </button>
+        </nav>
+
+        <button type="button" onclick="logout()" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-red-400 hover:bg-red-500/10 font-semibold transition-all mt-auto">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="lg:ml-[280px] min-h-screen p-6 lg:p-12 pb-48">
+      <header class="flex items-center justify-between gap-6 mb-16 relative">
+        <div class="relative w-full max-w-xl group">
+          <input type="text" id="searchInput" onkeyup="handleSearch(event)" placeholder="Search native library..." class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:border-blue-500/50 transition-all text-white" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <!-- Account Icon & Dropdown + Inbox/Notif -->
+        <div class="relative flex items-center gap-4">
+          <div id="notif-container" style="min-width:220px; text-align:right; font-size:14px;"></div>
+
+          <button type="button" id="inbox-btn" title="Inbox" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6"/><path d="M16 13l-4 4-4-4"/></svg>
+          </button>
+
+          <div class="relative">
+            <button type="button" onclick="toggleProfileMenu()" id="profile-trigger" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all text-slate-300 hover:text-white" aria-haspopup="true" aria-expanded="false">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div id="profile-dropdown" class="profile-dropdown absolute right-0 mt-4 w-64 glass rounded-[1.5rem] p-4 shadow-2xl z-[60]" role="menu" aria-hidden="true">
+              <div class="pb-4 mb-4 border-b border-white/10">
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-black mb-1">Signed in as</p>
+                <p id="dropdown-name" class="font-bold text-white truncate">Username</p>
+                <p id="dropdown-email" class="text-xs text-slate-400 truncate">email@example.com</p>
+              </div>
+              <div class="space-y-1">
+                <button id="display-name-btn" type="button" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all">
+                  <svg class="w-4 h-4 text-slate-500 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  Display name
+                </button>
+
+                <button id="account-settings-btn" type="button" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all group">
+                  <svg class="w-4 h-4 text-slate-500 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                  Account Settings
+                </button>
+
+                <button id="admin-panel-btn" type="button" style="display:none" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all group">
+                  <svg class="w-4 h-4 text-slate-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.9 6.5L22 9.3l-5 4.1L18.1 22 12 18.3 5.9 22 7 13.4 2 9.3l7.1-0.8z"/></svg>
+                  Admin Panel
+                </button>
+
+                <button type="button" onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-400 text-sm transition-all">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                  Log Out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="mb-16">
+        <div class="relative rounded-[2.5rem] overflow-hidden group">
+          <div class="absolute inset-0 bg-gradient-to-r from-blue-900/90 via-blue-900/40 to-transparent z-10"></div>
+          <img src="https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80&w=2000" class="w-full h-[300px] object-cover" alt="Banner" />
+          <div class="absolute inset-0 z-20 p-12 flex flex-col justify-center">
+            <h2 class="text-5xl font-black mb-2">Welcome Back, <span id="user-display" class="text-blue-400">User</span></h2>
+            <p class="text-slate-300 mb-6">Your personalized native playlist is ready.</p>
+            <button type="button" onclick="playTrack(0)" class="px-8 py-4 bg-white text-black rounded-2xl font-black w-fit hover:bg-blue-400 transition-all active:scale-95 shadow-2xl relative z-30">Play Daily Mix</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3 class="text-3xl font-extrabold mb-10" id="gridTitle">Recommended</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6" id="musicGrid"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- PLAYER -->
+  <div id="player-bar" class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-4 lg:p-6 z-[100] transform translate-y-full transition-transform duration-500">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-4 w-full md:w-1/4">
+        <img id="player-img" src="" class="w-14 h-14 rounded-xl object-cover shadow-lg" />
+        <div class="overflow-hidden">
+          <h4 id="player-title" class="font-bold truncate text-white">Song Title</h4>
+          <p id="player-artist" class="text-xs text-slate-400 truncate">Artist Name</p>
+        </div>
+      </div>
+      <div class="flex flex-col items-center gap-2 w-full md:w-2/4">
+        <div class="flex items-center gap-6">
+          <button type="button" class="text-slate-400 hover:text-white transition-colors" onclick="prevTrack()">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          <button id="play-pause-btn" type="button" onclick="togglePlay()" class="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center hover:scale-110 transition-transform">
+            <svg id="play-icon" class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="pause-icon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          </button>
+          <button type="button" class="text-slate-400 hover:text-white transition-colors" onclick="nextTrack()">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
+
+          <button id="repeat-btn" type="button" onclick="toggleRepeat()" title="Toggle Repeat" class="text-slate-400 hover:text-white transition-colors">
+            <svg id="repeat-icon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7v4h10V7l4 4-4 4v-4H5V7z"></path></svg>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-3 w-full max-w-md">
+          <span id="curr-time" class="text-[10px] font-mono text-slate-500 w-8">0:00</span>
+          <input type="range" id="seek-slider" value="0" step="1" class="flex-1 cursor-pointer" />
+          <span id="dur-time" class="text-[10px] font-mono text-slate-500 w-8">0:00</span>
+        </div>
+      </div>
+
+      <div class="hidden md:flex items-center justify-end gap-4 w-1/4">
+        <div class="flex items-end gap-1 h-8">
+          <div class="visualizer-bar w-1 bg-blue-500/40 rounded-full" style="height:20%"></div>
+          <div class="visualizer-bar w-1 bg-blue-500/60 rounded-full" style="height:60%"></div>
+          <div class="visualizer-bar w-1 bg-blue-500 rounded-full" style="height:40%"></div>
+          <div class="visualizer-bar w-1 bg-blue-500/60 rounded-full" style="height:80%"></div>
+          <div class="visualizer-bar w-1 bg-blue-500/40 rounded-full" style="height:30%"></div>
+        </div>
+        <input type="range" id="volume-slider" value="100" class="w-20" />
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS SIDEBAR -->
+  <div id="settings-overlay"></div>
+  <div id="settings-sidebar" class="glass">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-bold">Account Settings</h2>
+      <button type="button" id="settings-close" class="text-white text-2xl leading-none">&times;</button>
     </div>
 
-    <!-- DISPLAY NAME MODAL -->
-    <div id="displayname-overlay" aria-hidden="true">
-        <div id="displayname-modal" class="displayname-modal" role="dialog" aria-modal="true">
-            <!-- WARNING VIEW -->
-            <div id="dn-warning-view">
-                <h3 class="text-lg font-bold mb-2">Hmm...</h3>
-                <p class="text-slate-300">It looks like you're using an email as your display name. That could lead to possible vulnerabilities (phishing, accidental exposure). Do you want to change it?</p>
-                <div class="dn-actions">
-                    <button type="button" id="dn-no" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10">No</button>
-                    <button type="button" id="dn-yes" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white">Yes</button>
-                </div>
-            </div>
-
-            <!-- INPUT VIEW -->
-            <div id="dn-input-view" style="display:none;">
-                <h3 class="text-lg font-bold mb-2">Choose a display name</h3>
-                <p class="text-slate-400 text-sm mb-4">No special characters allowed. Use letters, numbers, spaces, underscores or hyphens.</p>
-                <input id="dn-input" class="dn-input" placeholder="Put your display name here" maxlength="30" />
-                <div id="dn-error" class="dn-error" style="display:none;">Invalid characters detected. Try letters, numbers, spaces, underscores or hyphens only.</div>
-
-                <div class="dn-actions">
-                    <button type="button" id="dn-cancel" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10">Cancel</button>
-                    <button type="button" id="dn-submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white">Save</button>
-                </div>
-            </div>
-        </div>
+    <div class="flex gap-3 mb-4">
+      <button type="button" id="tab-general" class="tab-btn active">General</button>
+      <button type="button" id="tab-zoom" class="tab-btn">Zoom</button>
     </div>
 
-<script>
-/********************************************************************
- * Full single-file app (updated):
- * - preserves original UI and scripts
- * - removes the mobile-frame feature
- * - integrates a WebSocket client for server-side inbox broadcasts
- * - falls back to BroadcastChannel/localStorage when server not available
- * - fixes display-name modal keyboard issues
- * - ensures buttons are type="button" and prevent accidental keyboard
- ********************************************************************/
-
-// ---------------------------
-// Core variables
-// ---------------------------
-const ADMIN_EMAIL = 'aidilzafri2013@gmail.com';
-let ws = null;             // websocket connection
-let bc = null;             // broadcast channel fallback
-let useServer = false;     // toggles true if websocket connected
-const WS_URL = 'ws://localhost:3000'; // server address (change if needed)
-
-const audio = new Audio();
-let currentTrackIndex = 0;
-let isPlaying = false;
-let authMode = 'login';
-let repeatTracks = false;
-
-const tracks = [
-    { title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
-    { title: 'End of Beginning', artist: 'Djo', img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
-    { title: 'Heat Waves', artist: 'Glass Animals', img: 'https://i.scdn.co/image/ab67616d0000b2739e495fb707973f3390850eea', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3' },
-    { title: 'Stereo Hearts', artist: 'Gym Class Heroes', img: 'https://i.scdn.co/image/ab67616d0000b273706dcf46953a040b8ed4b333', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3' },
-    { title: 'Get Lucky', artist: 'Daft Punk', img: 'https://images-ext-1.discordapp.net/external/xR3pl2SlUtADo9357RJ1lvKlsgnie7faJtruZyDKNu8/%3Fcb%3D20140421225330%26path-prefix%3Des/https/static.wikia.nocookie.net/daftpunk/images/7/71/Get_Lucky.jpg/revision/latest?format=png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3' },
-    { title: 'Rap God', artist: 'Eminem', img: 'https://images-ext-1.discordapp.net/external/5NjINKSPrPYMPecFhmRVSyb_aMQAQTUEB_7EmfB9EME/https/i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2?format=webp', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3' }
-];
-
-// ---------------------------
-// Storage helpers
-// ---------------------------
-function readMessages(){ try{return JSON.parse(localStorage.getItem('jamusic_messages')||'[]')}catch(e){return []} }
-function saveMessages(arr){ try{ localStorage.setItem('jamusic_messages', JSON.stringify(arr)); }catch(e){} }
-function readUsers(){ try { return JSON.parse(localStorage.getItem('jamusic_users') || '[]'); } catch(e){ return []; } }
-function saveUsers(arr){ try { localStorage.setItem('jamusic_users', JSON.stringify(arr)); } catch(e){} }
-function getCurrentUser(){ try{ const s=localStorage.getItem('jamusic_user'); return s ? JSON.parse(s) : null }catch(e){return null} }
-
-// ensure jamusic_users exists
-(function ensureUsers(){
-    try{
-        const u = readUsers();
-        if(!u || u.length === 0) {
-            const init = [{ email: ADMIN_EMAIL, password:'admin', name: ADMIN_EMAIL.split('@')[0] }];
-            saveUsers(init);
-        }
-    } catch(e){}
-})();
-
-// ---------------------------
-// WebSocket / BroadcastChannel wiring
-// ---------------------------
-function initRealtime(){
-    // WebSocket attempt
-    try {
-        ws = new WebSocket(WS_URL);
-        ws.addEventListener('open', () => {
-            useServer = true;
-            console.log('[WS] Connected to server.');
-            // request server messages
-            ws.send(JSON.stringify({ type: 'get_messages' }));
-        });
-        ws.addEventListener('message', (ev) => {
-            try {
-                const data = JSON.parse(ev.data);
-                if(!data) return;
-                if(data.type === 'all_messages') {
-                    // replace local messages with server authoritative list
-                    saveMessages(data.messages || []);
-                    updateNotifBanner();
-                } else if(data.type === 'new_broadcast') {
-                    // server pushed a single broadcast
-                    const messages = readMessages();
-                    if (!messages.find(m => m.id === data.msg.id)) {
-                        messages.push(data.msg);
-                        saveMessages(messages);
-                    }
-                    updateNotifBanner();
-                    const panel = document.getElementById('inbox-panel');
-                    if(panel && panel.classList.contains('open')) renderInboxList();
-                }
-            } catch(e){ console.warn('[WS] message parse', e); }
-        });
-        ws.addEventListener('close', ()=> { useServer = false; console.log('[WS] disconnected'); });
-        ws.addEventListener('error', ()=> { useServer = false; console.log('[WS] error'); });
-    } catch(e) { useServer = false; }
-
-    // BroadcastChannel fallback for cross-tab in same browser
-    try {
-        if ('BroadcastChannel' in window) {
-            bc = new BroadcastChannel('jamusic_channel');
-            bc.onmessage = (ev) => {
-                setTimeout(()=>{ // safety if functions not hoisted yet
-                    const data = ev.data;
-                    if(!data) return;
-                    if(data.type === 'new_broadcast' && data.msg) {
-                        try {
-                            const messages = readMessages();
-                            if(!messages.find(m => m.id === data.msg.id)) {
-                                messages.push(data.msg);
-                                saveMessages(messages);
-                            }
-                        } catch(e){}
-                        updateNotifBanner();
-                        const panel = document.getElementById('inbox-panel');
-                        if(panel && panel.classList.contains('open')) renderInboxList();
-                    }
-                }, 0);
-            };
-        }
-    } catch(e){}
-}
-
-// call early
-initRealtime();
-
-// ---------------------------
-// UI helpers
-// ---------------------------
-function alertBox(msg){
-    const node = document.createElement('div');
-    node.className = 'fixed top-10 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-xl z-[30000] animate-fade-in font-bold';
-    node.innerText = msg;
-    document.body.appendChild(node);
-    setTimeout(()=>node.remove(), 2500);
-}
-
-function escapeHtml(str){ return (str+'').replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s]); }
-
-// ---------------------------
-// Render tracks
-// ---------------------------
-function renderTracks(data){
-    const grid = document.getElementById('musicGrid');
-    if(!grid) return;
-    grid.innerHTML = data.map((track, index) => `
-        <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in" onclick="playTrack(${index})">
-            <div class="relative overflow-hidden rounded-2xl mb-5">
-                <img src="${track.img}" alt="${track.title}" class="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700">
-                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div class="play-btn-float w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                        <svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                    </div>
-                </div>
-            </div>
-            <h4 class="font-bold text-lg truncate group-hover:text-blue-400 transition-colors">${escapeHtml(track.title)}</h4>
-            <p class="text-xs text-slate-500 font-semibold uppercase">${escapeHtml(track.artist)}</p>
+    <div id="settings-content" class="flex-1 overflow-y-auto">
+      <div id="settings-general">
+        <p class="font-semibold text-sm text-slate-400 mb-2">Volume</p>
+        <input type="range" id="settings-volume" value="100" class="w-full" />
+        <p class="font-semibold text-sm text-slate-400 mt-4 mb-2">Theme</p>
+        <div class="flex gap-4">
+          <button type="button" id="theme-light-btn" class="px-4 py-2 bg-white text-black rounded-xl">Light</button>
+          <button type="button" id="theme-dark-btn" class="px-4 py-2 bg-black text-white rounded-xl">Dark</button>
         </div>
-    `).join('');
-}
+      </div>
 
-// ---------------------------
-// Player functions
-// ---------------------------
-function playTrack(index){
-    currentTrackIndex = index;
-    const track = tracks[index];
-    document.getElementById('player-bar').style.transform = 'translateY(0)';
-    document.getElementById('player-img').src = track.img;
-    document.getElementById('player-title').innerText = track.title;
-    document.getElementById('player-artist').innerText = track.artist;
-    audio.src = track.src;
-    audio.play().catch(()=>{});
-    updatePlayUI(true);
-    animateVisualizer();
-}
+      <div id="settings-zoom" class="hidden">
+        <p class="font-semibold text-sm text-slate-400 mb-2">Page Zoom</p>
+        <input type="range" id="settings-zoom-slider" min="0.6" max="1.4" step="0.05" value="1" class="w-full"/>
+        <p class="text-xs text-slate-500 mt-2">Adjust the page scale for readability.</p>
+      </div>
+    </div>
+  </div>
 
-function togglePlay(){ if(!audio.src){ playTrack(0); return; } if(audio.paused){ audio.play().catch(()=>{}); updatePlayUI(true); } else { audio.pause(); updatePlayUI(false); } }
-function updatePlayUI(playing){ isPlaying = playing; const p=document.getElementById('play-icon'), q=document.getElementById('pause-icon'); if(p&&q){ p.classList.toggle('hidden', playing); q.classList.toggle('hidden', !playing); } }
-function nextTrack(){ currentTrackIndex = (currentTrackIndex + 1) % tracks.length; playTrack(currentTrackIndex); }
-function prevTrack(){ currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length; playTrack(currentTrackIndex); }
-audio.ontimeupdate = () => {
-    const seekSlider = document.getElementById('seek-slider');
-    if(!seekSlider) return;
-    if(audio.duration){ seekSlider.max = Math.floor(audio.duration); seekSlider.value = Math.floor(audio.currentTime); const c=document.getElementById('curr-time'), d=document.getElementById('dur-time'); if(c) c.innerText = formatTime(audio.currentTime); if(d) d.innerText = formatTime(audio.duration); }
-};
-audio.onended = () => { if(repeatTracks){ audio.currentTime=0; audio.play().catch(()=>{}); } else nextTrack(); };
-document.getElementById && document.getElementById('seek-slider') && (document.getElementById('seek-slider').oninput = (e) => audio.currentTime = e.target.value);
-document.getElementById && document.getElementById('volume-slider') && (document.getElementById('volume-slider').oninput = (e) => audio.volume = e.target.value / 100);
-function formatTime(secs){ const min=Math.floor(secs/60); const sec=Math.floor(secs%60); return `${min}:${sec<10?'0':''}${sec}`; }
-function animateVisualizer(){ const bars=document.querySelectorAll('.visualizer-bar'); bars.forEach(bar=>{ if(isPlaying){ const h=Math.random()*80+20; bar.style.height = h + '%'; } else bar.style.height='20%'; }); if(isPlaying) setTimeout(animateVisualizer,150); }
+  <!-- INBOX PANEL -->
+  <div id="inbox-overlay"></div>
+  <div id="inbox-panel">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-xl font-bold">Inbox</h3>
+      <button type="button" id="inbox-close" class="text-white text-2xl leading-none">&times;</button>
+    </div>
+    <div id="inbox-list" style="flex:1; overflow:auto; padding-right:6px; display:flex; flex-direction:column; gap:10px;"></div>
+    <div style="padding-top:8px;">
+      <button type="button" id="inbox-refresh" class="px-3 py-2 bg-white/5 rounded-xl">Refresh</button>
+    </div>
+  </div>
 
-// ---------------------------
-// Auth system (signup/login validation)
-// ---------------------------
-function toggleAuthMode(mode){ authMode=mode; document.getElementById('login-tab').classList.toggle('active', mode==='login'); document.getElementById('signup-tab').classList.toggle('active', mode==='signup'); document.getElementById('submit-btn').innerText = mode==='login' ? 'Sign In' : 'Create Account'; }
+  <!-- READ MODAL -->
+  <div id="read-overlay">
+    <div id="read-modal" class="read-modal">
+      <h3 id="read-title" class="text-xl font-bold mb-2"></h3>
+      <p id="read-sub" class="text-sm text-slate-400 mb-4"></p>
+      <div id="read-body" class="text-sm text-slate-200 mb-4"></div>
+      <div style="display:flex; gap:8px; justify-content:flex-end;">
+        <button type="button" id="read-dismiss" class="px-3 py-2 rounded-xl bg-white/5">Dismiss</button>
+        <button type="button" id="read-close" class="px-3 py-2 rounded-xl bg-blue-600 text-white">Close</button>
+      </div>
+    </div>
+  </div>
 
-function handleAuth(){
-    const emailEl = document.getElementById('auth-email');
-    const passEl = document.getElementById('auth-pass');
-    const remember = document.getElementById('remember-me') ? document.getElementById('remember-me').checked : false;
-    if(!emailEl || !passEl) return;
-    const email = emailEl.value.trim();
-    const pass = passEl.value.trim();
-    if(!email || !pass){ alertBox('Please fill in all fields.'); return; }
-    const users = readUsers();
-    if(authMode === 'signup'){
-        const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if(exists){ alertBox('Email already registered. Try logging in.'); return; }
-        users.push({ email, password: pass, name: email.split('@')[0] });
-        saveUsers(users);
-        const user = { email, name: email.split('@')[0] };
-        if(remember) localStorage.setItem('jamusic_user', JSON.stringify(user)); else localStorage.setItem('jamusic_user', JSON.stringify(user));
-        showApp(user);
-        alertBox('Account created and signed in.');
-        return;
-    } else {
-        const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === pass);
-        if(!found){ alertBox('Invalid email or password.'); return; }
-        const user = { email: found.email, name: found.name };
-        if(remember) localStorage.setItem('jamusic_user', JSON.stringify(user)); else localStorage.setItem('jamusic_user', JSON.stringify(user));
-        showApp(user);
-        return;
+  <!-- ADMIN MODAL -->
+  <div id="admin-overlay"></div>
+  <div id="admin-modal" class="admin-modal">
+    <h3 class="text-lg font-bold mb-2">Admin - Send Broadcast</h3>
+    <div class="space-y-2">
+      <input id="admin-subject" placeholder="Subject" class="dn-input" />
+      <input id="admin-title" placeholder="Title" class="dn-input" />
+      <textarea id="admin-body" placeholder="Description / Body" class="dn-input" style="height:140px; resize:none;"></textarea>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:6px;">
+        <button type="button" id="admin-cancel" class="px-3 py-2 rounded-xl bg-white/5">Cancel</button>
+        <button type="button" id="admin-send" class="px-3 py-2 rounded-xl bg-blue-600 text-white">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISPLAY NAME MODAL -->
+  <div id="displayname-overlay" aria-hidden="true">
+    <div id="displayname-modal" class="displayname-modal" role="dialog" aria-modal="true">
+      <div id="dn-warning-view">
+        <h3 class="text-lg font-bold mb-2">Hmm...</h3>
+        <p class="text-slate-300">It looks like you're using an email as your display name. That could lead to possible vulnerabilities (phishing, accidental exposure). Do you want to change it?</p>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+          <button type="button" id="dn-no" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10">No</button>
+          <button type="button" id="dn-yes" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white">Yes</button>
+        </div>
+      </div>
+      <div id="dn-input-view" style="display:none;">
+        <h3 class="text-lg font-bold mb-2">Choose a display name</h3>
+        <p class="text-slate-400 text-sm mb-4">No special characters allowed. Use letters, numbers, spaces, underscores or hyphens.</p>
+        <input id="dn-input" class="dn-input" placeholder="Put your display name here" maxlength="30" />
+        <div id="dn-error" class="dn-error" style="display:none;">Invalid characters detected. Try letters, numbers, spaces, underscores or hyphens only.</div>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+          <button type="button" id="dn-cancel" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10">Cancel</button>
+          <button type="button" id="dn-submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ------------------------------
+       JaMusic v2 - restored full UI
+       Inbox uses localStorage + BroadcastChannel fallback
+       ------------------------------ */
+
+    const ADMIN_EMAIL = 'aidilzafri2013@gmail.com';
+    const audio = new Audio();
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    let authMode = 'login';
+    let repeatTracks = false;
+
+    const tracks = [
+      { title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
+      { title: 'End of Beginning', artist: 'Djo', img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
+      { title: 'Heat Waves', artist: 'Glass Animals', img: 'https://i.scdn.co/image/ab67616d0000b2739e495fb707973f3390850eea', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3' },
+      { title: 'Stereo Hearts', artist: 'Gym Class Heroes', img: 'https://i.scdn.co/image/ab67616d0000b273706dcf46953a040b8ed4b333', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3' },
+      { title: 'Get Lucky', artist: 'Daft Punk', img: 'https://images-ext-1.discordapp.net/external/xR3pl2SlUtADo9357RJ1lvKlsgnie7faJtruZyDKNu8/%3Fcb%3D20140421225330%26path-prefix%3Des/https/static.wikia.nocookie.net/daftpunk/images/7/71/Get_Lucky.jpg/revision/latest?format=png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3' },
+      { title: 'Rap God', artist: 'Eminem', img: 'https://images-ext-1.discordapp.net/external/5NjINKSPrPYMPecFhmRVSyb_aMQAQTUEB_7EmfB9EME/https/i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2?format=webp', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3' }
+    ];
+
+    // Storage helpers
+    function readMessages(){ try{ return JSON.parse(localStorage.getItem('jamusic_messages')||'[]'); }catch(e){return []} }
+    function saveMessages(arr){ try{ localStorage.setItem('jamusic_messages', JSON.stringify(arr)); }catch(e){} }
+    function readUsers(){ try{ return JSON.parse(localStorage.getItem('jamusic_users')||'[]'); }catch(e){return []} }
+    function saveUsers(arr){ try{ localStorage.setItem('jamusic_users', JSON.stringify(arr)); }catch(e){} }
+    function getCurrentUser(){ try{ const s=localStorage.getItem('jamusic_user'); return s?JSON.parse(s):null }catch(e){return null} }
+
+    // Ensure initial users (local only)
+    (function ensureUsers(){
+      const u = readUsers();
+      if(!u || u.length === 0) {
+        saveUsers([{ email: ADMIN_EMAIL, password:'admin', name: ADMIN_EMAIL.split('@')[0] }]);
+      }
+    })();
+
+    // BroadcastChannel fallback for cross-tab
+    let bc = null;
+    try {
+      if('BroadcastChannel' in window) {
+        bc = new BroadcastChannel('jamusic_channel');
+        bc.onmessage = (ev) => {
+          try {
+            const data = ev.data;
+            if(!data) return;
+            if(data.type === 'new_broadcast' && data.msg) {
+              const msgs = readMessages();
+              if(!msgs.find(m => m.id === data.msg.id)){
+                msgs.push(data.msg); saveMessages(msgs);
+              }
+              updateNotifBanner(); if(document.getElementById('inbox-panel').classList.contains('open')) renderInboxList();
+            }
+          } catch(e){}
+        };
+      }
+    } catch(e){ bc = null; }
+
+    // UI helpers
+    function alertBox(msg){
+      const banner = document.createElement('div');
+      banner.className = 'fixed top-10 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-xl z-[30000] animate-fade-in font-bold';
+      banner.innerText = msg;
+      document.body.appendChild(banner);
+      setTimeout(()=> banner.remove(), 2500);
     }
-}
+    function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
 
-function showApp(user){
-    if(!user) return;
-    const authOverlay = document.getElementById('auth-overlay'); if(authOverlay) authOverlay.style.opacity='0';
-    const userDisplay = document.getElementById('user-display'); if(userDisplay) userDisplay.innerText = user.name;
-    const ddn = document.getElementById('dropdown-name'); if(ddn) ddn.innerText = user.name;
-    const dde = document.getElementById('dropdown-email'); if(dde) dde.innerText = user.email;
-    const app = document.getElementById('main-app'); if(app){ app.classList.remove('hidden-state'); app.style.opacity='1'; app.style.pointerEvents='auto'; }
-    renderTracks(tracks);
-    setTimeout(()=> { if(authOverlay) authOverlay.style.display='none'; }, 600);
-
-    updateNotifBanner();
-    maybeShowAdminBtn();
-    startInboxLoop();
-}
-
-function logout(){ localStorage.removeItem('jamusic_user'); location.reload(); }
-
-// ---------------------------
-// Search
-// ---------------------------
-function handleSearch(e){
-    const query = e.target.value.toLowerCase();
-    const filtered = tracks.filter(t => t.title.toLowerCase().includes(query) || t.artist.toLowerCase().includes(query));
-    renderTracks(filtered);
-}
-
-// ---------------------------
-// Repeat toggle
-// ---------------------------
-function toggleRepeat(){ repeatTracks = !repeatTracks; document.getElementById('repeat-icon').style.color = repeatTracks ? 'var(--accent)' : ''; alertBox(repeatTracks ? 'Repeat ON' : 'Repeat OFF'); }
-
-// ---------------------------
-// Inbox & Admin (server-backed)
-// ---------------------------
-function openInbox(){
-    try { if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); } catch(e){}
-    const overlay = document.getElementById('inbox-overlay'); const panel = document.getElementById('inbox-panel');
-    overlay.classList.add('show'); panel.classList.add('open'); document.body.classList.add('no-scroll'); renderInboxList();
-}
-function closeInbox(){ document.getElementById('inbox-overlay').classList.remove('show'); document.getElementById('inbox-panel').classList.remove('open'); document.body.classList.remove('no-scroll'); }
-
-function renderInboxList(){
-    const listEl = document.getElementById('inbox-list'); if(!listEl) return; listEl.innerHTML = '';
-    const user = getCurrentUser(); if(!user){ listEl.innerHTML = `<div class="text-slate-400">You must sign in to view inbox.</div>`; return; }
-    const msgs = readMessages();
-    const visible = msgs.filter(m => { const dismissed = m.dismissedBy || []; if(dismissed.includes(user.email)) return false; return m.to === 'all' || m.to === user.email; }).sort((a,b)=> b.ts - a.ts);
-
-    if(visible.length === 0){ listEl.innerHTML = `<div class="text-slate-400">You have no emails.</div>`; return; }
-    visible.forEach(m => {
-        const unread = !(m.readBy || []).includes(user.email);
-        const item = document.createElement('div'); item.className = 'email-item';
-        item.innerHTML = `
-            <div style="display:flex; gap:10px; align-items:center; flex:1;">
-                <div style="width:10px;height:10px;border-radius:999px;background:${unread? 'var(--accent)':'#64748b'}"></div>
-                <div style="flex:1;">
-                    <div style="font-weight:700;">${escapeHtml(m.title)}</div>
-                    <div class="email-sub">${escapeHtml(m.subject)}</div>
-                </div>
+    // Render tracks
+    function renderTracks(data){
+      const grid = document.getElementById('musicGrid'); if(!grid) return;
+      grid.innerHTML = data.map((t,i)=>`
+        <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in" onclick="playTrack(${i})">
+          <div class="relative overflow-hidden rounded-2xl mb-5">
+            <img src="${t.img}" alt="${t.title}" class="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700" />
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div class="play-btn-float w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                <svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </div>
             </div>
-            <div style="text-align:right;">
-                <div class="email-time">${new Date(m.ts).toLocaleString()}</div>
+          </div>
+          <h4 class="font-bold text-lg truncate group-hover:text-blue-400 transition-colors">${escapeHtml(t.title)}</h4>
+          <p class="text-xs text-slate-500 font-semibold uppercase">${escapeHtml(t.artist)}</p>
+        </div>
+      `).join('');
+    }
+
+    // Player
+    function playTrack(idx){ currentTrackIndex = idx; const track = tracks[idx]; document.getElementById('player-bar').style.transform='translateY(0)'; document.getElementById('player-img').src = track.img; document.getElementById('player-title').innerText = track.title; document.getElementById('player-artist').innerText = track.artist; audio.src = track.src; audio.play().catch(()=>{}); updatePlayUI(true); animateVisualizer(); }
+    function togglePlay(){ if(!audio.src){ playTrack(0); return; } if(audio.paused){ audio.play().catch(()=>{}); updatePlayUI(true); } else { audio.pause(); updatePlayUI(false); } }
+    function updatePlayUI(playing){ isPlaying = playing; const p = document.getElementById('play-icon'), q = document.getElementById('pause-icon'); if(p && q){ p.classList.toggle('hidden', playing); q.classList.toggle('hidden', !playing); } }
+    function nextTrack(){ currentTrackIndex = (currentTrackIndex+1) % tracks.length; playTrack(currentTrackIndex); }
+    function prevTrack(){ currentTrackIndex = (currentTrackIndex-1+tracks.length)%tracks.length; playTrack(currentTrackIndex); }
+    audio.ontimeupdate = ()=>{ const s = document.getElementById('seek-slider'); if(!s) return; if(audio.duration){ s.max = Math.floor(audio.duration); s.value = Math.floor(audio.currentTime); const c = document.getElementById('curr-time'), d = document.getElementById('dur-time'); if(c) c.innerText = formatTime(audio.currentTime); if(d) d.innerText = formatTime(audio.duration); } };
+    audio.onended = ()=>{ if(repeatTracks){ audio.currentTime=0; audio.play().catch(()=>{});} else nextTrack(); };
+    document.addEventListener('DOMContentLoaded', ()=>{ const s = document.getElementById('seek-slider'); if(s) s.oninput = (e)=> audio.currentTime = e.target.value; const v = document.getElementById('volume-slider'); if(v) v.oninput = (e)=> audio.volume = e.target.value/100; });
+    function formatTime(secs){ const m=Math.floor(secs/60); const s=Math.floor(secs%60); return `${m}:${s<10?'0':''}${s}`; }
+    function animateVisualizer(){ const bars = document.querySelectorAll('.visualizer-bar'); bars.forEach(b=>{ if(isPlaying){ const h = Math.random()*80+20; b.style.height = h + '%'; } else b.style.height = '20%'; }); if(isPlaying) setTimeout(animateVisualizer,150); }
+
+    // Auth
+    function toggleAuthMode(mode){ authMode = mode; document.getElementById('login-tab').classList.toggle('active', mode==='login'); document.getElementById('signup-tab').classList.toggle('active', mode==='signup'); document.getElementById('submit-btn').innerText = mode==='login'?'Sign In':'Create Account'; }
+    function handleAuth(){
+      const email = document.getElementById('auth-email').value.trim(); const pass = document.getElementById('auth-pass').value.trim(); const remember = document.getElementById('remember-me')?document.getElementById('remember-me').checked:false;
+      if(!email || !pass){ alertBox('Please fill in all fields.'); return; }
+      const users = readUsers();
+      if(authMode === 'signup'){
+        if(users.find(u=>u.email.toLowerCase()===email.toLowerCase())){ alertBox('Email already registered.'); return; }
+        users.push({ email, password: pass, name: email.split('@')[0] }); saveUsers(users);
+        const user = { email, name: email.split('@')[0] }; localStorage.setItem('jamusic_user', JSON.stringify(user)); showApp(user); alertBox('Account created and signed in.'); return;
+      } else {
+        const found = users.find(u=>u.email.toLowerCase()===email.toLowerCase() && u.password===pass);
+        if(!found){ alertBox('Invalid email or password.'); return; }
+        const user = { email: found.email, name: found.name }; localStorage.setItem('jamusic_user', JSON.stringify(user)); showApp(user); return;
+      }
+    }
+    function showApp(user){ if(!user) return; document.getElementById('auth-overlay').style.opacity='0'; document.getElementById('user-display').innerText = user.name; document.getElementById('dropdown-name').innerText = user.name; document.getElementById('dropdown-email').innerText = user.email; const app = document.getElementById('main-app'); app.classList.remove('hidden-state'); app.style.opacity='1'; app.style.pointerEvents='auto'; renderTracks(tracks); setTimeout(()=> document.getElementById('auth-overlay').style.display='none', 600); updateNotifBanner(); maybeShowAdminBtn(); startInboxLoop(); }
+    function logout(){ localStorage.removeItem('jamusic_user'); location.reload(); }
+
+    // Search
+    function handleSearch(e){ const q = e.target.value.toLowerCase(); renderTracks(tracks.filter(t => t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q))); }
+
+    // Repeat
+    function toggleRepeat(){ repeatTracks = !repeatTracks; document.getElementById('repeat-icon').style.color = repeatTracks ? 'var(--accent)': ''; alertBox(repeatTracks ? 'Repeat ON' : 'Repeat OFF'); }
+
+    // Inbox & admin (client-side broadcast using localStorage + BroadcastChannel)
+    function openInbox(){ try{ if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); }catch(e){} const overlay=document.getElementById('inbox-overlay'), panel=document.getElementById('inbox-panel'); overlay.classList.add('show'); panel.classList.add('open'); document.body.classList.add('no-scroll'); renderInboxList(); }
+    function closeInbox(){ document.getElementById('inbox-overlay').classList.remove('show'); document.getElementById('inbox-panel').classList.remove('open'); document.body.classList.remove('no-scroll'); }
+
+    function renderInboxList(){
+      const listEl = document.getElementById('inbox-list'); if(!listEl) return; listEl.innerHTML = '';
+      const user = getCurrentUser(); if(!user){ listEl.innerHTML = `<div class="text-slate-400">You must sign in to view inbox.</div>`; return; }
+      const msgs = readMessages();
+      const visible = msgs.filter(m => { const dismissed = m.dismissedBy||[]; if(dismissed.includes(user.email)) return false; return m.to === 'all' || m.to === user.email; }).sort((a,b)=>b.ts - a.ts);
+      if(visible.length === 0) { listEl.innerHTML = `<div class="text-slate-400">You have no emails.</div>`; return; }
+      visible.forEach(m=>{
+        const unread = !(m.readBy||[]).includes(user.email);
+        const item = document.createElement('div'); item.className='email-item';
+        item.innerHTML = `<div style="display:flex; gap:10px; align-items:center; flex:1;">
+            <div style="width:10px;height:10px;border-radius:999px;background:${unread? 'var(--accent)':'#64748b'}"></div>
+            <div style="flex:1;">
+              <div style="font-weight:700;">${escapeHtml(m.title)}</div>
+              <div class="email-sub">${escapeHtml(m.subject)}</div>
             </div>
-        `;
+          </div>
+          <div style="text-align:right;">
+            <div class="email-time">${new Date(m.ts).toLocaleString()}</div>
+          </div>`;
         item.addEventListener('click', ()=> openReadModal(m.id));
         listEl.appendChild(item);
-    });
-}
-
-function openReadModal(id){
-    const msgs = readMessages(); const m = msgs.find(x => x.id === id); if(!m) return; const user = getCurrentUser(); if(!user) return;
-    m.readBy = m.readBy || []; if(!m.readBy.includes(user.email)) m.readBy.push(user.email); saveMessages(msgs);
-    document.getElementById('read-title').innerText = m.title; document.getElementById('read-sub').innerText = m.subject; document.getElementById('read-body').innerText = m.body;
-    const overlay = document.getElementById('read-overlay'); overlay.classList.add('show'); overlay.style.display = 'flex';
-    updateNotifBanner();
-    document.getElementById('read-dismiss').onclick = () => { m.dismissedBy = m.dismissedBy || []; if(!m.dismissedBy.includes(user.email)) m.dismissedBy.push(user.email); saveMessages(msgs); closeReadModal(); renderInboxList(); updateNotifBanner(); };
-    document.getElementById('read-close').onclick = () => { closeReadModal(); renderInboxList(); updateNotifBanner(); };
-}
-function closeReadModal(){ const overlay = document.getElementById('read-overlay'); overlay.classList.remove('show'); overlay.style.display = 'none'; }
-
-// admin
-function maybeShowAdminBtn(){ const user = getCurrentUser(); const btn = document.getElementById('admin-panel-btn'); if(user && user.email && user.email.toLowerCase()===ADMIN_EMAIL.toLowerCase()) btn.style.display='block'; else btn.style.display='none'; }
-function openAdminModal(){ try { if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); } catch(e){}; document.getElementById('admin-overlay').classList.add('show'); document.getElementById('admin-modal').classList.add('show'); document.body.classList.add('no-scroll'); }
-function closeAdminModal(){ document.getElementById('admin-overlay').classList.remove('show'); document.getElementById('admin-modal').classList.remove('show'); document.body.classList.remove('no-scroll'); }
-
-// send broadcast — uses server if connected, otherwise falls back to BroadcastChannel + localStorage
-function sendBroadcast(){
-    const subject = (document.getElementById('admin-subject').value || '').trim();
-    const title = (document.getElementById('admin-title').value || '').trim();
-    const body = (document.getElementById('admin-body').value || '').trim();
-    if(!subject || !title || !body){ alertBox('Please fill subject, title and description.'); return; }
-    const msg = { id: 'm_' + Date.now() + '_' + Math.floor(Math.random()*9999), from: (getCurrentUser()||{}).email || 'admin', to:'all', subject, title, body, ts: Date.now(), readBy:[], dismissedBy:[] };
-
-    // 1) server
-    if(useServer && ws && ws.readyState === WebSocket.OPEN){
-        try {
-            ws.send(JSON.stringify({ type:'broadcast', msg }));
-        } catch(e){}
-    } else {
-        // 2) BroadcastChannel fallback
-        try {
-            const messages = readMessages(); messages.push(msg); saveMessages(messages);
-            if(bc) bc.postMessage({ type:'new_broadcast', msg });
-            // also touch localStorage to trigger storage events (some contexts)
-            try { localStorage.setItem('jamusic_last_broadcast_ts', Date.now().toString()); } catch(e){}
-        } catch(e){}
+      });
     }
-    alertBox('Broadcast sent to all users.');
-    closeAdminModal();
-    updateNotifBanner();
-}
 
-// ---------------------------
-// notification banner and sync
-// ---------------------------
-function countUnreadForUser(email){
-    if(!email) return 0;
-    const msgs = readMessages();
-    return msgs.filter(m=>{
+    function openReadModal(id){
+      const msgs = readMessages(); const m = msgs.find(x=>x.id===id); if(!m) return; const user = getCurrentUser(); if(!user) return;
+      m.readBy = m.readBy || []; if(!m.readBy.includes(user.email)) m.readBy.push(user.email); saveMessages(msgs);
+      document.getElementById('read-title').innerText = m.title; document.getElementById('read-sub').innerText = m.subject; document.getElementById('read-body').innerText = m.body;
+      const overlay = document.getElementById('read-overlay'); overlay.classList.add('show'); overlay.style.display='flex';
+      document.getElementById('read-dismiss').onclick = () => { m.dismissedBy = m.dismissedBy || []; if(!m.dismissedBy.includes(user.email)) m.dismissedBy.push(user.email); saveMessages(msgs); closeReadModal(); renderInboxList(); updateNotifBanner(); };
+      document.getElementById('read-close').onclick = () => { closeReadModal(); renderInboxList(); updateNotifBanner(); };
+      updateNotifBanner();
+    }
+    function closeReadModal(){ const ro = document.getElementById('read-overlay'); ro.classList.remove('show'); ro.style.display='none'; }
+
+    // Admin UI
+    function maybeShowAdminBtn(){ const u = getCurrentUser(); const btn = document.getElementById('admin-panel-btn'); if(u && u.email && u.email.toLowerCase()===ADMIN_EMAIL.toLowerCase()) btn.style.display='block'; else btn.style.display='none'; }
+    function openAdminModal(){ try{ if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); }catch(e){} document.getElementById('admin-overlay').classList.add('show'); document.getElementById('admin-modal').classList.add('show'); document.body.classList.add('no-scroll'); }
+    function closeAdminModal(){ document.getElementById('admin-overlay').classList.remove('show'); document.getElementById('admin-modal').classList.remove('show'); document.body.classList.remove('no-scroll'); }
+
+    // send broadcast (client/local implementation) — writes to localStorage and posts on BroadcastChannel so other tabs receive it
+    function sendBroadcast(){
+      const subject = (document.getElementById('admin-subject').value||'').trim();
+      const title = (document.getElementById('admin-title').value||'').trim();
+      const body = (document.getElementById('admin-body').value||'').trim();
+      if(!subject || !title || !body){ alertBox('Please fill subject, title and description.'); return; }
+      const msg = { id: 'm_'+Date.now()+'_'+Math.floor(Math.random()*9999), from:(getCurrentUser()||{}).email||'admin', to:'all', subject, title, body, ts: Date.now(), readBy:[], dismissedBy:[] };
+      const messages = readMessages(); messages.push(msg); saveMessages(messages);
+      try{ if(bc) bc.postMessage({ type:'new_broadcast', msg }); }catch(e){}
+      try{ localStorage.setItem('jamusic_last_broadcast_ts', Date.now().toString()); }catch(e){}
+      alertBox('Broadcast sent to all users (client-side).');
+      closeAdminModal(); updateNotifBanner();
+    }
+
+    // Notification banner
+    function countUnreadForUser(email){
+      if(!email) return 0;
+      const msgs = readMessages();
+      return msgs.filter(m=>{
         if(m.to !== 'all' && m.to !== email) return false;
-        const dismissed = m.dismissedBy || [];
-        if(dismissed.includes(email)) return false;
-        const read = m.readBy || [];
-        return !read.includes(email);
-    }).length;
-}
+        const dismissed = m.dismissedBy || []; if(dismissed.includes(email)) return false;
+        const read = m.readBy || []; return !read.includes(email);
+      }).length;
+    }
 
-function updateNotifBanner(){
-    const container = document.getElementById('notif-container'); if(!container) return;
-    const user = getCurrentUser(); if(!user){ container.innerHTML=''; return; }
-    const count = countUnreadForUser(user.email);
-    if(count > 0){
+    function updateNotifBanner(){
+      const container = document.getElementById('notif-container'); if(!container) return;
+      const user = getCurrentUser(); if(!user){ container.innerHTML = ''; return; }
+      const count = countUnreadForUser(user.email);
+      if(count>0){
         container.innerHTML = `<div class="notif-bar" role="status" aria-live="polite" onclick="openInbox()" style="cursor:pointer;"><span class="notif-text"><strong><em>${count} NEW NOTIFICATIONS!</em></strong></span></div>`;
-    } else container.innerHTML = '';
-}
-
-// polling loop
-let inboxLoopHandle = null;
-function startInboxLoop(){ if(inboxLoopHandle) clearInterval(inboxLoopHandle); updateNotifBanner(); inboxLoopHandle = setInterval(()=>{ updateNotifBanner(); const panel = document.getElementById('inbox-panel'); if(panel && panel.classList.contains('open')) renderInboxList(); }, 5000); }
-function stopInboxLoop(){ if(inboxLoopHandle) clearInterval(inboxLoopHandle); inboxLoopHandle=null; }
-
-// storage event to sync fallback (if server not used)
-window.addEventListener('storage', (e)=> {
-    if(!e.key) return;
-    if(e.key === 'jamusic_messages' || e.key === 'jamusic_last_broadcast_ts') {
-        updateNotifBanner();
-        const panel = document.getElementById('inbox-panel');
-        if(panel && panel.classList.contains('open')) renderInboxList();
-    }
-    if(e.key === 'jamusic_user') {
-        const u = getCurrentUser();
-        if(u) { document.getElementById('user-display').innerText = u.name || ''; document.getElementById('dropdown-name').innerText = u.name || ''; document.getElementById('dropdown-email').innerText = u.email || ''; }
-    }
-});
-
-// ---------------------------
-// Display-name modal code
-// ---------------------------
-function isEmailLike(name){ if(!name) return false; return /@.+\./.test(name); }
-
-// DOM wiring after load
-document.addEventListener('DOMContentLoaded', () => {
-    // restore user
-    const su = localStorage.getItem('jamusic_user'); if(su) showApp(JSON.parse(su));
-    renderTracks(tracks);
-
-    // toggle profile dropdown
-    window.toggleProfileMenu = function(){ const dd = document.getElementById('profile-dropdown'); dd.classList.toggle('active'); };
-
-    // close dropdown when clicking outside
-    window.onclick = (e) => { const dropdown = document.getElementById('profile-dropdown'); const trigger = document.getElementById('profile-trigger'); if(!trigger.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('active'); };
-
-    // ensure all buttons have explicit type and don't steal focus on touch
-    try {
-        document.querySelectorAll('button').forEach(b => { if(!b.hasAttribute('type')) b.setAttribute('type','button'); b.addEventListener('touchstart', ()=> b.blur(), { passive:true }); });
-    } catch(e){}
-
-    // settings wiring
-    const settingsBtn = document.getElementById('account-settings-btn');
-    const settingsOverlay = document.getElementById('settings-overlay');
-    const settingsPanel = document.getElementById('settings-sidebar');
-    const settingsClose = document.getElementById('settings-close');
-
-    if(settingsBtn) settingsBtn.addEventListener('click', (e)=>{ e.stopPropagation(); try { if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); } catch(e){} settingsPanel && settingsPanel.classList.add('open'); settingsOverlay && settingsOverlay.classList.add('show'); document.body.classList.add('no-scroll'); const dd = document.getElementById('profile-dropdown'); if(dd) dd.classList.remove('active'); });
-    if(settingsClose) settingsClose.addEventListener('click', ()=>{ settingsPanel && settingsPanel.classList.remove('open'); settingsOverlay && settingsOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); });
-    if(settingsOverlay) settingsOverlay.addEventListener('click', ()=>{ settingsPanel && settingsPanel.classList.remove('open'); settingsOverlay && settingsOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); });
-
-    // settings tabs
-    const tabGeneral = document.getElementById('tab-general'), tabZoom = document.getElementById('tab-zoom');
-    if(tabGeneral) tabGeneral.addEventListener('click', ()=>{ document.getElementById('settings-general').classList.remove('hidden'); document.getElementById('settings-zoom').classList.add('hidden'); tabGeneral.classList.add('active'); tabZoom.classList.remove('active'); });
-    if(tabZoom) tabZoom.addEventListener('click', ()=>{ document.getElementById('settings-general').classList.add('hidden'); document.getElementById('settings-zoom').classList.remove('hidden'); tabGeneral.classList.remove('active'); tabZoom.classList.add('active'); });
-
-    // volume sync
-    const vslider = document.getElementById('settings-volume');
-    if(vslider){ vslider.value = Math.round((audio.volume || 1) * 100); vslider.addEventListener('input', (e)=>{ audio.volume = e.target.value / 100; const mv = document.getElementById('volume-slider'); if(mv) mv.value = e.target.value; }); }
-    const mainV = document.getElementById('volume-slider');
-    if(mainV) mainV.addEventListener('input', (e)=>{ audio.volume = e.target.value / 100; if(vslider) vslider.value = e.target.value; });
-
-    // zoom slider
-    const zoomSlider = document.getElementById('settings-zoom-slider');
-    if(zoomSlider){ const saved = localStorage.getItem('jamusic_zoom'); if(saved) document.body.style.zoom = saved; zoomSlider.value = document.body.style.zoom || 1; zoomSlider.addEventListener('input', (e)=>{ document.body.style.zoom = e.target.value; try{ localStorage.setItem('jamusic_zoom', e.target.value);}catch(e){} }); }
-
-    // theme restore
-    try{ const savedTheme = localStorage.getItem('jamusic_theme'); if(savedTheme){ if(savedTheme==='light'){ document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; } else { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; } } } catch(e){}
-    const themeLightBtn = document.getElementById('theme-light-btn'); const themeDarkBtn = document.getElementById('theme-dark-btn');
-    if(themeLightBtn) themeLightBtn.addEventListener('click', ()=>{ document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; try{ localStorage.setItem('jamusic_theme','light'); }catch(e){} });
-    if(themeDarkBtn) themeDarkBtn.addEventListener('click', ()=>{ document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; try{ localStorage.setItem('jamusic_theme','dark'); }catch(e){} });
-
-    // inbox wiring
-    document.getElementById('inbox-btn') && document.getElementById('inbox-btn').addEventListener('click', ()=> openInbox());
-    document.getElementById('inbox-close') && document.getElementById('inbox-close').addEventListener('click', ()=> closeInbox());
-    document.getElementById('inbox-overlay') && document.getElementById('inbox-overlay').addEventListener('click', ()=> closeInbox());
-    document.getElementById('inbox-refresh') && document.getElementById('inbox-refresh').addEventListener('click', ()=> renderInboxList());
-
-    // read-overlay click close
-    const readOverlay = document.getElementById('read-overlay');
-    if(readOverlay) readOverlay.addEventListener('click', (e)=>{ if(e.target === readOverlay) closeReadModal(); });
-
-    // admin wires
-    const adminBtn = document.getElementById('admin-panel-btn'), adminOverlay = document.getElementById('admin-overlay'), adminModal = document.getElementById('admin-modal'), adminCancel = document.getElementById('admin-cancel'), adminSend = document.getElementById('admin-send');
-    if(adminBtn) adminBtn.addEventListener('click', ()=> { const u=getCurrentUser(); if(u && u.email && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) openAdminModal(); else alertBox('Not authorized'); });
-    if(adminCancel) adminCancel.addEventListener('click', ()=> closeAdminModal());
-    if(adminSend) adminSend.addEventListener('click', ()=> sendBroadcast());
-    if(adminOverlay) adminOverlay.addEventListener('click', ()=> closeAdminModal());
-
-    // display name wiring
-    const displayNameBtn = document.getElementById('display-name-btn');
-    const dnOverlay = document.getElementById('displayname-overlay');
-    const dnModal = document.getElementById('displayname-modal');
-    const dnWarningView = document.getElementById('dn-warning-view');
-    const dnInputView = document.getElementById('dn-input-view');
-    const dnYes = document.getElementById('dn-yes');
-    const dnNo = document.getElementById('dn-no');
-    const dnCancel = document.getElementById('dn-cancel');
-    const dnSubmit = document.getElementById('dn-submit');
-    const dnInput = document.getElementById('dn-input');
-    const dnError = document.getElementById('dn-error');
-
-    if(displayNameBtn){
-        displayNameBtn.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            try { if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); } catch(e){}
-            let currentName = '';
-            try{ const s = localStorage.getItem('jamusic_user'); if(s) currentName = JSON.parse(s).name || ''; } catch(e){}
-            if(dnOverlay) dnOverlay.classList.add('show'); if(dnModal) dnModal.classList.add('show'); document.body.classList.add('no-scroll');
-            if(isEmailLike(currentName)){ if(dnWarningView) dnWarningView.style.display='block'; if(dnInputView) dnInputView.style.display='none'; } else { if(dnWarningView) dnWarningView.style.display='none'; if(dnInputView) dnInputView.style.display='block'; }
-        });
+      } else container.innerHTML = '';
     }
 
-    if(dnNo) dnNo.addEventListener('click', ()=> { dnOverlay.classList.remove('show'); dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
+    // Inbox loop
+    let inboxLoopHandle = null;
+    function startInboxLoop(){ if(inboxLoopHandle) clearInterval(inboxLoopHandle); updateNotifBanner(); inboxLoopHandle = setInterval(()=>{ updateNotifBanner(); const panel = document.getElementById('inbox-panel'); if(panel && panel.classList.contains('open')) renderInboxList(); }, 5000); }
+    function stopInboxLoop(){ if(inboxLoopHandle) clearInterval(inboxLoopHandle); inboxLoopHandle=null; }
 
-    // THIS IS THE LINE WE CHANGED — correct target to replace earlier
-    if(dnYes) dnYes.addEventListener('click', () => {
-      dnWarningView.classList.add('hidden');
-      dnInputView.classList.remove('hidden');
-      dnError.classList.add('hidden');
-      dnInput.value = '';
-      setTimeout(() => dnInput.focus(), 50);
+    // Storage event to sync fallback
+    window.addEventListener('storage', (e)=>{
+      if(!e.key) return;
+      if(e.key === 'jamusic_messages' || e.key === 'jamusic_last_broadcast_ts'){ updateNotifBanner(); const panel = document.getElementById('inbox-panel'); if(panel && panel.classList.contains('open')) renderInboxList(); }
+      if(e.key === 'jamusic_user'){ const u = getCurrentUser(); if(u){ document.getElementById('user-display').innerText = u.name || ''; document.getElementById('dropdown-name').innerText = u.name || ''; document.getElementById('dropdown-email').innerText = u.email || ''; } }
     });
 
-    if(dnCancel) dnCancel.addEventListener('click', ()=> { dnOverlay.classList.remove('show'); dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
-    if(dnOverlay) dnOverlay.addEventListener('click', (e)=> { if(e.target===dnOverlay){ dnOverlay.classList.remove('show'); dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); } });
+    // Display-name modal utilities
+    function isEmailLike(name){ if(!name) return false; return /@.+\./.test(name); }
 
-    if(dnSubmit) dnSubmit.addEventListener('click', ()=> {
-        const val = (dnInput.value || '').trim();
+    // DOM wiring
+    document.addEventListener('DOMContentLoaded', ()=>{
+      // restore user and tracks
+      const su = localStorage.getItem('jamusic_user'); if(su) showApp(JSON.parse(su)); renderTracks(tracks);
+
+      // ensure all buttons have type="button" and prevent accidental focus on touch
+      try { document.querySelectorAll('button').forEach(b=>{ if(!b.hasAttribute('type')) b.setAttribute('type','button'); b.addEventListener('touchstart', ()=> b.blur(), {passive:true}); }); }catch(e){}
+
+      // profile dropdown toggle
+      window.toggleProfileMenu = function(){
+        const dd = document.getElementById('profile-dropdown');
+        if(dd) dd.classList.toggle('active');
+      };
+      // close dropdown when clicking outside
+      document.addEventListener('click', (e)=>{ const dd = document.getElementById('profile-dropdown'); const trigger = document.getElementById('profile-trigger'); if(!dd) return; if(trigger.contains(e.target)) return; if(!dd.contains(e.target)) dd.classList.remove('active'); });
+
+      // settings wiring
+      const settingsBtn = document.getElementById('account-settings-btn');
+      const settingsOverlay = document.getElementById('settings-overlay');
+      const settingsPanel = document.getElementById('settings-sidebar');
+      const settingsClose = document.getElementById('settings-close');
+      if(settingsBtn) settingsBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); try{ if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); }catch(e){} settingsPanel && settingsPanel.classList.add('open'); settingsOverlay && settingsOverlay.classList.add('show'); document.body.classList.add('no-scroll'); const dd = document.getElementById('profile-dropdown'); if(dd) dd.classList.remove('active'); });
+      if(settingsClose) settingsClose.addEventListener('click', ()=>{ settingsPanel && settingsPanel.classList.remove('open'); settingsOverlay && settingsOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); });
+      if(settingsOverlay) settingsOverlay.addEventListener('click', ()=>{ settingsPanel && settingsPanel.classList.remove('open'); settingsOverlay && settingsOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); });
+
+      // settings tabs
+      const tabGeneral = document.getElementById('tab-general'), tabZoom = document.getElementById('tab-zoom');
+      if(tabGeneral) tabGeneral.addEventListener('click', ()=>{ document.getElementById('settings-general').classList.remove('hidden'); document.getElementById('settings-zoom').classList.add('hidden'); tabGeneral.classList.add('active'); tabZoom.classList.remove('active'); });
+      if(tabZoom) tabZoom.addEventListener('click', ()=>{ document.getElementById('settings-general').classList.add('hidden'); document.getElementById('settings-zoom').classList.remove('hidden'); tabGeneral.classList.remove('active'); tabZoom.classList.add('active'); });
+
+      // volume sync
+      const vslider = document.getElementById('settings-volume'); if(vslider){ vslider.value = Math.round((audio.volume||1) * 100); vslider.addEventListener('input', (e)=>{ audio.volume = e.target.value/100; const mv = document.getElementById('volume-slider'); if(mv) mv.value = e.target.value; }); }
+      const mainV = document.getElementById('volume-slider'); if(mainV) mainV.addEventListener('input', (e)=>{ audio.volume = e.target.value / 100; if(vslider) vslider.value = e.target.value; });
+
+      // zoom slider
+      const zoomSlider = document.getElementById('settings-zoom-slider');
+      if(zoomSlider){ const saved = localStorage.getItem('jamusic_zoom'); if(saved) document.body.style.zoom = saved; zoomSlider.value = document.body.style.zoom || 1; zoomSlider.addEventListener('input', (e)=>{ document.body.style.zoom = e.target.value; try{ localStorage.setItem('jamusic_zoom', e.target.value); }catch(e){} }); }
+
+      // theme restore
+      try{ const savedTheme = localStorage.getItem('jamusic_theme'); if(savedTheme){ if(savedTheme==='light'){ document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; } else { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; } } }catch(e){}
+      const themeLightBtn = document.getElementById('theme-light-btn'); const themeDarkBtn = document.getElementById('theme-dark-btn');
+      if(themeLightBtn) themeLightBtn.addEventListener('click', ()=>{ document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; try{ localStorage.setItem('jamusic_theme','light'); }catch(e){} });
+      if(themeDarkBtn) themeDarkBtn.addEventListener('click', ()=>{ document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; try{ localStorage.setItem('jamusic_theme','dark'); }catch(e){} });
+
+      // inbox wiring
+      document.getElementById('inbox-btn') && document.getElementById('inbox-btn').addEventListener('click', ()=> openInbox());
+      document.getElementById('inbox-close') && document.getElementById('inbox-close').addEventListener('click', ()=> closeInbox());
+      document.getElementById('inbox-overlay') && document.getElementById('inbox-overlay').addEventListener('click', ()=> closeInbox());
+      document.getElementById('inbox-refresh') && document.getElementById('inbox-refresh').addEventListener('click', ()=> renderInboxList());
+
+      // read-overlay
+      const readOverlay = document.getElementById('read-overlay');
+      if(readOverlay) readOverlay.addEventListener('click', (e)=>{ if(e.target === readOverlay) closeReadModal(); });
+
+      // admin wires
+      const adminBtn = document.getElementById('admin-panel-btn'), adminOverlay = document.getElementById('admin-overlay'), adminModal = document.getElementById('admin-modal'), adminCancel = document.getElementById('admin-cancel'), adminSend = document.getElementById('admin-send');
+      if(adminBtn) adminBtn.addEventListener('click', ()=> { const u=getCurrentUser(); if(u && u.email && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) openAdminModal(); else alertBox('Not authorized'); });
+      if(adminCancel) adminCancel.addEventListener('click', ()=> closeAdminModal());
+      if(adminSend) adminSend.addEventListener('click', ()=> sendBroadcast());
+      if(adminOverlay) adminOverlay.addEventListener('click', ()=> closeAdminModal());
+
+      // display name wiring
+      const displayNameBtn = document.getElementById('display-name-btn');
+      const dnOverlay = document.getElementById('displayname-overlay');
+      const dnModal = document.getElementById('displayname-modal');
+      const dnWarningView = document.getElementById('dn-warning-view');
+      const dnInputView = document.getElementById('dn-input-view');
+      const dnYes = document.getElementById('dn-yes');
+      const dnNo = document.getElementById('dn-no');
+      const dnCancel = document.getElementById('dn-cancel');
+      const dnSubmit = document.getElementById('dn-submit');
+      const dnInput = document.getElementById('dn-input');
+      const dnError = document.getElementById('dn-error');
+
+      if(displayNameBtn) displayNameBtn.addEventListener('click', (ev)=> {
+        ev.stopPropagation();
+        try{ if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); }catch(e){}
+        let currentName = '';
+        try{ const s = localStorage.getItem('jamusic_user'); if(s) currentName = JSON.parse(s).name || ''; }catch(e){}
+        if(dnOverlay) dnOverlay.classList.add('show'); if(dnModal) dnModal.classList.add('show'); document.body.classList.add('no-scroll');
+        if(isEmailLike(currentName)){ if(dnWarningView) dnWarningView.style.display='block'; if(dnInputView) dnInputView.style.display='none'; } else { if(dnWarningView) dnWarningView.style.display='none'; if(dnInputView) dnInputView.style.display='block'; setTimeout(()=>dnInput.focus(),100); }
+      });
+
+      if(dnNo) dnNo.addEventListener('click', ()=> { dnOverlay.classList.remove('show'); dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
+      // REPLACED HANDLER (the fix)
+      if(dnYes) dnYes.addEventListener('click', () => {
+        dnWarningView.classList.add('hidden');
+        dnInputView.classList.remove('hidden');
+        dnError.classList.add('hidden');
+        dnInput.value = '';
+        setTimeout(()=> dnInput.focus(), 50);
+      });
+      if(dnCancel) dnCancel.addEventListener('click', ()=> { dnOverlay.classList.remove('show'); dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
+      if(dnOverlay) dnOverlay.addEventListener('click', (e)=> { if(e.target === dnOverlay){ dnOverlay.classList.remove('show'); dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); } });
+
+      if(dnSubmit) dnSubmit.addEventListener('click', ()=> {
+        const val = (dnInput.value||'').trim();
         const r = /^[A-Za-z0-9 _-]{2,30}$/;
-        if (!r.test(val)) { dnError.style.display='block'; return; }
+        if(!r.test(val)){ dnError.style.display='block'; return; }
         const ddn = document.getElementById('dropdown-name'); const ud = document.getElementById('user-display');
-        if (ddn) ddn.innerText = val; if (ud) ud.innerText = val;
-        try {
-            const su = localStorage.getItem('jamusic_user');
-            if (su) { const obj = JSON.parse(su); obj.name = val; localStorage.setItem('jamusic_user', JSON.stringify(obj)); }
-            else localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
-        } catch(e){}
+        if(ddn) ddn.innerText = val; if(ud) ud.innerText = val;
+        try{
+          const su = localStorage.getItem('jamusic_user');
+          if(su){ const obj = JSON.parse(su); obj.name = val; localStorage.setItem('jamusic_user', JSON.stringify(obj)); }
+          else localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
+        }catch(e){}
         dnModal.classList.remove('show');
-        setTimeout(()=>{ dnOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); dnModal.classList.add('show'); }, 220);
+        setTimeout(()=>{ dnOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); }, 220);
+      });
+
+      // admin button + loop
+      maybeShowAdminBtn(); startInboxLoop();
     });
 
-    // admin button visibility + start loop
-    maybeShowAdminBtn();
-    startInboxLoop();
+    // ensure inbox btn wired (defensive)
+    document.getElementById('inbox-btn') && document.getElementById('inbox-btn').addEventListener('click', ()=> openInbox());
+    (function initReadOverlay(){ const ro = document.getElementById('read-overlay'); if(ro){ ro.style.opacity='0'; ro.style.pointerEvents='none'; ro.classList.remove('show'); } })();
 
-});
-
-// ensure inbox btn wired
-document.getElementById('inbox-btn') && document.getElementById('inbox-btn').addEventListener('click', ()=> openInbox());
-// init read overlay hide
-(function initReadOverlay(){ const ro = document.getElementById('read-overlay'); if(ro){ ro.style.opacity='0'; ro.style.pointerEvents='none'; ro.classList.remove('show'); } })();
-
-/* Graceful WS send helper for client */
-function safeSendToServer(payload){
-    if(useServer && ws && ws.readyState === WebSocket.OPEN){
-        try { ws.send(JSON.stringify(payload)); return true; } catch(e){ return false; }
-    }
-    return false;
-}
-
-/* When server pushes 'new_broadcast' it will arrive via ws and handled above.
-   For admin sends we call sendBroadcast() which will use server or fallback. */
-
-// On page unload, close ws
-window.addEventListener('beforeunload', ()=> { try{ if(ws) ws.close(); }catch(e){} });
-
-</script>
+  </script>
 </body>
 </html>
