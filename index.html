@@ -239,19 +239,87 @@
         .admin-modal { width:640px; max-width:92%; background:var(--card-bg); padding:18px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 40px rgba(0,0,0,0.6); transform: translateY(-6px); opacity:0; transition:all .2s; }
         #admin-modal.show { transform: translateY(0); opacity:1; }
 
-        /* notification banner (shiny animated) */
-        #notif-banner {
-          display:inline-block; font-weight:800; font-style:italic; letter-spacing:.6px;
-          background: linear-gradient(90deg, #fff7 0%, #fff2 20%, #fff 50%, #fff2 80%, #fff7 100%);
-          -webkit-background-clip: text; background-clip: text; color: transparent;
-          text-shadow: 0 0 12px rgba(56,189,248,0.25);
-          animation: shine 2.4s infinite linear;
-        }
-        @keyframes shine {
-          0% { filter: brightness(1); transform: translateY(0) scale(1); }
-          50% { filter: brightness(1.25); transform: translateY(-2px) scale(1.02); }
-          100% { filter: brightness(1); transform: translateY(0) scale(1); }
-        }
+       /* ---------- Shiny notification bar (replace old #notif-banner / @keyframes shine) ---------- */
+.notif-bar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 22px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #06a6ff 0%, #0369a1 60%);
+  box-shadow: 0 14px 40px rgba(3,105,161,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+  transform-origin: center;
+  animation: notif-pop 2s ease-in-out infinite;
+}
+
+/* text styling: bold + italic */
+.notif-text {
+  color: #fff;
+  font-weight: 800;
+  font-style: italic;
+  font-size: 18px;
+  letter-spacing: 0.6px;
+  text-shadow: 0 6px 20px rgba(3,105,161,0.25);
+}
+
+/* subtle breathing motion */
+@keyframes notif-pop {
+  0%   { transform: translateY(0) scale(1); filter: brightness(1); }
+  45%  { transform: translateY(-4px) scale(1.02); filter: brightness(1.08); }
+  100% { transform: translateY(0) scale(1); filter: brightness(1); }
+}
+
+/* sliding sparkle overlay to mimic "cartoon clean" shine */
+.notif-bar::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  left: -60%;
+  width: 220%;
+  height: 220%;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(255,255,255,0.85) 0 2%, transparent 8%),
+    radial-gradient(circle at 50% 10%, rgba(255,255,255,0.45) 0 1%, transparent 3%);
+  transform: rotate(28deg) translateX(-100%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  filter: blur(6px);
+  animation: notif-sparkle 2.2s linear infinite;
+  pointer-events: none;
+}
+
+/* sparkle motion: sweep across bar */
+@keyframes notif-sparkle {
+  0%   { transform: rotate(28deg) translateX(-110%); opacity: 0; }
+  30%  { opacity: 0.85; }
+  60%  { transform: rotate(28deg) translateX(10%); opacity: 0.85; }
+  100% { transform: rotate(28deg) translateX(110%); opacity: 0; }
+}
+
+/* tiny accent glints — optional small stars using pseudo-element */
+.notif-bar::after {
+  content: "";
+  position: absolute;
+  right: 8%;
+  top: 10%;
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95) 0 10%, transparent 40%);
+  transform: rotate(20deg) scale(0.9);
+  opacity: .9;
+  filter: blur(.6px);
+  animation: notif-glint 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes notif-glint {
+  0% { transform: rotate(10deg) scale(.9); opacity: .6; }
+  50% { transform: rotate(10deg) scale(1.15); opacity: 1; }
+  100% { transform: rotate(10deg) scale(.9); opacity: .6; }
+}
 
         /* prevent page zoom weirdness small screens */
         @media (max-width: 640px) {
@@ -1004,17 +1072,23 @@
         }
 
         function updateNotifBanner(){
-            const container = document.getElementById('notif-container');
-            if (!container) return;
-            const user = getCurrentUser();
-            if (!user) { container.innerHTML = ''; return; }
-            const n = countUnreadForUser(user.email);
-            if (n > 0){
-                container.innerHTML = `<span id="notif-banner">*** ${n} NEW NOTIFICATIONS! ***</span>`;
-            } else {
-                container.innerHTML = '';
-            }
-        }
+    const container = document.getElementById('notif-container');
+    if (!container) return;
+    const user = getCurrentUser();
+    if (!user) { container.innerHTML = ''; return; }
+    const n = countUnreadForUser(user.email);
+
+    if (n > 0) {
+        // big shiny bar with bold+italic text (no ***)
+        container.innerHTML = `
+            <div class="notif-bar" role="status" aria-live="polite">
+                <span class="notif-text"><strong><em>${n} NEW NOTIFICATIONS!</em></strong></span>
+            </div>
+        `;
+    } else {
+        container.innerHTML = '';
+    }
+}
 
         // inbox loop (poll)
         let inboxLoopHandle = null;
@@ -1247,3 +1321,4 @@
     </script>
 </body>
 </html>
+
