@@ -301,41 +301,55 @@
                 h: "JaMusic v2", 
                 p: "All in one and powerful modular discord bot. Harnessing the next generation of audio processing for seamless community interaction.",
                 b: "Read Terms",
-                hash: "" 
+                id: "home"
             },
             tos: { 
                 h: "Terms of Service", 
                 p: "By using JaMusic, you agree to follow the Discord ToS and not use the service for illegal streaming or disruption. We reserve the right to restrict access at any time.",
                 b: "Privacy Policy",
-                hash: "#terms" 
+                id: "tos"
             },
             privacy: { 
                 h: "Privacy Policy", 
                 p: "We do not store your private audio data. Minimal metadata like User IDs are used solely for configuration persistence and queue management.",
                 b: "Back to Home",
-                hash: "#privacy" 
+                id: "privacy"
             }
         };
 
+        // Function to update content based on current ID
+        function updateUI(id) {
+            transition.currentPage = id;
+            headline.textContent = contentData[id].h;
+            subline.textContent = contentData[id].p;
+            mainButton.textContent = contentData[id].b;
+            heroContent.classList.remove('hidden');
+        }
+
+        // Check hash and route accordingly
+        function handleRouting() {
+            const hash = window.location.hash;
+            if (hash === '#terms') {
+                updateUI('tos');
+            } else if (hash === '#privacy') {
+                updateUI('privacy');
+            } else {
+                updateUI('home');
+            }
+        }
+
         function performNavigation() {
             let next;
-            if (transition.currentPage === 'home') next = 'tos';
+            if (transition.currentPage === 'home') next = 'terms';
             else if (transition.currentPage === 'tos') next = 'privacy';
-            else next = 'home';
+            else next = '';
             
-            transition.currentPage = next;
+            // This will trigger the hashchange listener
+            window.location.hash = next;
             
-            // UI Updates
-            headline.textContent = contentData[next].h;
-            subline.textContent = contentData[next].p;
-            mainButton.textContent = contentData[next].b;
-
-            // Change Hash instead of Path to avoid 404s
-            window.location.hash = contentData[next].hash;
-            
-            setTimeout(() => {
-                heroContent.classList.remove('hidden');
-            }, 300);
+            // In case the hash doesn't change (e.g. going from home to home), 
+            // we call the handler manually
+            handleRouting();
         }
 
         function startTransition(e) {
@@ -362,7 +376,12 @@
             if (e.target.tagName !== 'BUTTON' && !transition.active) triggerDrop(e.clientX, e.clientY, 15);
         });
 
+        // Listen for back/forward browser buttons or manual URL changes
+        window.addEventListener('hashchange', handleRouting);
+
         resize();
+        // Initial route check on load
+        handleRouting();
         requestAnimationFrame(animate);
     </script>
 </body>
