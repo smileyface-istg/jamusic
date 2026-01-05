@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquid Experience</title>
+    <style>
+        :root {
+            --bg-color: #020617;
+            --accent: #3b82f6;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            color: white;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            padding: 100px;
+            margin: -100px;
+            z-index: 1;
+        }
+
+        /* Hero Content */
+        .content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.8s ease, transform 1s cubic-bezier(0.23, 1, 0.32, 1);
+            padding: 0 20px;
+        }
+
+        .content.hidden {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+            background: linear-gradient(to bottom, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-body {
+            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+            color: #94a3b8;
+            max-width: 700px;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .cta-button {
+            pointer-events: auto;
+            padding: 1rem 2.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            backdrop-filter: blur(10px);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .cta-button:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
+        }
+
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.05;
+            z-index: 2;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body>
+
+    <div class="noise"></div>
+    
+    <main class="content" id="heroContent">
+        <h1 id="headline">JaMusic v2</h1>
+        <div class="text-body" id="subline">All in one and powerful modular discord bot. Harnessing the next generation of audio processing for seamless community interaction.</div>
+        <button class="cta-button" id="mainButton">Read Terms</button>
+    </main>
+
+    <div id="canvas-container">
+        <canvas id="liquidCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('liquidCanvas');
+        const container = document.getElementById('canvas-container');
+        const mainButton = document.getElementById('mainButton');
+        const heroContent = document.getElementById('heroContent');
+        const headline = document.getElementById('headline');
+        const subline = document.getElementById('subline');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let balls = [];
+        let trail = [];
+        let ripples = [];
+        let shakeIntensity = 0;
+        const shakeDecay = 0.96;
+
+        let transition = {
+            active: false,
+            phase: 'out',
+            x: 0,
+            y: 0,
+            radius: 0,
+            speed: 2,
+            maxRadius: 0,
+            currentPage: 'home' // 'home', 'tos', 'privacy'
+        };
+
+        const mouse = {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2,
+            targetX: window.innerWidth / 2,
+            targetY: window.innerHeight / 2
+        };
+
+        class Ball {
+            constructor() { this.init(); }
+            init() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.radius = Math.random() * 100 + 150;
+                const colors = ['#3b82f6', '#1d4ed8', '#60a5fa'];
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                const dx = this.x - mouse.x, dy = this.y - mouse.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 300) {
+                    const force = (300 - dist) / 300;
+                    this.vx += (dx / dist) * force * 0.5;
+                    this.vy += (dy / dist) * force * 0.5;
+                }
+                ripples.forEach(r => {
+                    const rdx = this.x - r.x, rdy = this.y - r.y;
+                    const rdist = Math.sqrt(rdx * rdx + rdy * rdy);
+                    const diff = Math.abs(rdist - r.currentRadius);
+                    if (diff < 60) {
+                        const rforce = (60 - diff) * r.life * 0.45;
+                        this.vx += (rdx / rdist) * rforce;
+                        this.vy += (rdy / rdist) * rforce;
+                    }
+                });
+                this.vx *= 0.98; this.vy *= 0.98;
+                if (this.x < -this.radius) this.x = width + this.radius;
+                if (this.x > width + this.radius) this.x = -this.radius;
+                if (this.y < -this.radius) this.y = height + this.radius;
+                if (this.y > height + this.radius) this.y = -this.radius;
+            }
+            draw() {
+                const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                g.addColorStop(0, this.color + '33');
+                g.addColorStop(1, this.color + '00');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        class Ripple {
+            constructor(x, y, intensity = 12) {
+                this.x = x; this.y = y; this.currentRadius = 0; this.life = 1.0; this.speed = intensity;
+            }
+            update() { this.currentRadius += this.speed; this.life -= 0.012; }
+            draw() {
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(147, 197, 253, ${this.life * 0.6})`;
+                ctx.lineWidth = 4 * this.life; ctx.stroke();
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            transition.maxRadius = Math.max(width, height) * 1.6;
+            balls = [];
+            for (let i = 0; i < 15; i++) balls.push(new Ball());
+        }
+
+        function triggerDrop(x, y, intensity = 15) {
+            ripples.push(new Ripple(x, y, intensity * 0.8));
+            shakeIntensity = intensity;
+        }
+
+        function applyShake() {
+            if (shakeIntensity > 0.1) {
+                const sx = (Math.random() - 0.5) * shakeIntensity;
+                const sy = (Math.random() - 0.5) * shakeIntensity;
+                container.style.transform = `translate(${sx}px, ${sy}px)`;
+                shakeIntensity *= shakeDecay;
+            } else {
+                container.style.transform = `translate(0, 0)`;
+            }
+        }
+
+        function animate() {
+            applyShake();
+            const dx = mouse.targetX - mouse.x, dy = mouse.targetY - mouse.y;
+            mouse.x += dx * 0.12; mouse.y += dy * 0.12;
+
+            if (Math.abs(dx) + Math.abs(dy) > 1 && !transition.active) {
+                trail.push({ x: mouse.x, y: mouse.y, size: 60, life: 1.0 });
+            }
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'screen';
+
+            balls.forEach(ball => { ball.update(); ball.draw(); });
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                ripples[i].update(); ripples[i].draw();
+                if (ripples[i].life <= 0) ripples.splice(i, 1);
+            }
+            for (let i = trail.length - 1; i >= 0; i--) {
+                const t = trail[i]; t.life -= 0.025;
+                if (t.life <= 0) { trail.splice(i, 1); continue; }
+                const g = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.size * (1 + (1 - t.life)));
+                g.addColorStop(0, `rgba(37, 99, 235, ${t.life * 0.3})`);
+                g.addColorStop(1, `rgba(37, 99, 235, 0)`);
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.arc(t.x, t.y, t.size * (1 + (1 - t.life)), 0, Math.PI * 2); ctx.fill();
+            }
+
+            if (transition.active) {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.fillStyle = '#FFFFFF';
+                
+                if (transition.phase === 'out') {
+                    transition.radius += transition.speed;
+                    transition.speed = transition.speed * 1.045 + 0.1; 
+                    if (transition.radius >= transition.maxRadius) {
+                        transition.phase = 'in';
+                        transition.speed = 4;
+                        updateContent();
+                    }
+                } else {
+                    transition.radius -= transition.speed;
+                    transition.speed = transition.speed * 1.06 + 0.2;
+                    if (transition.radius <= 0) {
+                        transition.active = false;
+                        transition.radius = 0;
+                    }
+                }
+
+                ctx.beginPath();
+                ctx.arc(transition.x, transition.y, Math.max(0, transition.radius), 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.globalCompositeOperation = 'source-over';
+            requestAnimationFrame(animate);
+        }
+
+        const pages = {
+            home: {
+                h: "JaMusic v2",
+                p: "All in one and powerful modular discord bot. Harnessing the next generation of audio processing for seamless community interaction.",
+                b: "Read Terms",
+                url: "/"
+            },
+            tos: {
+                h: "Terms of Service",
+                p: "By using JaMusic v2, you agree to our usage policies. We prohibit the exploitation of bot commands to disrupt Discord services. You are responsible for any content processed through the modular interface. We reserve the right to terminate access for users violating these standards.",
+                b: "Privacy Policy",
+                url: "/terms"
+            },
+            privacy: {
+                h: "Privacy Policy",
+                p: "We value your data. JaMusic v2 only collects minimal data required for functionality, such as Server IDs and User preferences. We do not sell your personal information to third parties. Audio streams are processed in real-time and are never stored on our permanent servers.",
+                b: "Back to Home",
+                url: "/privacy"
+            }
+        };
+
+        function updateContent() {
+            let next;
+            if (transition.currentPage === 'home') next = 'tos';
+            else if (transition.currentPage === 'tos') next = 'privacy';
+            else next = 'home';
+            
+            transition.currentPage = next;
+            headline.textContent = pages[next].h;
+            subline.textContent = pages[next].p;
+            mainButton.textContent = pages[next].b;
+
+            // Update URL using History API
+            try {
+                window.history.pushState({ page: next }, pages[next].h, pages[next].url);
+            } catch (e) {
+                // history.pushState might fail in some iframe environments
+                console.warn("Could not update URL:", e);
+            }
+            
+            setTimeout(() => {
+                heroContent.classList.remove('hidden');
+            }, 300);
+        }
+
+        function startTransition(e) {
+            if (transition.active) return;
+            const rect = mainButton.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            triggerDrop(centerX, centerY, 80);
+            transition.active = true;
+            transition.phase = 'out';
+            transition.x = centerX;
+            transition.y = centerY;
+            transition.radius = 0;
+            transition.speed = 1.5;
+            heroContent.classList.add('hidden');
+        }
+
+        mainButton.addEventListener('click', startTransition);
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', (e) => { mouse.targetX = e.clientX; mouse.targetY = e.clientY; });
+        window.addEventListener('mousedown', (e) => {
+            if (e.target.tagName !== 'BUTTON' && !transition.active) triggerDrop(e.clientX, e.clientY, 15);
+        });
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', (event) => {
+            if (event.state && event.state.page) {
+                // If the user uses back/forward, we force a transition to that state
+                const next = event.state.page;
+                // Simplified reset to avoid complex logic during popstate
+                headline.textContent = pages[next].h;
+                subline.textContent = pages[next].p;
+                mainButton.textContent = pages[next].b;
+                transition.currentPage = next;
+            }
+        });
+
+        resize();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
