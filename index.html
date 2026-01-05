@@ -1,1261 +1,1042 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>JaMusic v2 | Free of charge!</title>
-    <style>
-        :root {
-            --bg-color: #020617;
-            --accent: #3b82f6;
-            --player-height: 100px;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JaMusic v2 | Free of charge!</title>
+  <style>
+    :root{
+      --bg-color:#020617;
+      --accent:#3b82f6;
+      --player-height:100px;
+      --zoom-scale:1;
+    }
+    html{font-size:16px}
+    body,html{
+      margin:0;padding:0;width:100%;height:100%;
+      background-color:var(--bg-color);
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color:white; -webkit-font-smoothing:antialiased;
+      user-select:none; scroll-behavior:smooth;
+      transform-origin:top left;
+    }
+    /* Light mode vars */
+    body.light-mode{
+      --bg-color:#f6f7fb;
+      --accent:#2563eb;
+      color:#0b1220;
+      background-color:var(--bg-color);
+    }
+    /* Prevent scrolling initially */
+    body.no-scroll{ overflow:hidden; }
 
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            background-color: var(--bg-color);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            user-select: none;
-            color: white;
-            scroll-behavior: smooth;
-        }
+    /* Canvas container */
+    #canvas-container{ position:fixed; top:0; left:0; width:100vw; height:100vh; padding:100px; margin:-100px; z-index:1; pointer-events:none; }
+    canvas{ width:100%; height:100%; display:block; }
 
-        /* Prevent scrolling initially */
-        body.no-scroll {
-            overflow: hidden;
-        }
+    /* Hero content */
+    .content{
+      position:relative; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      height:100vh; text-align:center; pointer-events:none; padding:0 20px;
+      transition:opacity .8s ease, transform 1s cubic-bezier(.23,1,.32,1);
+    }
+    .content.hidden{ opacity:0; transform:scale(.95); }
+    h1{ font-size:clamp(2.5rem,8vw,4rem); font-weight:800; margin:0 0 .6rem; line-height:1.05;
+        background:linear-gradient(to bottom,#fff,#94a3b8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .text-body{ color:#94a3b8; max-width:700px; margin-bottom:1.5rem; line-height:1.6; pointer-events:auto; }
+    body.light-mode .text-body{ color:#334155; }
 
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            padding: 100px;
-            margin: -100px;
-            z-index: 1;
-        }
+    /* Buttons */
+    .button-container{ pointer-events:auto; display:flex; flex-direction:column; gap:1rem; align-items:center; margin-top:40px; }
+    .horizontal-buttons{ display:flex; gap:1rem; }
+    .cta-button{
+      padding:1rem 2.25rem; font-weight:600; border-radius:99px; border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.04); color:white; cursor:pointer; text-transform:uppercase; letter-spacing:.08em;
+      transition:all .25s cubic-bezier(.23,1,.32,1); pointer-events:auto;
+    }
+    .cta-button:hover{ background:var(--accent); box-shadow:0 0 40px rgba(59,130,246,.28); transform:scale(1.04); border-color:var(--accent) }
+    .signout-button{ display:none; padding:.6rem 1rem; border-radius:99px; background:rgba(239,68,68,.06); border:1px solid rgba(239,68,68,.18); color:#ef4444; font-weight:600; cursor:pointer; }
+    .secondary-button{ background:transparent; border:none; color:#94a3b8; text-decoration:underline; cursor:pointer; }
+    .secondary-button:hover{ color:white; }
 
-        /* Hero Content */
-        .content {
-            position: relative;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            text-align: center;
-            pointer-events: none;
-            transition: opacity 0.8s ease, transform 1s cubic-bezier(0.23, 1, 0.32, 1);
-            padding: 0 20px;
-        }
+    /* Form */
+    .form-container{ width:100%; max-width:420px; margin:0 auto; text-align:left; pointer-events:auto; }
+    .form-group{ margin-bottom:1rem; display:flex; flex-direction:column; gap:.5rem; }
+    label{ font-size:.85rem; color:#94a3b8; margin-left:.25rem; }
+    input,select{ padding:.85rem 1rem; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); color:inherit; }
+    input:focus,select:focus{ outline:none; border-color:var(--accent); }
 
-        .content.hidden {
-            opacity: 0;
-            transform: scale(0.9);
-        }
+    /* Grid */
+    .dashboard-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1.25rem; width:100%; max-width:1000px; margin:40px auto; pointer-events:auto; }
+    .song-card{ background:rgba(255,255,255,.04); border-radius:12px; padding:1rem; border:1px solid rgba(255,255,255,.06); cursor:pointer; position:relative; overflow:hidden; transition:transform .22s, background .22s, border-color .22s; }
+    .song-card:hover{ transform:translateY(-6px); border-color:var(--accent); background:rgba(255,255,255,.07); }
+    .song-art{ width:100%; aspect-ratio:1; border-radius:10px; background-size:cover; background-position:center; margin-bottom:.6rem; }
+    .song-title{ font-weight:700; font-size:.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .song-artist{ color:#94a3b8; font-size:.85rem; }
+    .song-card.playing{ border-color:var(--accent); box-shadow:0 0 26px rgba(59,130,246,.12) }
 
-        h1 {
-            font-size: clamp(2.5rem, 8vw, 5rem);
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            margin-bottom: 1rem;
-            line-height: 1.1;
-            background: linear-gradient(to bottom, #ffffff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+    /* Player */
+    #player-bar{
+      position:fixed; left:0; bottom:0; width:100%; height:var(--player-height); background:rgba(15,23,42,.88); backdrop-filter:blur(18px);
+      border-top:1px solid rgba(255,255,255,.06); z-index:100; transform:translateY(100%); transition:transform .45s cubic-bezier(.16,1,.3,1);
+    }
+    #player-bar.visible{ transform:translateY(0); }
+    .progress-container{ height:4px; width:100%; background:rgba(255,255,255,.08); cursor:pointer; transition:height .15s }
+    .progress-container:hover{ height:6px }
+    .progress-bar{ height:100%; background:var(--accent); width:0%; transition:width .12s linear; }
 
-        .text-body {
-            font-size: clamp(0.9rem, 1.5vw, 1.1rem);
-            color: #94a3b8;
-            max-width: 700px;
-            margin-bottom: 2.5rem;
-            line-height: 1.6;
-            text-align: center;
-        }
+    .player-main-content{ display:flex; align-items:center; gap:1rem; padding:0 1.5rem; height:calc(100% - 4px); box-sizing:border-box; }
+    .player-info{ display:flex; align-items:center; gap:1rem; flex:1; min-width:0; }
+    .player-art{ width:56px; height:56px; border-radius:8px; background-size:cover; background-position:center; background-color:#1e293b; }
+    .player-meta{ min-width:0; }
+    .player-title{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .player-artist{ color:#94a3b8; font-size:.87rem; }
 
-        /* Button Layout */
-        .button-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            align-items: center;
-            pointer-events: auto;
-            margin-top: 50px;
-        }
+    .player-controls{ display:flex; align-items:center; gap:1rem; justify-content:center; flex:2 }
+    .control-btn{ background:none; border:none; color:white; cursor:pointer; padding:.35rem; display:inline-flex; align-items:center; justify-content:center; }
+    .play-pause-btn{ width:44px; height:44px; border-radius:50%; background:white; color:black; display:flex; align-items:center; justify-content:center; }
+    .loop-btn{ width:36px; height:36px; border-radius:8px; background:rgba(255,255,255,.06); display:flex; align-items:center; justify-content:center; }
 
-        .horizontal-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
+    .player-volume{ display:flex; align-items:center; gap:.6rem; justify-content:flex-end; flex:1 }
+    .volume-slider{ width:100px; accent-color:var(--accent); }
 
-        .cta-button {
-            padding: 1rem 2.5rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: white;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 99px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-            backdrop-filter: blur(10px);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            white-space: nowrap;
-        }
+    /* Go Back */
+    #goBackBtn{
+      position:fixed; left:16px; top:16px; z-index:200; display:none; padding:.6rem .9rem; border-radius:12px; border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.35); color:white; font-weight:600; cursor:pointer; backdrop-filter:blur(6px);
+    }
+    #goBackBtn:hover{ background:var(--accent); border-color:var(--accent); transform:scale(1.02); }
 
-        .cta-button:hover {
-            background: var(--accent);
-            border-color: var(--accent);
-            transform: scale(1.05);
-            box-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
-        }
+    /* Profile button top-right */
+    #profileBtn{
+      position:fixed; right:16px; top:16px; z-index:210; width:44px; height:44px; border-radius:999px; background:linear-gradient(135deg,#1f2937,#111827); border:1px solid rgba(255,255,255,.06);
+      display:none; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 20px rgba(2,6,23,.5);
+    }
+    #profileBtn img{ width:36px; height:36px; border-radius:999px; object-fit:cover; display:block; }
 
-        .cta-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+    /* Profile menu */
+    .profile-menu{
+      position:fixed; right:16px; top:72px; z-index:220; min-width:220px; border-radius:12px; background:rgba(6,8,15,.95);
+      border:1px solid rgba(255,255,255,.06); padding:.6rem; box-shadow:0 10px 30px rgba(2,6,23,.6); display:none;
+    }
+    .profile-menu .user{
+      display:flex; gap:.6rem; align-items:center; padding:.5rem .6rem; border-radius:8px;
+    }
+    .profile-menu .user .meta{ line-height:1; }
+    .profile-menu .user .meta .name{ font-weight:700; }
+    .profile-menu .actions{ display:flex; flex-direction:column; margin-top:.5rem; gap:.4rem; }
+    .profile-menu button{ background:transparent; border:none; color:#cbd5e1; padding:.6rem .6rem; text-align:left; border-radius:8px; cursor:pointer; }
+    .profile-menu button:hover{ background:rgba(255,255,255,.03); color:white; }
 
-        .signout-button {
-            padding: 0.8rem 2rem;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.05);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            border-radius: 99px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            display: none;
-        }
+    /* Modal / overlay */
+    .overlay{ position:fixed; inset:0; z-index:1000; background:rgba(2,6,23,.6); display:none; align-items:center; justify-content:center; }
+    .modal{
+      width: min(920px, 96%); max-height:90vh; overflow:auto; border-radius:14px; background:linear-gradient(180deg,#fff,#f7fbff);
+      box-shadow:0 30px 80px rgba(2,6,23,.6); transform-origin:top center;
+      padding:0; position:relative; color:var(--modal-text,#0b1220);
+      animation: modalIn .38s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes modalIn{
+      0%{ transform: translateY(-18px) scale(.98); opacity:0 }
+      100%{ transform: translateY(0) scale(1); opacity:1}
+    }
+    .modal-header{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid rgba(0,0,0,.06); background:transparent; }
+    .modal-body{ display:flex; gap:12px; padding:16px; color:#0b1220; }
+    .modal-left{ width:220px; background:transparent; border-right:1px solid rgba(0,0,0,.04); padding-right:12px; }
+    .modal-left button{ display:block; width:100%; text-align:left; padding:.6rem .6rem; border-radius:8px; background:transparent; border:none; color:#334155; cursor:pointer; }
+    .modal-left button.active{ background:var(--accent); color:white; }
+    .modal-right{ flex:1; padding-left:12px; background:transparent; }
+    .modal .section-title{ font-weight:700; margin-bottom:.5rem; }
 
-        .signout-button:hover {
-            background: #ef4444;
-            color: white;
-            border-color: #ef4444;
-            transform: scale(1.05);
-        }
+    /* Dark-mode modal adjustments */
+    body:not(.light-mode) .modal{ background:linear-gradient(180deg,#071024,#07162a); color:#dbeafe; border:1px solid rgba(255,255,255,.04) }
+    body:not(.light-mode) .modal-left{ border-right:1px solid rgba(255,255,255,.03) }
+    body:not(.light-mode) .modal-left button{ color:#cbd5e1 }
+    body:not(.light-mode) .modal-left button.active{ background:var(--accent); color:white }
 
-        .secondary-button {
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            font-size: 0.8rem;
-            cursor: pointer;
-            text-decoration: underline;
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
-        }
+    /* small helpers */
+    .row{ display:flex; gap:8px; align-items:center; }
+    .muted{ color:#94a3b8; font-size:.9rem; }
+    .error{ color:#ef4444; font-size:.9rem; margin-top:.4rem; }
+    .success{ color:#16a34a; font-size:.9rem; margin-top:.4rem; }
 
-        .secondary-button:hover {
-            opacity: 1;
-            color: white;
-        }
-
-        /* Form Styling */
-        .form-container {
-            width: 100%;
-            max-width: 400px;
-            margin: 0 auto;
-            text-align: left;
-            pointer-events: auto;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .form-group label {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            margin-left: 0.5rem;
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="password"],
-        input[type="date"],
-        select {
-            width: 100%;
-            padding: 0.8rem 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: white;
-            font-family: inherit;
-            box-sizing: border-box;
-            transition: border-color 0.3s ease;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            color: #94a3b8;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 1rem;
-            background: var(--accent);
-            border: none;
-            border-radius: 12px;
-            color: white;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.2s ease, opacity 0.2s ease;
-        }
-
-        .submit-btn:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-
-        .submit-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .error-msg {
-            color: #ef4444;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-            text-align: center;
-            display: none;
-        }
-
-        /* Dashboard/Song Grid */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 1.5rem;
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
-            pointer-events: auto;
-            text-align: left;
-        }
-
-        /* Search Bar for Dashboard */
-        .dashboard-search-container {
-            width: 100%;
-            max-width: 900px;
-            margin: 0 auto 100px auto; 
-            pointer-events: auto;
-        }
-
-        .dashboard-search-input {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            color: white;
-            font-size: 1rem;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-
-        .dashboard-search-input:focus {
-            outline: none;
-            border-color: var(--accent);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
-        }
-
-        .song-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 1rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .song-card.hidden {
-            display: none;
-        }
-
-        .song-card:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-5px);
-            border-color: var(--accent);
-        }
-
-        .song-card.playing {
-            border-color: var(--accent);
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
-        }
-
-        .song-art {
-            aspect-ratio: 1;
-            background: linear-gradient(45deg, #1e293b, #334155);
-            border-radius: 12px;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: var(--accent);
-            background-size: cover;
-            background-position: center;
-        }
-
-        .song-title {
-            font-weight: 700;
-            font-size: 0.95rem;
-            margin-bottom: 0.25rem;
-            color: white;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .song-artist {
-            font-size: 0.8rem;
-            color: #94a3b8;
-        }
-
-        .playing-indicator {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: var(--accent);
-            color: white;
-            font-size: 0.6rem;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-weight: bold;
-            display: none;
-        }
-
-        .song-card.playing .playing-indicator {
-            display: block;
-        }
-
-        /* Player Bar UI */
-        #player-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: var(--player-height);
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(25px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 100;
-            display: flex;
-            flex-direction: column; 
-            box-sizing: border-box;
-            transform: translateY(100%);
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        #player-bar.visible {
-            transform: translateY(0);
-        }
-
-        .progress-container {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            cursor: pointer;
-            position: relative;
-            transition: height 0.2s ease;
-        }
-
-        .progress-container:hover {
-            height: 6px;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: var(--accent);
-            width: 0%;
-            position: relative;
-            transition: width 0.1s linear;
-        }
-
-        .player-main-content {
-            display: flex;
-            align-items: center;
-            padding: 0 2rem;
-            height: calc(100% - 4px);
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .player-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex: 1;
-            min-width: 0;
-        }
-
-        .player-art {
-            width: 56px;
-            height: 56px;
-            border-radius: 8px;
-            background-size: cover;
-            background-position: center;
-            background-color: #1e293b;
-        }
-
-        .player-meta {
-            min-width: 0;
-        }
-
-        .player-title {
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: white;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .player-artist {
-            font-size: 0.8rem;
-            color: #94a3b8;
-        }
-
-        .player-controls {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            flex: 2;
-            justify-content: center;
-        }
-
-        .control-btn {
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            opacity: 0.8;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .control-btn:hover {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-
-        .play-pause-btn {
-            width: 44px;
-            height: 44px;
-            background: white;
-            color: black;
-            border-radius: 50%;
-            font-size: 1.2rem;
-        }
-
-        .player-volume {
-            flex: 1;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .volume-slider {
-            width: 100px;
-            accent-color: var(--accent);
-            cursor: pointer;
-        }
-
-        .noise {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            opacity: 0.05;
-            z-index: 2;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        }
-
-        /* Go Back button styling (visible only in dashboard) */
-        #goBackBtn {
-            position: fixed;
-            left: 16px;
-            top: 16px;
-            z-index: 200;
-            display: none;
-            padding: 0.6rem 1rem;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.12);
-            background: rgba(0,0,0,0.4);
-            color: white;
-            cursor: pointer;
-            font-weight: 600;
-            backdrop-filter: blur(6px);
-        }
-        #goBackBtn:hover {
-            background: var(--accent);
-            border-color: var(--accent);
-            transform: scale(1.03);
-        }
-    </style>
+    /* responsive */
+    @media (max-width:720px){
+      .modal{ width:96%; }
+      .modal-body{ flex-direction:column; }
+      .modal-left{ width:100% }
+    }
+  </style>
 </head>
 <body class="no-scroll">
 
-    <div class="noise"></div>
-    
-    <main class="content" id="heroContent">
-        <h1 id="headline">JaMusic v2</h1>
-        <div class="text-body" id="subline">All in one and powerful modular discord bot. We thought its cool to turn it into a website cuz why not?</div>
-        
-        <div id="dynamicFormContainer" class="form-container" style="display: none;"></div>
+  <div id="canvas-container"><canvas id="liquidCanvas"></canvas></div>
 
-        <div class="button-container" id="mainControls">
-            <div class="horizontal-buttons" id="homeButtons">
-                <button class="cta-button" id="mainButton">Read Terms</button>
-                <button class="cta-button" id="dashboardButton">Dashboard</button>
-            </div>
-            <button class="signout-button" id="signOutBtn">Sign Out</button>
-            <button class="secondary-button" id="doneButton">Done reading?</button>
-        </div>
-    </main>
+  <main class="content" id="heroContent">
+    <h1 id="headline">JaMusic v2</h1>
+    <div id="subline" class="text-body">All in one and powerful modular discord bot. We thought it's cool to turn it into a website cuz why not?</div>
 
-    <div id="canvas-container">
-        <canvas id="liquidCanvas"></canvas>
+    <div id="dynamicFormContainer" class="form-container" style="display:none;"></div>
+
+    <div class="button-container" id="mainControls">
+      <div class="horizontal-buttons" id="homeButtons">
+        <button class="cta-button" id="mainButton">Read Terms</button>
+        <button class="cta-button" id="dashboardButton">Dashboard</button>
+      </div>
+      <button class="signout-button" id="signOutBtn">Sign Out</button>
+      <button class="secondary-button" id="doneButton">Done reading?</button>
     </div>
+  </main>
 
-    <div id="player-bar">
-        <div class="progress-container" id="progressContainer">
-            <div class="progress-bar" id="progressBar"></div>
-        </div>
-        <div class="player-main-content">
-            <div class="player-info">
-                <div id="player-art" class="player-art"></div>
-                <div class="player-meta">
-                    <div id="player-title" class="player-title">Not Playing</div>
-                    <div id="player-artist" class="player-artist">Select a track</div>
-                </div>
-            </div>
-            <div class="player-controls">
-                <button class="control-btn">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
-                </button>
-                <button class="control-btn play-pause-btn" id="playPauseControl">
-                    <svg id="playIcon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    <svg id="pauseIcon" style="display:none;" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                </button>
-                <button class="control-btn">
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-                </button>
-            </div>
-            <div class="player-volume">
-                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-                <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="0.8" id="volumeSlider">
-            </div>
-        </div>
+  <!-- Go Back -->
+  <button id="goBackBtn" aria-label="Go back to home">Go Back</button>
+
+  <!-- Profile button -->
+  <div id="profileBtn" title="Profile" aria-haspopup="true" aria-expanded="false">
+    <img id="profileAvatar" src="https://avatars.dicebear.com/api/identicon/guest.svg" alt="avatar"/>
+  </div>
+
+  <!-- Profile menu -->
+  <div class="profile-menu" id="profileMenu" role="menu" aria-hidden="true">
+    <div class="user">
+      <div style="width:44px;height:44px;border-radius:999px;background:linear-gradient(135deg,#111827,#0f172a);display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:800;">
+        <span id="profileInitial">G</span>
+      </div>
+      <div class="meta">
+        <div class="name" id="profileName">Guest</div>
+        <div class="muted" id="profileEmail">guest@example.com</div>
+      </div>
     </div>
+    <div class="actions">
+      <button id="btnAccountSettings">Account Settings</button>
+      <button id="btnGeneralSettings">General Settings</button>
+      <button id="btnDisplayName">Display Name</button>
+      <button id="btnLogout">Log Out</button>
+    </div>
+  </div>
 
-    <!-- Go Back button (will be shown only when dashboard is active) -->
-    <button id="goBackBtn" aria-label="Go back to home">Go Back</button>
+  <!-- Overlay + Modals -->
+  <div class="overlay" id="overlay">
+    <!-- Account / General modal (re-used) -->
+    <div class="modal" id="settingsModal" role="dialog" aria-modal="true" style="display:none;">
+      <div class="modal-header">
+        <div id="modalTitle">Settings</div>
+        <button id="modalClose" style="background:transparent;border:none;cursor:pointer;font-weight:700;padding:.4rem .6rem;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-left" id="modalLeft">
+          <!-- left nav buttons injected dynamically -->
+        </div>
+        <div class="modal-right" id="modalRight">
+          <!-- right content injected dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithCustomToken, signInAnonymously, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+  <!-- Display-name popup (small) -->
+  <div class="overlay" id="nameOverlay" style="display:none; align-items:center; justify-content:center;">
+    <div class="modal" style="width:420px; max-height:80vh;">
+      <div class="modal-header">
+        <div>Change Display Name</div>
+        <button id="nameClose">✕</button>
+      </div>
+      <div style="padding:14px;">
+        <div class="form-group">
+          <label>New display name</label>
+          <input id="newDisplayName" placeholder="Your new display name" />
+        </div>
+        <div style="display:flex; gap:.5rem;">
+          <button id="saveDisplayName" class="cta-button" style="pointer-events:auto;">Save</button>
+          <button id="cancelDisplayName" class="secondary-button" style="pointer-events:auto;">Cancel</button>
+        </div>
+        <div id="displayNameMsg" class="muted"></div>
+      </div>
+    </div>
+  </div>
 
-        const envConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+  <!-- Player -->
+  <div id="player-bar" aria-hidden="true">
+    <div class="progress-container" id="progressContainer"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="player-main-content">
+      <div class="player-info">
+        <div id="player-art" class="player-art"></div>
+        <div class="player-meta">
+          <div id="player-title" class="player-title">Not Playing</div>
+          <div id="player-artist" class="player-artist">Select a track</div>
+        </div>
+      </div>
+      <div class="player-controls">
+        <button class="control-btn" id="prevBtn" title="Previous">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
+        </button>
+        <button class="control-btn play-pause-btn" id="playPauseControl" title="Play/Pause">
+          <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="pauseIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button class="control-btn" id="nextBtn" title="Next">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyApKLZIjUZSQnKJCngvp0KZPYJf3zBNaCc",
-            authDomain: "jamusic-v2.firebaseapp.com",
-            projectId: "jamusic-v2",
-            storageBucket: "jamusic-v2.firebasestorage.app",
-            messagingSenderId: "765002295434",
-            appId: "1:765002295434:web:a4c9ba98c68dbcd84f2573",
-            measurementId: "G-XT4K7L1TVX"
-        };
+        <button class="loop-btn" id="loopBtn" title="Loop (off → all → one)">🔁</button>
+      </div>
+      <div class="player-volume">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
+        <input id="volumeSlider" class="volume-slider" type="range" min="0" max="1" step="0.01" value="0.8" />
+      </div>
+    </div>
+  </div>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+<script type="module">
+/* ============================
+   Firebase imports & setup
+   ============================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence,
+  signInWithCustomToken, signInAnonymously, sendEmailVerification,
+  updatePassword, reauthenticateWithCredential, EmailAuthProvider, updateProfile
+} from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    try {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } catch (tokenErr) {
-                        try {
-                            await signInAnonymously(auth);
-                        } catch (anonErr) {}
-                    }
-                } else {
-                    // Firebase handles persistence automatically. 
-                    // We just need to wait for the onAuthStateChanged to trigger.
-                }
-            } catch (err) {
-                console.error("Auth init failed", err);
-            }
-        };
-        initAuth();
+const envConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = {
+  apiKey: "AIzaSyApKLZIjUZSQnKJCngvp0KZPYJf3zBNaCc",
+  authDomain: "jamusic-v2.firebaseapp.com",
+  projectId: "jamusic-v2",
+  storageBucket: "jamusic-v2.firebasestorage.app",
+  messagingSenderId: "765002295434",
+  appId: "1:765002295434:web:a4c9ba98c68dbcd84f2573",
+  measurementId: "G-XT4K7L1TVX"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-        const canvas = document.getElementById('liquidCanvas');
-        const container = document.getElementById('canvas-container');
-        const mainButton = document.getElementById('mainButton');
-        const dashboardButton = document.getElementById('dashboardButton');
-        const homeButtons = document.getElementById('homeButtons');
-        const signOutBtn = document.getElementById('signOutBtn');
-        const doneButton = document.getElementById('doneButton');
-        const heroContent = document.getElementById('heroContent');
-        const headline = document.getElementById('headline');
-        const subline = document.getElementById('subline');
-        const dynamicFormContainer = document.getElementById('dynamicFormContainer');
-        const goBackBtn = document.getElementById('goBackBtn');
-        const ctx = canvas.getContext('2d');
-        
-        const playerBar = document.getElementById('player-bar');
-        const playerArt = document.getElementById('player-art');
-        const playerTitle = document.getElementById('player-title');
-        const playerArtist = document.getElementById('player-artist');
-        const playPauseControl = document.getElementById('playPauseControl');
-        const playIcon = document.getElementById('playIcon');
-        const pauseIcon = document.getElementById('pauseIcon');
-        const volumeSlider = document.getElementById('volumeSlider');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        
-        let width, height;
-        let balls = [];
-        let trail = [];
-        let ripples = [];
-        let shakeIntensity = 0;
-        const shakeDecay = 0.96;
-        let currentUser = null;
+const initAuth = async () => {
+  try {
+    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+      try { await signInWithCustomToken(auth, __initial_auth_token); }
+      catch(e){ try{ await signInAnonymously(auth); }catch(e){} }
+    } else {
+      // wait for onAuthStateChanged
+    }
+  } catch(e){ console.error("Auth init failed",e) }
+};
+initAuth();
 
-        let currentAudio = null;
-        let currentTrackId = null;
+/* ============================
+   Shared DOM references
+   ============================ */
+const canvas = document.getElementById('liquidCanvas');
+const container = document.getElementById('canvas-container');
+const mainButton = document.getElementById('mainButton');
+const dashboardButton = document.getElementById('dashboardButton');
+const homeButtons = document.getElementById('homeButtons');
+const signOutBtn = document.getElementById('signOutBtn');
+const doneButton = document.getElementById('doneButton');
+const heroContent = document.getElementById('heroContent');
+const headline = document.getElementById('headline');
+const subline = document.getElementById('subline');
+const dynamicFormContainer = document.getElementById('dynamicFormContainer');
+const goBackBtn = document.getElementById('goBackBtn');
 
-        const Tracks = [
-            { id: "t1", name: "Never Gonna Give You Up", artist: "Rick Astley", imageurl: "https://i.scdn.co/image/ab67616d0000b273237665d08de01907e82a7d8a", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3" },
-            { id: "t2", name: "FTW", artist: "Lets be Friends", imageurl: "https://upload.wikimedia.org/wikipedia/en/5/53/FTW_Lets_Be_Friends_Orignal_Cover.jpeg", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/%5BElectro%5D%20-%20Lets%20Be%20Friends%20-%20FTW%20%5BMonstercat%20Release%5D.mp3" },
-            { id: "t3", name: "River Flows In You", artist: "DJ Herjuana", imageurl: "https://i.scdn.co/image/ab67616d0000b27371cde6e77fc2d217cbc5f567", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/SpotiDownloader.com%20-%20River%20Flows%20in%20You%20-%20DJ%20HERJUANA.mp3" },
-            { id: "t4", name: "Stereo Hearts", artist: "Gym Class Heroes", imageurl: "https://i.scdn.co/image/ab67616d0000b27318b8088fe0c3dbf78398b55a", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3" },
-            { id: "t5", name: "Heat Waves", artist: "Glass Animals", imageurl: "https://i.scdn.co/image/ab67616d0000b273712701c5e263efc8726b1464", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3" },
-            { id: "t6", name: "Rap God", artist: "Eminem", imageurl: "https://i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3" },
-            { id: "t7", name: "End of Beginning", artist: "Djo", imageurl: "https://i.scdn.co/image/ab67616d0000b273fddfffec51b4580acae727c1", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3" },
-            { id: "t8", name: "Corrupted", artist: "Danimal Cannon", imageurl: "https://i.scdn.co/image/ab67616d0000b27339be440fe5b4ef67f9de6cc7", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Danimal%20Cannon%20&%20Zef%20-%20Corrupted.mp3" },
-            { id: "t9", name: "Get Lucky", artist: "Daft Punk", imageurl: "https://external-preview.redd.it/YhSfC0SPUFM1lKaznHyKvHb4mSa04ZtBfmd6vOUYuLM.jpg?width=1080&crop=smart&auto=webp&s=68f06ce15bc7a17b1792ebd7077803046191e139", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3" },
-            { id: "t10", name: "A LITTLE THEORIZING", artist: "Stupendium", imageurl: "https://i.scdn.co/image/ab67616d0000b273bfebcc991d99e277f3260221", audiourl: "https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/A%20Little%20Theorizing%20Lyrics.mp3" }
-        ];
+const profileBtn = document.getElementById('profileBtn');
+const profileMenu = document.getElementById('profileMenu');
+const profileName = document.getElementById('profileName');
+const profileEmail = document.getElementById('profileEmail');
+const profileInitial = document.getElementById('profileInitial');
+const profileAvatar = document.getElementById('profileAvatar');
 
-        let transition = {
-            active: false,
-            phase: 'out',
-            x: 0,
-            y: 0,
-            radius: 0,
-            speed: 2,
-            maxRadius: 0,
-            currentPage: 'home',
-            targetHash: null
-        };
+const overlay = document.getElementById('overlay');
+const settingsModal = document.getElementById('settingsModal');
+const modalLeft = document.getElementById('modalLeft');
+const modalRight = document.getElementById('modalRight');
+const modalClose = document.getElementById('modalClose');
+const modalTitle = document.getElementById('modalTitle');
 
-        const mouse = {
-            x: window.innerWidth / 2,
-            y: window.innerHeight / 2,
-            targetX: window.innerWidth / 2,
-            targetY: window.innerHeight / 2
-        };
+const nameOverlay = document.getElementById('nameOverlay');
+const newDisplayNameInput = document.getElementById('newDisplayName');
+const saveDisplayName = document.getElementById('saveDisplayName');
+const cancelDisplayName = document.getElementById('cancelDisplayName');
+const displayNameMsg = document.getElementById('displayNameMsg');
+const nameClose = document.getElementById('nameClose');
 
-        class Ball {
-            constructor() { this.init(); }
-            init() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.vx = (Math.random() - 0.5) * 2;
-                this.vy = (Math.random() - 0.5) * 2;
-                this.radius = Math.random() * 100 + 150;
-                const colors = ['#3b82f6', '#1d4ed8', '#60a5fa'];
-                this.color = colors[Math.floor(Math.random() * colors.length)];
-            }
-            update() {
-                this.x += this.vx; this.y += this.vy;
-                const dx = this.x - mouse.x, dy = this.y - mouse.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 300) {
-                    const force = (300 - dist) / 300;
-                    this.vx += (dx / dist) * force * 0.5;
-                    this.vy += (dy / dist) * force * 0.5;
-                }
-                ripples.forEach(r => {
-                    const rdx = this.x - r.x, rdy = this.y - r.y;
-                    const rdist = Math.sqrt(rdx * rdx + rdy * rdy);
-                    const diff = Math.abs(rdist - r.currentRadius);
-                    if (diff < 60) {
-                        const rforce = (60 - diff) * r.life * 0.45;
-                        this.vx += (rdx / rdist) * rforce;
-                        this.vy += (rdy / rdist) * rforce;
-                    }
-                });
-                this.vx *= 0.98; this.vy *= 0.98;
-                if (this.x < -this.radius) this.x = width + this.radius;
-                if (this.x > width + this.radius) this.x = -this.radius;
-                if (this.y < -this.radius) this.y = height + this.radius;
-                if (this.y > height + this.radius) this.y = -this.radius;
-            }
-            draw() {
-                const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
-                g.addColorStop(0, this.color + '33');
-                g.addColorStop(1, this.color + '00');
-                ctx.fillStyle = g;
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
-            }
-        }
+const playerBar = document.getElementById('player-bar');
+const playerArt = document.getElementById('player-art');
+const playerTitle = document.getElementById('player-title');
+const playerArtist = document.getElementById('player-artist');
+const playPauseControl = document.getElementById('playPauseControl');
+const playIcon = document.getElementById('playIcon');
+const pauseIcon = document.getElementById('pauseIcon');
+const volumeSlider = document.getElementById('volumeSlider');
+const progressContainer = document.getElementById('progressContainer');
+const progressBar = document.getElementById('progressBar');
+const loopBtn = document.getElementById('loopBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
 
-        class Ripple {
-            constructor(x, y, intensity = 12) {
-                this.x = x; this.y = y; this.currentRadius = 0; this.life = 1.0; this.speed = intensity;
-            }
-            update() { this.currentRadius += this.speed; this.life -= 0.012; }
-            draw() {
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.currentRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(147, 197, 253, ${this.life * 0.6})`;
-                ctx.lineWidth = 4 * this.life; ctx.stroke();
-            }
-        }
+/* ============================
+   Canvas animation (unchanged)
+   ============================ */
+const ctx = canvas.getContext('2d');
+let width, height;
+let balls = [], trail = [], ripples = [], shakeIntensity = 0;
+const shakeDecay = 0.96;
 
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            transition.maxRadius = Math.max(width, height) * 1.6;
-            balls = [];
-            for (let i = 0; i < 15; i++) balls.push(new Ball());
-        }
+function resize(){
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+  balls = [];
+  for(let i=0;i<14;i++) balls.push(new Ball());
+}
+class Ball{
+  constructor(){ this.init(); }
+  init(){ this.x=Math.random()*width; this.y=Math.random()*height; this.vx=(Math.random()-.5)*2; this.vy=(Math.random()-.5)*2; this.radius=Math.random()*100+120; const colors=['#3b82f6','#1d4ed8','#60a5fa']; this.color=colors[Math.floor(Math.random()*colors.length)]; }
+  update(){
+    this.x+=this.vx; this.y+=this.vy;
+    const dx=this.x-mouse.x, dy=this.y-mouse.y; const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<300){ const force=(300-dist)/300; this.vx+=(dx/dist)*force*0.5; this.vy+=(dy/dist)*force*0.5; }
+    ripples.forEach(r=>{ const rdx=this.x-r.x, rdy=this.y-r.y; const rdist=Math.sqrt(rdx*rdx+rdy*rdy); const diff=Math.abs(rdist-r.currentRadius); if(diff<60){ const rforce=(60-diff)*r.life*0.45; this.vx+=(rdx/rdist)*rforce; this.vy+=(rdy/rdist)*rforce; }});
+    this.vx*=0.98; this.vy*=0.98;
+    if(this.x<-this.radius) this.x=width+this.radius;
+    if(this.x>width+this.radius) this.x=-this.radius;
+    if(this.y<-this.radius) this.y=height+this.radius;
+    if(this.y>height+this.radius) this.y=-this.radius;
+  }
+  draw(){
+    const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.radius); g.addColorStop(0,this.color+'33'); g.addColorStop(1,this.color+'00'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(this.x,this.y,this.radius,0,Math.PI*2); ctx.fill();
+  }
+}
+class Ripple{ constructor(x,y,intensity=12){ this.x=x; this.y=y; this.currentRadius=0; this.life=1; this.speed=intensity; } update(){ this.currentRadius+=this.speed; this.life-=0.012; } draw(){ ctx.beginPath(); ctx.arc(this.x,this.y,this.currentRadius,0,Math.PI*2); ctx.strokeStyle=`rgba(147,197,253,${this.life*.6})`; ctx.lineWidth=4*this.life; ctx.stroke(); } }
 
-        function triggerDrop(x, y, intensity = 15) {
-            ripples.push(new Ripple(x, y, intensity * 0.8));
-            shakeIntensity = intensity;
-        }
+const mouse = { x:window.innerWidth/2, y:window.innerHeight/2, targetX:window.innerWidth/2, targetY:window.innerHeight/2 };
+function triggerDrop(x,y,intensity=15){ ripples.push(new Ripple(x,y,intensity*.8)); shakeIntensity=intensity; }
+function applyShake(){ if(shakeIntensity>0.1){ const sx=(Math.random()-.5)*shakeIntensity; const sy=(Math.random()-.5)*shakeIntensity; container.style.transform=`translate(${sx}px, ${sy}px)`; shakeIntensity*=shakeDecay; } else container.style.transform='translate(0,0)'; }
 
-        function applyShake() {
-            if (shakeIntensity > 0.1) {
-                const sx = (Math.random() - 0.5) * shakeIntensity;
-                const sy = (Math.random() - 0.5) * shakeIntensity;
-                container.style.transform = `translate(${sx}px, ${sy}px)`;
-                shakeIntensity *= shakeDecay;
-            } else {
-                container.style.transform = `translate(0, 0)`;
-            }
-        }
+let transition = { active:false, phase:'out', x:0, y:0, radius:0, speed:2, maxRadius:0, currentPage:'home', targetHash:null };
 
-        function animate() {
-            applyShake();
-            const dx = mouse.targetX - mouse.x, dy = mouse.targetY - mouse.y;
-            mouse.x += dx * 0.12; mouse.y += dy * 0.12;
+function animate(){
+  applyShake();
+  const dx = mouse.targetX - mouse.x, dy = mouse.targetY - mouse.y;
+  mouse.x += dx * 0.12; mouse.y += dy * 0.12;
+  if(Math.abs(dx)+Math.abs(dy)>1 && !transition.active) trail.push({ x:mouse.x, y:mouse.y, size:60, life:1.0 });
 
-            if (Math.abs(dx) + Math.abs(dy) > 1 && !transition.active) {
-                trail.push({ x: mouse.x, y: mouse.y, size: 60, life: 1.0 });
-            }
+  ctx.fillStyle = getComputedStyle(document.body).backgroundColor || '#020617';
+  ctx.fillRect(0,0,width,height);
+  ctx.globalCompositeOperation = 'screen';
 
-            ctx.fillStyle = '#020617';
-            ctx.fillRect(0, 0, width, height);
-            ctx.globalCompositeOperation = 'screen';
+  balls.forEach(b=>{ b.update(); b.draw(); });
+  for(let i=ripples.length-1;i>=0;i--){ ripples[i].update(); ripples[i].draw(); if(ripples[i].life<=0) ripples.splice(i,1); }
+  for(let i=trail.length-1;i>=0;i--){ const t=trail[i]; t.life-=0.025; if(t.life<=0){ trail.splice(i,1); continue; } const g=ctx.createRadialGradient(t.x,t.y,0,t.x,t.y,t.size*(1+(1-t.life))); g.addColorStop(0,`rgba(37,99,235,${t.life*.3})`); g.addColorStop(1,`rgba(37,99,235,0)`); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(t.x,t.y,t.size*(1+(1-t.life)),0,Math.PI*2); ctx.fill(); }
 
-            balls.forEach(ball => { ball.update(); ball.draw(); });
-            for (let i = ripples.length - 1; i >= 0; i--) {
-                ripples[i].update(); ripples[i].draw();
-                if (ripples[i].life <= 0) ripples.splice(i, 1);
-            }
-            for (let i = trail.length - 1; i >= 0; i--) {
-                const t = trail[i]; t.life -= 0.025;
-                if (t.life <= 0) { trail.splice(i, 1); continue; }
-                const g = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.size * (1 + (1 - t.life)));
-                g.addColorStop(0, `rgba(37, 99, 235, ${t.life * 0.3})`);
-                g.addColorStop(1, `rgba(37, 99, 235, 0)`);
-                ctx.fillStyle = g;
-                ctx.beginPath(); ctx.arc(t.x, t.y, t.size * (1 + (1 - t.life)), 0, Math.PI * 2); ctx.fill();
-            }
+  if(transition.active){
+    ctx.globalCompositeOperation='source-over';
+    ctx.fillStyle = '#FFFFFF';
+    if(transition.phase==='out'){
+      transition.radius += transition.speed;
+      transition.speed = transition.speed * 1.045 + 0.1;
+      if(transition.radius >= transition.maxRadius){ performNavigation(); transition.phase='in'; transition.speed=4; }
+    } else {
+      transition.radius -= transition.speed;
+      transition.speed = transition.speed * 1.06 + 0.2;
+      if(transition.radius <= 0){ transition.active=false; transition.radius=0; }
+    }
+    ctx.beginPath(); ctx.arc(transition.x, transition.y, Math.max(0, transition.radius), 0, Math.PI*2); ctx.fill();
+  }
 
-            if (transition.active) {
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.fillStyle = '#FFFFFF';
-                
-                if (transition.phase === 'out') {
-                    transition.radius += transition.speed;
-                    transition.speed = transition.speed * 1.045 + 0.1; 
-                    if (transition.radius >= transition.maxRadius) {
-                        performNavigation();
-                        transition.phase = 'in';
-                        transition.speed = 4;
-                    }
-                } else {
-                    transition.radius -= transition.speed;
-                    transition.speed = transition.speed * 1.06 + 0.2;
-                    if (transition.radius <= 0) {
-                        transition.active = false;
-                        transition.radius = 0;
-                    }
-                }
+  ctx.globalCompositeOperation='source-over';
+  requestAnimationFrame(animate);
+}
 
-                ctx.beginPath();
-                ctx.arc(transition.x, transition.y, Math.max(0, transition.radius), 0, Math.PI * 2);
-                ctx.fill();
-            }
+/* ============================
+   Tracks + audio logic
+   ============================ */
+const Tracks = [
+  { id:"t1", name:"Never Gonna Give You Up", artist:"Rick Astley", imageurl:"https://i.scdn.co/image/ab67616d0000b273237665d08de01907e82a7d8a", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3" },
+  { id:"t2", name:"FTW", artist:"Lets be Friends", imageurl:"https://upload.wikimedia.org/wikipedia/en/5/53/FTW_Lets_Be_Friends_Orignal_Cover.jpeg", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/%5BElectro%5D%20-%20Lets%20Be%20Friends%20-%20FTW%20%5BMonstercat%20Release%5D.mp3" },
+  { id:"t3", name:"River Flows In You", artist:"DJ Herjuana", imageurl:"https://i.scdn.co/image/ab67616d0000b27371cde6e77fc2d217cbc5f567", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/SpotiDownloader.com%20-%20River%20Flows%20in%20You%20-%20DJ%20HERJUANA.mp3" },
+  { id:"t4", name:"Stereo Hearts", artist:"Gym Class Heroes", imageurl:"https://i.scdn.co/image/ab67616d0000b27318b8088fe0c3dbf78398b55a", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3" },
+  { id:"t5", name:"Heat Waves", artist:"Glass Animals", imageurl:"https://i.scdn.co/image/ab67616d0000b273712701c5e263efc8726b1464", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3" },
+  { id:"t6", name:"Rap God", artist:"Eminem", imageurl:"https://i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3" },
+  { id:"t7", name:"End of Beginning", artist:"Djo", imageurl:"https://i.scdn.co/image/ab67616d0000b273fddfffec51b4580acae727c1", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3" },
+  { id:"t8", name:"Corrupted", artist:"Danimal Cannon", imageurl:"https://i.scdn.co/image/ab67616d0000b27339be440fe5b4ef67f9de6cc7", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Danimal%20Cannon%20&%20Zef%20-%20Corrupted.mp3" },
+  { id:"t9", name:"Get Lucky", artist:"Daft Punk", imageurl:"https://external-preview.redd.it/YhSfC0SPUFM1lKaznHyKvHb4mSa04ZtBfmd6vOUYuLM.jpg?width=1080&crop=smart&auto=webp&s=68f06ce15bc7a17b1792ebd7077803046191e139", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3" },
+  { id:"t10", name:"A LITTLE THEORIZING", artist:"Stupendium", imageurl:"https://i.scdn.co/image/ab67616d0000b273bfebcc991d99e277f3260221", audiourl:"https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/A%20Little%20Theorizing%20Lyrics.mp3" }
+];
 
-            ctx.globalCompositeOperation = 'source-over';
-            requestAnimationFrame(animate);
-        }
+let currentAudio = null;
+let currentTrackId = null;
+let loopState = 0; // 0=off,1=all,2=one
 
-        const contentData = {
-            home: { 
-                h: "JaMusic v2", 
-                p: "All in one and powerful modular discord bot. We thought its cool to turn it into a website cuz why not?",
-                b: "Read Terms",
-                id: "home"
-            },
-            tos: { 
-                h: "Terms of Service", 
-                p: "By using JaMusic, you agree to follow the Discord ToS and not use the service for illegal streaming or disruption. We reserve the right to restrict access at any time.",
-                b: "Privacy Policy",
-                id: "tos"
-            },
-            privacy: { 
-                h: "Privacy Policy", 
-                p: "We do not store your private audio data. Minimal metadata like User IDs are used solely for configuration persistence and queue management.",
-                b: "Back to Home",
-                id: "privacy"
-            },
-            dashboard: {
-                h: "Audio Dashboard",
-                p: "Explore your audio library and AI-generated masterpieces. Your modular music hub starts here.",
-                b: "Back to Home",
-                id: "dashboard",
-                customContent: `
-                    <div class="dashboard-search-container">
-                        <input type="text" id="dashboardSearch" class="dashboard-search-input" placeholder="Search by track name or artist...">
-                    </div>
-                    <div class="dashboard-grid" id="dashboardGrid">
-                        ${Tracks.map(track => `
-                            <div class="song-card ${currentTrackId === track.id ? 'playing' : ''}" data-track-id="${track.id}" data-name="${track.name.toLowerCase()}" data-artist="${track.artist.toLowerCase()}">
-                                <div class="playing-indicator">Playing</div>
-                                <div class="song-art" style="background-image: url('${track.imageurl}')"></div>
-                                <div class="song-title">${track.name}</div>
-                                <div class="song-artist">${track.artist}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `
-            },
-            signup: {
-                h: "Create Your Account",
-                p: "Join the JaMusic ecosystem. Register now to save your custom modular configurations.",
-                b: "Back to Home",
-                id: "signup",
-                form: `
-                    <form id="signupForm">
-                        <div class="form-group"><label>First Name</label><input type="text" id="regFirst" required placeholder="John"></div>
-                        <div class="form-group"><label>Last Name</label><input type="text" id="regLast" required placeholder="Doe"></div>
-                        <div class="form-group"><label>Email Address</label><input type="email" id="regEmail" required placeholder="john@example.com"></div>
-                        <div class="form-group"><label>Password</label><input type="password" id="regPass" required placeholder="••••••••"></div>
-                        <div class="form-group">
-                            <label>Gender</label>
-                            <select id="regGender" required>
-                                <option value="">Select Gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="form-group"><label>Birthdate</label><input type="date" id="regDob" required></div>
-                        <div id="signupError" class="error-msg"></div>
-                        <button type="submit" class="submit-btn" id="signupSubmit">Submit Registration</button>
-                    </form>
-                `
-            },
-            login: {
-                h: "Welcome Back",
-                p: "Sign in to manage your bot instances and access your personalized dashboard.",
-                b: "Back to Home",
-                id: "login",
-                form: `
-                    <form id="loginForm">
-                        <div class="form-group"><label>Email Address</label><input type="email" id="logEmail" required placeholder="john@example.com"></div>
-                        <div class="form-group"><label>Password</label><input type="password" id="logPass" required placeholder="••••••••"></div>
-                        <label class="checkbox-group">
-                            <input type="checkbox" id="logRemember"> Remember me
-                        </label>
-                        <div id="loginError" class="error-msg"></div>
-                        <button type="submit" class="submit-btn" id="loginSubmit">Login</button>
-                    </form>
-                `
-            }
-        };
+function playTrack(trackId){
+  const track = Tracks.find(t=>t.id===trackId);
+  if(!track) return;
+  if(currentTrackId===trackId && currentAudio){ togglePlayback(); return; }
+  if(currentAudio){ currentAudio.pause(); currentAudio.ontimeupdate=null; }
+  currentAudio = new Audio(track.audiourl);
+  currentAudio.volume = parseFloat(volumeSlider.value);
+  currentTrackId = trackId;
+  currentAudio.play().catch(()=>{ /* autoplay could be blocked */ });
 
-        function playTrack(trackId) {
-            const track = Tracks.find(t => t.id === trackId);
-            if (!track) return;
+  currentAudio.ontimeupdate = () => {
+    if(currentAudio.duration){
+      const pct = (currentAudio.currentTime/currentAudio.duration)*100;
+      progressBar.style.width = pct+'%';
+    }
+  };
+  currentAudio.onended = () => {
+    if(loopState===2){
+      // loop one
+      currentAudio.currentTime = 0;
+      currentAudio.play();
+    } else if(loopState===1){
+      // loop all -> next track
+      playNext();
+    } else {
+      // none
+      progressBar.style.width='0%';
+      updatePlaybackIcons(false);
+    }
+  };
 
-            if (currentTrackId === trackId && currentAudio) {
-                togglePlayback();
-                return;
-            }
+  playerArt.style.backgroundImage = `url('${track.imageurl}')`;
+  playerTitle.textContent = track.name;
+  playerArtist.textContent = track.artist;
+  playerBar.classList.add('visible');
+  updatePlaybackIcons(true);
+  updateDashboardUI();
+  triggerDrop(window.innerWidth/2, window.innerHeight/2, 40);
+}
 
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.ontimeupdate = null;
-            }
+function togglePlayback(){
+  if(!currentAudio) return;
+  if(currentAudio.paused){ currentAudio.play(); updatePlaybackIcons(true); } else { currentAudio.pause(); updatePlaybackIcons(false); }
+}
+function updatePlaybackIcons(isPlaying){
+  playIcon.style.display = isPlaying ? 'none' : 'block';
+  pauseIcon.style.display = isPlaying ? 'block' : 'none';
+}
 
-            currentAudio = new Audio(track.audiourl);
-            currentAudio.volume = volumeSlider.value;
-            currentTrackId = trackId;
-            currentAudio.play();
+function playNext(){
+  if(!currentTrackId){
+    // play first
+    playTrack(Tracks[0].id);
+    return;
+  }
+  const idx = Tracks.findIndex(t=>t.id===currentTrackId);
+  const next = Tracks[(idx+1)%Tracks.length];
+  playTrack(next.id);
+}
+function playPrev(){
+  if(!currentTrackId){ playTrack(Tracks[0].id); return; }
+  const idx = Tracks.findIndex(t=>t.id===currentTrackId);
+  const prev = Tracks[(idx-1+Tracks.length)%Tracks.length];
+  playTrack(prev.id);
+}
 
-            currentAudio.ontimeupdate = () => {
-                if (currentAudio.duration) {
-                    const pct = (currentAudio.currentTime / currentAudio.duration) * 100;
-                    progressBar.style.width = pct + '%';
-                }
-            };
+prevBtn.addEventListener('click', playPrev);
+nextBtn.addEventListener('click', playNext);
 
-            currentAudio.onended = () => {
-                progressBar.style.width = '0%';
-                updatePlaybackIcons(false);
-            };
+/* loop button cycle */
+loopBtn.addEventListener('click', ()=>{
+  loopState = (loopState+1)%3;
+  loopBtn.title = loopState===0 ? 'Loop: off' : loopState===1 ? 'Loop: all' : 'Loop: one';
+  loopBtn.style.background = loopState===0 ? 'rgba(255,255,255,.06)' : 'var(--accent)';
+});
 
-            playerArt.style.backgroundImage = `url('${track.imageurl}')`;
-            playerTitle.textContent = track.name;
-            playerArtist.textContent = track.artist;
-            
-            playerBar.classList.add('visible');
-            updatePlaybackIcons(true);
+/* progress seeking */
+progressContainer.addEventListener('click', e=>{
+  if(!currentAudio || !currentAudio.duration) return;
+  const rect = progressContainer.getBoundingClientRect();
+  const pos = (e.clientX - rect.left) / rect.width;
+  currentAudio.currentTime = pos * currentAudio.duration;
+});
 
-            if (transition.currentPage === 'dashboard') {
-                updateDashboardUI();
-            }
-            
-            triggerDrop(window.innerWidth / 2, window.innerHeight / 2, 40);
-        }
+/* volume slider */
+volumeSlider.addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  if(currentAudio) currentAudio.volume = v;
+});
 
-        function togglePlayback() {
-            if (!currentAudio) return;
-            if (currentAudio.paused) {
-                currentAudio.play();
-                updatePlaybackIcons(true);
-            } else {
-                currentAudio.pause();
-                updatePlaybackIcons(false);
-            }
-        }
+/* ============================
+   UI Routing / transitions
+   ============================ */
+function updateDashboardUI(){
+  document.querySelectorAll('.song-card').forEach(card=>{
+    const id = card.getAttribute('data-track-id');
+    if(id===currentTrackId) card.classList.add('playing'); else card.classList.remove('playing');
+  });
+}
+const contentData = {
+  home: { h:"JaMusic v2", p:"All in one and powerful modular discord bot. We thought it's cool to turn it into a website cuz why not?", b:"Read Terms", id:"home" },
+  tos: { h:"Terms of Service", p:"By using JaMusic, you agree to follow the Discord ToS and not use the service for illegal streaming or disruption. We reserve the right to restrict access at any time.", b:"Privacy Policy", id:"tos" },
+  privacy: { h:"Privacy Policy", p:"We do not store your private audio data. Minimal metadata like User IDs are used solely for configuration persistence and queue management.", b:"Back to Home", id:"privacy" },
+  dashboard: {
+    h:"Audio Dashboard",
+    p:"Explore your audio library and AI-generated masterpieces. Your modular music hub starts here.",
+    b:"Back to Home",
+    id:"dashboard",
+    customContent: `
+      <div style="max-width:1000px;margin:10px auto;">
+        <div class="dashboard-search-container">
+          <input type="text" id="dashboardSearch" class="dashboard-search-input" placeholder="Search by track name or artist...">
+        </div>
+        <div class="dashboard-grid" id="dashboardGrid">
+          ${Tracks.map(t=>`
+            <div class="song-card" data-track-id="${t.id}" data-name="${t.name.toLowerCase()}" data-artist="${t.artist.toLowerCase()}">
+              <div class="song-art" style="background-image:url('${t.imageurl}');"></div>
+              <div class="song-title">${t.name}</div>
+              <div class="song-artist">${t.artist}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `
+  },
+  signup: { h:"Create Your Account", p:"Join the JaMusic ecosystem. Register now to save your custom modular configurations.", b:"Back to Home", id:"signup",
+    form: `
+      <form id="signupForm">
+        <div class="form-group"><label>First Name</label><input type="text" id="regFirst" required placeholder="John"></div>
+        <div class="form-group"><label>Last Name</label><input type="text" id="regLast" required placeholder="Doe"></div>
+        <div class="form-group"><label>Email Address</label><input type="email" id="regEmail" required placeholder="john@example.com"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="regPass" required placeholder="••••••••"></div>
+        <div class="form-group"><label>Gender</label><select id="regGender" required><option value="">Select Gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
+        <div class="form-group"><label>Birthdate</label><input type="date" id="regDob" required></div>
+        <div id="signupError" class="error-msg"></div>
+        <button type="submit" class="submit-btn" id="signupSubmit">Submit Registration</button>
+      </form>
+    `
+  },
+  login: { h:"Welcome Back", p:"Sign in to manage your bot instances and access your personalized dashboard.", b:"Back to Home", id:"login",
+    form: `
+      <form id="loginForm">
+        <div class="form-group"><label>Email Address</label><input type="email" id="logEmail" required placeholder="john@example.com"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="logPass" required placeholder="••••••••"></div>
+        <label class="checkbox-group"><input type="checkbox" id="logRemember"> Remember me</label>
+        <div id="loginError" class="error-msg"></div>
+        <button type="submit" class="submit-btn" id="loginSubmit">Login</button>
+      </form>
+    `
+  }
+};
 
-        function updatePlaybackIcons(isPlaying) {
-            playIcon.style.display = isPlaying ? 'none' : 'block';
-            pauseIcon.style.display = isPlaying ? 'block' : 'none';
-        }
+function updateUI(id){
+  transition.currentPage = id;
+  headline.textContent = contentData[id].h;
+  subline.textContent = contentData[id].p;
 
-        function updateDashboardUI() {
-            const cards = document.querySelectorAll('.song-card');
-            cards.forEach(card => {
-                const id = card.getAttribute('data-track-id');
-                if (id === currentTrackId) {
-                    card.classList.add('playing');
-                } else {
-                    card.classList.remove('playing');
-                }
-            });
-        }
+  // Controls visibility
+  if(id==='home'){
+    mainButton.textContent = "Read Terms";
+    homeButtons.style.display='flex';
+    dashboardButton.style.display = (currentUser && !currentUser.isAnonymous) ? 'block' : 'none';
+    signOutBtn.style.display = (currentUser && !currentUser.isAnonymous) ? 'block' : 'none';
+    goBackBtn.style.display='none';
+    profileBtn.style.display='none';
+    doneButton.style.display='block';
+  } else if(id==='tos' || id==='privacy'){
+    mainButton.textContent = contentData[id].b;
+    homeButtons.style.display='flex';
+    dashboardButton.style.display='none';
+    signOutBtn.style.display='none';
+    goBackBtn.style.display='none';
+    profileBtn.style.display='none';
+    doneButton.style.display='none';
+  } else if(id==='dashboard'){
+    homeButtons.style.display='none';
+    dashboardButton.style.display='none';
+    signOutBtn.style.display='none';
+    goBackBtn.style.display='block';
+    profileBtn.style.display='flex';
+    doneButton.style.display='none'; // removed on dashboard as requested
+  } else {
+    homeButtons.style.display='none';
+    signOutBtn.style.display='none';
+    goBackBtn.style.display='none';
+    profileBtn.style.display='none';
+    doneButton.style.display='none';
+  }
 
-        function handleSearch(e) {
-            const term = e.target.value.toLowerCase();
-            const cards = document.querySelectorAll('.song-card');
-            cards.forEach(card => {
-                const name = card.getAttribute('data-name');
-                const artist = card.getAttribute('data-artist');
-                if (name.includes(term) || artist.includes(term)) {
-                    card.classList.remove('hidden');
-                } else {
-                    card.classList.add('hidden');
-                }
-            });
-        }
+  if(contentData[id].customContent){
+    dynamicFormContainer.innerHTML = contentData[id].customContent;
+    dynamicFormContainer.style.display='block';
+    subline.style.marginBottom='1rem';
+    if(id==='dashboard'){
+      document.getElementById('dashboardSearch').addEventListener('input', handleSearch);
+      document.querySelectorAll('.song-card').forEach(card=>{
+        card.addEventListener('click', ()=>{ playTrack(card.getAttribute('data-track-id')); });
+      });
+    }
+  } else if(contentData[id].form){
+    dynamicFormContainer.innerHTML = contentData[id].form;
+    dynamicFormContainer.style.display='block';
+    subline.style.marginBottom='1rem';
+    if(id==='signup') document.getElementById('signupForm').addEventListener('submit', handleSignup);
+    if(id==='login') document.getElementById('loginForm').addEventListener('submit', handleLogin);
+  } else {
+    dynamicFormContainer.style.display='none';
+    subline.style.marginBottom='2.5rem';
+  }
+  heroContent.classList.remove('hidden');
+}
 
-        playPauseControl.addEventListener('click', togglePlayback);
-        
-        volumeSlider.addEventListener('input', (e) => {
-            if (currentAudio) currentAudio.volume = e.target.value;
-        });
+function handleRouting(){
+  const hash = window.location.hash;
+  if(hash==='#terms') updateUI('tos');
+  else if(hash==='#privacy') updateUI('privacy');
+  else if(hash==='#signup') updateUI('signup');
+  else if(hash==='#login') updateUI('login');
+  else if(hash==='#dashboard') updateUI('dashboard');
+  else updateUI('home');
+}
 
-        progressContainer.addEventListener('click', (e) => {
-            if (!currentAudio) return;
-            const rect = progressContainer.getBoundingClientRect();
-            const pos = (e.clientX - rect.left) / rect.width;
-            currentAudio.currentTime = pos * currentAudio.duration;
-        });
+function performNavigation(){
+  let next;
+  if(transition.targetHash!==null){ next=transition.targetHash; transition.targetHash=null; }
+  else {
+    if(transition.currentPage==='home') next='terms';
+    else if(transition.currentPage==='tos') next='privacy';
+    else next='';
+  }
+  window.location.hash = next ? `#${next}` : '';
+  handleRouting();
+}
 
-        // Keep auth state handling but don't manipulate any removed DOM elements
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user && !user.isAnonymous) {
-                // show/hide controls based on auth
-                if (transition.currentPage === 'home') {
-                    signOutBtn.style.display = 'block';
-                    mainButton.textContent = "Read Terms"; 
-                    dashboardButton.style.display = 'block';
-                }
-                if (window.location.hash === '#login' || window.location.hash === '#signup') {
-                   window.location.hash = '';
-                }
-            } else {
-                // not signed in: hide user-specific controls
-                signOutBtn.style.display = 'none';
-                dashboardButton.style.display = 'none';
-                if (transition.currentPage === 'home') {
-                    mainButton.textContent = "Read Terms";
-                }
-                if (!user) {
-                    signInAnonymously(auth).catch(() => {});
-                }
-            }
-        });
+function startTransition(e, forcedHash=null){
+  if(transition.active) return;
+  const target = e.target;
+  const rect = target.getBoundingClientRect();
+  const centerX = rect.left + rect.width/2, centerY = rect.top + rect.height/2;
+  transition.targetHash = forcedHash;
+  triggerDrop(centerX, centerY, 80);
+  transition.active = true; transition.phase='out'; transition.x=centerX; transition.y=centerY; transition.radius=0; transition.speed=1.5;
+  heroContent.classList.add('hidden');
+}
 
-        signOutBtn.addEventListener('click', async (e) => {
-            const rect = signOutBtn.getBoundingClientRect();
-            triggerDrop(rect.left + rect.width / 2, rect.top + rect.height / 2, 80);
-            await signOut(auth);
-            try {
-                await signInAnonymously(auth);
-            } catch (err) {}
-        });
+window.handleAuthNav = (page,e) => { window.scrollTo({top:0,behavior:'smooth'}); setTimeout(()=>startTransition(e,page),300); };
 
-        async function handleSignup(e) {
-            e.preventDefault();
-            const email = document.getElementById('regEmail').value;
-            const pass = document.getElementById('regPass').value;
-            const firstName = document.getElementById('regFirst').value;
-            const lastName = document.getElementById('regLast').value;
-            const gender = document.getElementById('regGender').value;
-            const dob = document.getElementById('regDob').value;
-            const errorDiv = document.getElementById('signupError');
-            const submitBtn = document.getElementById('signupSubmit');
+mainButton.addEventListener('click', (e)=>{ if(transition.currentPage==='home') startTransition(e,'terms'); else if(transition.currentPage==='tos') startTransition(e,'privacy'); else if(transition.currentPage==='privacy') startTransition(e,''); else startTransition(e,''); });
+dashboardButton.addEventListener('click', (e)=> startTransition(e,'dashboard'));
 
-            errorDiv.style.display = 'none';
-            submitBtn.disabled = true;
+doneButton.addEventListener('click', ()=>{ document.body.classList.remove('no-scroll'); window.scrollTo({top:0,behavior:'smooth'}); triggerDrop(window.innerWidth/2, window.innerHeight/2, 10); });
 
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                const user = userCredential.user;
-                await sendEmailVerification(user);
-                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info'), {
-                    firstName, lastName, gender, dob, createdAt: new Date().toISOString()
-                });
-                alert("Registration successful! A verification email has been sent to " + email);
-                window.location.hash = ''; 
-            } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
-            } finally {
-                submitBtn.disabled = false;
-            }
-        }
+goBackBtn.addEventListener('click', ()=>{ window.location.hash = ''; updateUI('home'); triggerDrop(window.innerWidth/2, window.innerHeight/2, 25); });
 
-        async function handleLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('logEmail').value;
-            const pass = document.getElementById('logPass').value;
-            const remember = document.getElementById('logRemember')?.checked;
-            const errorDiv = document.getElementById('loginError');
-            const submitBtn = document.getElementById('loginSubmit');
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', (e)=>{ mouse.targetX=e.clientX; mouse.targetY=e.clientY; });
+window.addEventListener('mousedown', (e)=>{ const isInteractive=(e.target.closest&& (e.target.closest('button')||e.target.closest('input')||e.target.closest('select')||e.target.closest('#player-bar'))); if(!isInteractive && !transition.active) triggerDrop(e.clientX,e.clientY,15); });
+window.addEventListener('hashchange', handleRouting);
 
-            errorDiv.style.display = 'none';
-            submitBtn.disabled = true;
+/* ============================
+   Auth / profile menu behavior
+   ============================ */
+let currentUser = null;
 
-            try {
-                const pType = remember ? browserLocalPersistence : browserSessionPersistence;
-                await setPersistence(auth, pType);
-                await signInWithEmailAndPassword(auth, email, pass);
-                window.location.hash = '';
-            } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
-            } finally {
-                submitBtn.disabled = false;
-            }
-        }
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  // update profile display
+  if(user){
+    const displayName = user.displayName || (user.email ? user.email.split('@')[0] : 'User');
+    profileName.textContent = displayName;
+    profileEmail.textContent = user.email || 'Guest';
+    profileInitial.textContent = (displayName[0]||'G').toUpperCase();
+    profileAvatar.src = `https://avatars.dicebear.com/api/initials/${encodeURIComponent(displayName)}.svg`;
+    // show dashboard button when logged in
+    if(transition.currentPage==='home'){
+      signOutBtn.style.display = user.isAnonymous ? 'none' : 'block';
+      dashboardButton.style.display = user.isAnonymous ? 'none' : 'block';
+    }
+  } else {
+    profileName.textContent = 'Guest';
+    profileEmail.textContent = 'guest@example.com';
+    profileInitial.textContent = 'G';
+    profileAvatar.src = 'https://avatars.dicebear.com/api/identicon/guest.svg';
+    signOutBtn.style.display = 'none';
+    dashboardButton.style.display = 'none';
+    signInAnonymously(auth).catch(()=>{});
+  }
+});
 
-        function updateUI(id) {
-            transition.currentPage = id;
-            headline.textContent = contentData[id].h;
-            subline.textContent = contentData[id].p;
-            
-            if (id === 'home') {
-                mainButton.textContent = "Read Terms";
-                homeButtons.style.display = 'flex';
-                dashboardButton.style.display = (currentUser && !currentUser.isAnonymous) ? 'block' : 'none';
-                signOutBtn.style.display = (currentUser && !currentUser.isAnonymous) ? 'block' : 'none';
-                goBackBtn.style.display = 'none';
-            } else if (id === 'tos' || id === 'privacy') {
-                mainButton.textContent = contentData[id].b;
-                homeButtons.style.display = 'flex'; 
-                dashboardButton.style.display = 'none';
-                signOutBtn.style.display = 'none';
-                goBackBtn.style.display = 'none';
-            } else if (id === 'dashboard') {
-                homeButtons.style.display = 'none'; 
-                dashboardButton.style.display = 'none';
-                signOutBtn.style.display = 'none';
-                goBackBtn.style.display = 'block';
-            } else {
-                mainButton.textContent = contentData[id].b;
-                homeButtons.style.display = 'none';
-                signOutBtn.style.display = 'none';
-                goBackBtn.style.display = 'none';
-            }
-            
-            if (contentData[id].customContent) {
-                dynamicFormContainer.innerHTML = contentData[id].customContent;
-                dynamicFormContainer.style.display = 'block';
-                subline.style.marginBottom = '2rem';
-                
-                if (id === 'dashboard') {
-                    document.getElementById('dashboardSearch').addEventListener('input', handleSearch);
-                    document.querySelectorAll('.song-card').forEach(card => {
-                        card.addEventListener('click', () => {
-                            const trackId = card.getAttribute('data-track-id');
-                            playTrack(trackId);
-                        });
-                    });
-                }
-            } else if (contentData[id].form) {
-                dynamicFormContainer.innerHTML = contentData[id].form;
-                dynamicFormContainer.style.display = 'block';
-                subline.style.marginBottom = '1.5rem';
-                if (id === 'signup') document.getElementById('signupForm').addEventListener('submit', handleSignup);
-                if (id === 'login') document.getElementById('loginForm').addEventListener('submit', handleLogin);
-            } else {
-                dynamicFormContainer.style.display = 'none';
-                subline.style.marginBottom = '2.5rem';
-            }
+/* profile menu toggles */
+let profileOpen = false;
+profileBtn.addEventListener('click', (e)=>{
+  profileOpen = !profileOpen;
+  profileMenu.style.display = profileOpen ? 'block' : 'none';
+  profileMenu.setAttribute('aria-hidden', profileOpen ? 'false':'true');
+});
+document.addEventListener('click', (e)=>{
+  if(!profileMenu.contains(e.target) && !profileBtn.contains(e.target)){
+    profileMenu.style.display='none'; profileOpen=false;
+  }
+});
 
-            heroContent.classList.remove('hidden');
-            doneButton.style.display = (id === 'home') ? 'block' : 'none';
-        }
+/* profile menu actions */
+document.getElementById('btnAccountSettings').addEventListener('click', ()=>{ openSettingsModal('account') });
+document.getElementById('btnGeneralSettings').addEventListener('click', ()=>{ openSettingsModal('general') });
+document.getElementById('btnDisplayName').addEventListener('click', ()=>{ openNamePopup(); });
+document.getElementById('btnLogout').addEventListener('click', async ()=>{
+  try{ await signOut(auth); await signInAnonymously(auth); alert('Logged out.'); window.location.hash=''; updateUI('home'); } catch(e){ alert('Error logging out: '+e.message); }
+});
 
-        function handleRouting() {
-            const hash = window.location.hash;
-            if (hash === '#terms') updateUI('tos');
-            else if (hash === '#privacy') updateUI('privacy');
-            else if (hash === '#signup') updateUI('signup');
-            else if (hash === '#login') updateUI('login');
-            else if (hash === '#dashboard') updateUI('dashboard');
-            else updateUI('home');
-        }
+/* sign out button (top area) */
+signOutBtn.addEventListener('click', async ()=>{
+  try{ await signOut(auth); await signInAnonymously(auth); alert('Signed out'); } catch(e){ console.error(e) }
+});
 
-        function performNavigation() {
-            let next;
-            if (transition.targetHash !== null) {
-                next = transition.targetHash;
-                transition.targetHash = null;
-            } else {
-                if (transition.currentPage === 'home') next = 'terms';
-                else if (transition.currentPage === 'tos') next = 'privacy';
-                else next = '';
-            }
-            window.location.hash = next;
-            handleRouting();
-        }
+/* ============================
+   Settings Modal (Account / General)
+   ============================ */
+function openSettingsModal(type='account'){
+  overlay.style.display='flex';
+  settingsModal.style.display='block';
+  modalTitle.textContent = (type==='account') ? 'Account Settings' : 'General Settings';
+  // build left nav & right content depending on type
+  if(type==='account'){
+    buildModalLeft(['Safety','Personal Details'], 0);
+    buildAccountRight('Safety');
+  } else {
+    buildModalLeft(['General','Zoom'], 0);
+    buildGeneralRight('General');
+  }
+}
+modalClose.addEventListener('click', closeSettingsModal);
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeSettingsModal(); });
+function closeSettingsModal(){ overlay.style.display='none'; settingsModal.style.display='none'; }
 
-        function startTransition(e, forcedHash = null) {
-            if (transition.active) return;
-            const target = e.target;
-            const rect = target.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            
-            transition.targetHash = forcedHash;
-            triggerDrop(centerX, centerY, 80);
-            transition.active = true;
-            transition.phase = 'out';
-            transition.x = centerX;
-            transition.y = centerY;
-            transition.radius = 0;
-            transition.speed = 1.5;
-            heroContent.classList.add('hidden');
-        }
+/* left nav builder */
+function buildModalLeft(items, activeIndex=0){
+  modalLeft.innerHTML = '';
+  items.forEach((it,idx)=>{
+    const btn = document.createElement('button');
+    btn.textContent = it;
+    btn.className = (idx===activeIndex ? 'active' : '');
+    btn.addEventListener('click', ()=>{
+      [...modalLeft.querySelectorAll('button')].forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      // render right side depending on title
+      if(it==='Safety' || it==='Personal Details') buildAccountRight(it);
+      if(it==='General' || it==='Zoom') buildGeneralRight(it);
+    });
+    modalLeft.appendChild(btn);
+  });
+}
 
-        window.handleAuthNav = (page, e) => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setTimeout(() => { startTransition(e, page); }, 300);
-        };
+/* Account (right) */
+function buildAccountRight(title){
+  modalRight.innerHTML = '';
+  modalTitle.textContent = 'Account Settings — '+title;
+  if(title==='Safety'){
+    const html = `
+      <div>
+        <div class="section-title">Safety</div>
+        <p class="muted">Change your password. You will be re-authenticated with your current password before the change.</p>
+        <div style="margin-top:12px;">
+          <div class="form-group"><label>Current password</label><input id="curPass" type="password" placeholder="Current password"/></div>
+          <div class="form-group"><label>New password</label><input id="newPass" type="password" placeholder="New password"/></div>
+          <div class="form-group"><label>Confirm new password</label><input id="confirmPass" type="password" placeholder="Confirm new password"/></div>
+          <div style="display:flex;gap:.5rem;margin-top:6px;">
+            <button id="changePasswordBtn" class="cta-button" style="pointer-events:auto;">Change password</button>
+            <button id="cancelChangePwd" class="secondary-button" style="pointer-events:auto;">Cancel</button>
+          </div>
+          <div id="pwdMsg" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    `;
+    modalRight.innerHTML = html;
+    document.getElementById('changePasswordBtn').addEventListener('click', async ()=>{
+      const cur = document.getElementById('curPass').value;
+      const np = document.getElementById('newPass').value;
+      const cp = document.getElementById('confirmPass').value;
+      const msg = document.getElementById('pwdMsg');
+      msg.innerHTML='';
+      if(!auth.currentUser || !auth.currentUser.email){ msg.innerHTML = `<div class="error">You must be signed in to change password.</div>`; return; }
+      if(!cur || !np || !cp){ msg.innerHTML = `<div class="error">Please fill all fields.</div>`; return; }
+      if(np.length<6){ msg.innerHTML = `<div class="error">New password must be at least 6 characters.</div>`; return; }
+      if(np!==cp){ msg.innerHTML = `<div class="error">Passwords do not match.</div>`; return; }
+      try{
+        // reauthenticate
+        const credential = EmailAuthProvider.credential(auth.currentUser.email, cur);
+        await reauthenticateWithCredential(auth.currentUser, credential);
+        await updatePassword(auth.currentUser, np);
+        msg.innerHTML = `<div class="success">Password updated successfully.</div>`;
+        document.getElementById('curPass').value=''; document.getElementById('newPass').value=''; document.getElementById('confirmPass').value='';
+      } catch (err){
+        msg.innerHTML = `<div class="error">${err.message}</div>`;
+      }
+    });
+    document.getElementById('cancelChangePwd').addEventListener('click', ()=>{ buildAccountRight('Safety'); });
+  } else if(title==='Personal Details'){
+    const display = auth.currentUser ? (auth.currentUser.displayName || '(not set)') : 'Guest';
+    const email = auth.currentUser ? (auth.currentUser.email || 'guest@example.com') : 'guest@example.com';
+    modalRight.innerHTML = `
+      <div>
+        <div class="section-title">Personal Details</div>
+        <p class="muted">Your profile information.</p>
+        <div style="margin-top:12px;">
+          <div class="form-group"><label>Display name</label><input value="${escapeHtml(display)}" disabled /></div>
+          <div class="form-group"><label>Email</label><input value="${escapeHtml(email)}" disabled /></div>
+        </div>
+      </div>
+    `;
+  }
+}
 
-        mainButton.addEventListener('click', (e) => {
-            if (transition.currentPage === 'home') startTransition(e, 'terms');
-            else if (transition.currentPage === 'tos') startTransition(e, 'privacy');
-            else if (transition.currentPage === 'privacy') startTransition(e, '');
-            else startTransition(e, '');
-        });
+/* General (right) */
+function buildGeneralRight(title){
+  modalRight.innerHTML = '';
+  modalTitle.textContent = 'General Settings — '+title;
+  if(title==='General'){
+    modalRight.innerHTML = `
+      <div>
+        <div class="section-title">General</div>
+        <p class="muted">App-wide settings.</p>
+        <div style="margin-top:12px;">
+          <label>Master volume</label>
+          <input id="generalVolume" type="range" min="0" max="1" step="0.01" value="${volumeSlider.value}" />
+          <div style="height:12px;"></div>
+          <label>Theme</label>
+          <div style="display:flex;gap:.6rem;margin-top:8px;">
+            <button id="themeLight" class="cta-button" style="pointer-events:auto;">Light</button>
+            <button id="themeDark" class="cta-button" style="pointer-events:auto;">Dark</button>
+          </div>
+          <div style="height:12px;"></div>
+          <label>Other</label>
+          <div style="margin-top:8px;">
+            <label style="display:flex;align-items:center;gap:.6rem;"><input id="toggleAutoplay" type="checkbox" /> Enable autoplay on first play</label>
+          </div>
+        </div>
+      </div>
+    `;
+    const generalVolume = modalRight.querySelector('#generalVolume');
+    generalVolume.addEventListener('input', (e)=>{ volumeSlider.value = e.target.value; if(currentAudio) currentAudio.volume = e.target.value; });
+    modalRight.querySelector('#themeLight').addEventListener('click', ()=>{ document.body.classList.add('light-mode'); });
+    modalRight.querySelector('#themeDark').addEventListener('click', ()=>{ document.body.classList.remove('light-mode'); });
+  } else if(title==='Zoom'){
+    modalRight.innerHTML = `
+      <div>
+        <div class="section-title">Zoom</div>
+        <p class="muted">Adjust base UI scale for easier reading on mobile.</p>
+        <div style="margin-top:12px;">
+          <label>UI Zoom</label>
+          <input id="zoomSlider" type="range" min="0.8" max="1.6" step="0.05" value="1" />
+          <div class="muted" style="margin-top:8px;">Tip: increase on small screens to make text larger.</div>
+        </div>
+      </div>
+    `;
+    modalRight.querySelector('#zoomSlider').addEventListener('input', (e)=>{
+      const v = parseFloat(e.target.value);
+      document.documentElement.style.fontSize = (16 * v) + 'px';
+    });
+  }
+}
 
-        dashboardButton.addEventListener('click', (e) => {
-            startTransition(e, 'dashboard');
-        });
-        
-        doneButton.addEventListener('click', () => {
-            // headlines removed — make this collapse the intro scroll and allow scrolling
-            document.body.classList.remove('no-scroll');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            triggerDrop(window.innerWidth/2, window.innerHeight/2, 10);
-        });
+/* Modal helpers */
+modalClose.addEventListener('click', closeSettingsModal);
 
-        // Go Back button behavior: sets hash to home (#)
-        goBackBtn.addEventListener('click', () => {
-            window.location.hash = '';
-            updateUI('home');
-            triggerDrop(window.innerWidth/2, window.innerHeight/2, 25);
-        });
+/* Escape-safe injection */
+function escapeHtml(s){ if(!s) return ''; return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;');)'); }
 
-        window.addEventListener('resize', resize);
-        window.addEventListener('mousemove', (e) => { mouse.targetX = e.clientX; mouse.targetY = e.clientY; });
-        window.addEventListener('mousedown', (e) => {
-            const isInteractive = (e.target.closest && (
-                e.target.closest('button') || 
-                e.target.closest('input') || 
-                e.target.closest('select') || 
-                e.target.closest('#player-bar')
-            ));
-            if (!isInteractive && !transition.active) triggerDrop(e.clientX, e.clientY, 15);
-        });
+/* ============================
+   Display name popup
+   ============================ */
+function openNamePopup(){
+  nameOverlay.style.display='flex';
+  profileMenu.style.display='none';
+  profileOpen=false;
+  newDisplayNameInput.value = (auth.currentUser && auth.currentUser.displayName) ? auth.currentUser.displayName : '';
+  displayNameMsg.textContent = '';
+}
+function closeNamePopup(){ nameOverlay.style.display='none'; }
+saveDisplayName.addEventListener('click', async ()=>{
+  const newName = newDisplayNameInput.value.trim();
+  if(!auth.currentUser){ displayNameMsg.textContent = 'You must be signed in.'; return; }
+  if(!newName){ displayNameMsg.textContent = 'Enter a display name.'; return; }
+  try{
+    await updateProfile(auth.currentUser, { displayName: newName });
+    profileName.textContent = newName;
+    profileInitial.textContent = (newName[0]||'G').toUpperCase();
+    profileAvatar.src = `https://avatars.dicebear.com/api/initials/${encodeURIComponent(newName)}.svg`;
+    displayNameMsg.textContent = 'Display name updated.';
+    setTimeout(()=>closeNamePopup(), 900);
+  } catch(err){
+    displayNameMsg.textContent = err.message;
+  }
+});
+cancelDisplayName.addEventListener('click', closeNamePopup);
+nameClose.addEventListener('click', closeNamePopup);
 
-        window.addEventListener('hashchange', handleRouting);
+/* ============================
+   Signup / Login handlers (kept from original)
+   ============================ */
+async function handleSignup(e){
+  e.preventDefault();
+  const email = document.getElementById('regEmail').value;
+  const pass = document.getElementById('regPass').value;
+  const firstName = document.getElementById('regFirst').value;
+  const lastName = document.getElementById('regLast').value;
+  const gender = document.getElementById('regGender').value;
+  const dob = document.getElementById('regDob').value;
+  const errorDiv = document.getElementById('signupError');
+  const submitBtn = document.getElementById('signupSubmit');
+  errorDiv.style.display='none'; submitBtn.disabled=true;
+  try{
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    const user = userCredential.user;
+    await sendEmailVerification(user);
+    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info'), { firstName, lastName, gender, dob, createdAt:new Date().toISOString() });
+    alert("Registration successful! A verification email has been sent to "+email);
+    window.location.hash = '';
+  } catch(err){
+    errorDiv.textContent = err.message; errorDiv.style.display='block';
+  } finally{ submitBtn.disabled=false; }
+}
+async function handleLogin(e){
+  e.preventDefault();
+  const email = document.getElementById('logEmail').value;
+  const pass = document.getElementById('logPass').value;
+  const remember = document.getElementById('logRemember')?.checked;
+  const errorDiv = document.getElementById('loginError');
+  const submitBtn = document.getElementById('loginSubmit');
+  errorDiv.style.display='none'; submitBtn.disabled=true;
+  try{
+    const pType = remember ? browserLocalPersistence : browserSessionPersistence;
+    await setPersistence(auth, pType);
+    await signInWithEmailAndPassword(auth, email, pass);
+    window.location.hash='';
+  } catch(err){
+    errorDiv.textContent = err.message; errorDiv.style.display='block';
+  } finally{ submitBtn.disabled=false; }
+}
 
-        resize();
-        handleRouting();
-        requestAnimationFrame(animate);
+/* ============================
+   Search handler
+   ============================ */
+function handleSearch(e){
+  const term = e.target.value.toLowerCase();
+  document.querySelectorAll('.song-card').forEach(card=>{
+    const name = card.getAttribute('data-name');
+    const artist = card.getAttribute('data-artist');
+    if(name.includes(term) || artist.includes(term)) card.style.display='block'; else card.style.display='none';
+  });
+}
 
-    </script>
+/* ============================
+   Misc UI wiring & startup
+   ============================ */
+/* Show/hide overlay safety when overlay clicked outside modal handled earlier */
+document.getElementById('dashboardButton').addEventListener('click',(e)=> startTransition(e,'dashboard'));
+
+/* init */
+resize();
+handleRouting();
+requestAnimationFrame(animate);
+
+/* Small polyfills / helpers to ensure nothing left referencing deleted headlines */
+document.getElementById('doneButton').style.display = 'block';
+
+</script>
 </body>
 </html>
