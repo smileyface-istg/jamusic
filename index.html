@@ -275,7 +275,15 @@
                     transition.speed = transition.speed * 1.045 + 0.1; 
                     if (transition.radius >= transition.maxRadius) {
                         performNavigation();
-                        transition.active = false; // Prevent double trigger
+                        transition.phase = 'in';
+                        transition.speed = 4;
+                    }
+                } else {
+                    transition.radius -= transition.speed;
+                    transition.speed = transition.speed * 1.06 + 0.2;
+                    if (transition.radius <= 0) {
+                        transition.active = false;
+                        transition.radius = 0;
                     }
                 }
 
@@ -288,30 +296,46 @@
             requestAnimationFrame(animate);
         }
 
-        const pages = {
-            home: { url: "https://jamusic.vercel.app/" },
-            tos: { url: "https://jamusic.vercel.app/terms" },
-            privacy: { url: "https://jamusic.vercel.app/privacy" }
+        const contentData = {
+            home: { 
+                h: "JaMusic v2", 
+                p: "All in one and powerful modular discord bot. Harnessing the next generation of audio processing for seamless community interaction.",
+                b: "Read Terms",
+                hash: "" 
+            },
+            tos: { 
+                h: "Terms of Service", 
+                p: "By using JaMusic, you agree to follow the Discord ToS and not use the service for illegal streaming or disruption. We reserve the right to restrict access at any time.",
+                b: "Privacy Policy",
+                hash: "#terms" 
+            },
+            privacy: { 
+                h: "Privacy Policy", 
+                p: "We do not store your private audio data. Minimal metadata like User IDs are used solely for configuration persistence and queue management.",
+                b: "Back to Home",
+                hash: "#privacy" 
+            }
         };
 
         function performNavigation() {
-            let nextUrl;
-            // Cycle logic: Home -> Terms -> Privacy -> Home
-            if (transition.currentPage === 'home') {
-                nextUrl = pages.tos.url;
-                transition.currentPage = 'tos';
-            } else if (transition.currentPage === 'tos') {
-                nextUrl = pages.privacy.url;
-                transition.currentPage = 'privacy';
-            } else {
-                nextUrl = pages.home.url;
-                transition.currentPage = 'home';
-            }
+            let next;
+            if (transition.currentPage === 'home') next = 'tos';
+            else if (transition.currentPage === 'tos') next = 'privacy';
+            else next = 'home';
             
-            // Re-evaluating redirection strategy:
-            // Since sub-paths on Vercel might return 404 if not configured,
-            // we use window.location.assign for a fresh load.
-            window.location.assign(nextUrl);
+            transition.currentPage = next;
+            
+            // UI Updates
+            headline.textContent = contentData[next].h;
+            subline.textContent = contentData[next].p;
+            mainButton.textContent = contentData[next].b;
+
+            // Change Hash instead of Path to avoid 404s
+            window.location.hash = contentData[next].hash;
+            
+            setTimeout(() => {
+                heroContent.classList.remove('hidden');
+            }, 300);
         }
 
         function startTransition(e) {
