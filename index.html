@@ -8,18 +8,23 @@
         :root {
             --bg-color: #020617;
             --accent: #3b82f6;
+            --player-height: 100px;
         }
 
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
-            overflow: hidden;
             background-color: var(--bg-color);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             user-select: none;
             color: white;
+            scroll-behavior: smooth;
+        }
+
+        /* Prevent scrolling initially */
+        body.no-scroll {
+            overflow: hidden;
         }
 
         #canvas-container {
@@ -73,8 +78,23 @@
             text-align: center;
         }
 
-        .cta-button {
+        /* Button Layout */
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
             pointer-events: auto;
+            margin-top: 50px;
+        }
+
+        .horizontal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .cta-button {
             padding: 1rem 2.5rem;
             font-size: 0.9rem;
             font-weight: 600;
@@ -87,6 +107,7 @@
             backdrop-filter: blur(10px);
             text-transform: uppercase;
             letter-spacing: 0.1em;
+            white-space: nowrap;
         }
 
         .cta-button:hover {
@@ -94,6 +115,413 @@
             border-color: var(--accent);
             transform: scale(1.05);
             box-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
+        }
+
+        .cta-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .signout-button {
+            padding: 0.8rem 2rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 99px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: none;
+        }
+
+        .signout-button:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+            transform: scale(1.05);
+        }
+
+        .secondary-button {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: underline;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .secondary-button:hover {
+            opacity: 1;
+            color: white;
+        }
+
+        /* Form Styling */
+        .form-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: left;
+            pointer-events: auto;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-left: 0.5rem;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            text-align: center;
+            display: none;
+        }
+
+        /* Dashboard/Song Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            pointer-events: auto;
+            text-align: left;
+        }
+
+        /* Search Bar for Dashboard */
+        .dashboard-search-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto 100px auto; 
+            pointer-events: auto;
+        }
+
+        .dashboard-search-input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: white;
+            font-size: 1rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+        }
+
+        .song-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .song-card.hidden {
+            display: none;
+        }
+
+        .song-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .song-card.playing {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        }
+
+        .song-art {
+            aspect-ratio: 1;
+            background: linear-gradient(45deg, #1e293b, #334155);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--accent);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .song-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .song-artist {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .playing-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--accent);
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            display: none;
+        }
+
+        .song-card.playing .playing-indicator {
+            display: block;
+        }
+
+        /* Player Bar UI */
+        #player-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--player-height);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(25px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+            display: flex;
+            flex-direction: column; 
+            box-sizing: border-box;
+            transform: translateY(100%);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #player-bar.visible {
+            transform: translateY(0);
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            position: relative;
+            transition: height 0.2s ease;
+        }
+
+        .progress-container:hover {
+            height: 6px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            position: relative;
+            transition: width 0.1s linear;
+        }
+
+        .player-main-content {
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            height: calc(100% - 4px);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .player-art {
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            background-size: cover;
+            background-position: center;
+            background-color: #1e293b;
+        }
+
+        .player-meta {
+            min-width: 0;
+        }
+
+        .player-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-artist {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex: 2;
+            justify-content: center;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .play-pause-btn {
+            width: 44px;
+            height: 44px;
+            background: white;
+            color: black;
+            border-radius: 50%;
+            font-size: 1.2rem;
+        }
+
+        .player-volume {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .volume-slider {
+            width: 100px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* New Headlines Section */
+        .news-section {
+            position: relative;
+            z-index: 10;
+            padding: 100px 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .news-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .auth-cta {
+            margin-top: 2rem;
+            font-size: 1rem;
+            color: #94a3b8;
+        }
+
+        .auth-link {
+            color: var(--accent);
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 600;
+            transition: filter 0.3s ease;
+        }
+
+        .auth-link:hover {
+            filter: brightness(1.3);
         }
 
         .noise {
@@ -105,32 +533,145 @@
             pointer-events: none;
             opacity: 0.05;
             z-index: 2;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3Cfilter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
         }
     </style>
 </head>
-<body>
+<body class="no-scroll">
 
     <div class="noise"></div>
     
     <main class="content" id="heroContent">
         <h1 id="headline">JaMusic v2</h1>
         <div class="text-body" id="subline">All in one and powerful modular discord bot. Harnessing the next generation of audio processing for seamless community interaction.</div>
-        <button class="cta-button" id="mainButton">Read Terms</button>
+        
+        <div id="dynamicFormContainer" class="form-container" style="display: none;"></div>
+
+        <div class="button-container" id="mainControls">
+            <div class="horizontal-buttons" id="homeButtons">
+                <button class="cta-button" id="mainButton">Read Terms</button>
+                <button class="cta-button" id="dashboardButton">Dashboard</button>
+            </div>
+            <button class="signout-button" id="signOutBtn">Sign Out</button>
+            <button class="secondary-button" id="doneButton">Done reading?</button>
+        </div>
     </main>
 
     <div id="canvas-container">
         <canvas id="liquidCanvas"></canvas>
     </div>
 
-    <script>
+    <div id="player-bar">
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="player-main-content">
+            <div class="player-info">
+                <div id="player-art" class="player-art"></div>
+                <div class="player-meta">
+                    <div id="player-title" class="player-title">Not Playing</div>
+                    <div id="player-artist" class="player-artist">Select a track</div>
+                </div>
+            </div>
+            <div class="player-controls">
+                <button class="control-btn">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6L18 6v12z"/></svg>
+                </button>
+                <button class="control-btn play-pause-btn" id="playPauseControl">
+                    <svg id="playIcon" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="pauseIcon" style="display:none;" width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button class="control-btn">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                </button>
+            </div>
+            <div class="player-volume">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="0.8" id="volumeSlider">
+            </div>
+        </div>
+    </div>
+
+    <section class="news-section" id="headlines">
+        <h2>Latest Headlines</h2>
+        <div class="text-body" style="text-align: left;">
+            <p>Stuck on the audio dashboard and cannot redirect to homepage? <a href="#" style="color: var(--accent); text-decoration: underline;">Click here to redirect back.</a></p>
+            <p>Engine V2.4 successfully deployed. Experience low-latency audio processing and improved stability across all nodes.</p>
+            <p>New modular plugin support is now live. Developers can begin building custom integrations using our new SDK.</p>
+            
+            <div id="authCtaContainer" class="auth-cta">
+                No account? <span class="auth-link" id="linkSignup">Create yours today!</span> 
+                ...or if you already have an account, click <span class="auth-link" id="linkLogin">here!</span>
+            </div>
+        </div>
+    </section>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithCustomToken, signInAnonymously, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        const envConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyApKLZIjUZSQnKJCngvp0KZPYJf3zBNaCc",
+            authDomain: "jamusic-v2.firebaseapp.com",
+            projectId: "jamusic-v2",
+            storageBucket: "jamusic-v2.firebasestorage.app",
+            messagingSenderId: "765002295434",
+            appId: "1:765002295434:web:a4c9ba98c68dbcd84f2573",
+            measurementId: "G-XT4K7L1TVX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch (tokenErr) {
+                        try {
+                            await signInAnonymously(auth);
+                        } catch (anonErr) {}
+                    }
+                } else {
+                    // Firebase handles persistence automatically. 
+                    // We just need to wait for the onAuthStateChanged to trigger.
+                }
+            } catch (err) {
+                console.error("Auth init failed", err);
+            }
+        };
+        initAuth();
+
         const canvas = document.getElementById('liquidCanvas');
         const container = document.getElementById('canvas-container');
         const mainButton = document.getElementById('mainButton');
+        const dashboardButton = document.getElementById('dashboardButton');
+        const homeButtons = document.getElementById('homeButtons');
+        const signOutBtn = document.getElementById('signOutBtn');
+        const doneButton = document.getElementById('doneButton');
         const heroContent = document.getElementById('heroContent');
         const headline = document.getElementById('headline');
         const subline = document.getElementById('subline');
+        const dynamicFormContainer = document.getElementById('dynamicFormContainer');
+        const authCtaContainer = document.getElementById('authCtaContainer');
         const ctx = canvas.getContext('2d');
+        
+        const playerBar = document.getElementById('player-bar');
+        const playerArt = document.getElementById('player-art');
+        const playerTitle = document.getElementById('player-title');
+        const playerArtist = document.getElementById('player-artist');
+        const playPauseControl = document.getElementById('playPauseControl');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
         
         let width, height;
         let balls = [];
@@ -138,6 +679,17 @@
         let ripples = [];
         let shakeIntensity = 0;
         const shakeDecay = 0.96;
+        let currentUser = null;
+
+        let currentAudio = null;
+        let currentTrackId = null;
+
+        const Tracks = [
+            { id: "t1", name: "Synthwave Echoes", artist: "AI Generator 1", imageurl: "https://picsum.photos/seed/synth/400/400", audiourl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+            { id: "t2", name: "Neo-Metal Core", artist: "AI Generator 2", imageurl: "https://picsum.photos/seed/metal/400/400", audiourl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+            { id: "t3", name: "LoFi Midnight", artist: "Modular Bot V2", imageurl: "https://picsum.photos/seed/lofi/400/400", audiourl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+            { id: "t4", name: "Drum & Bass Drive", artist: "Local User Library", imageurl: "https://picsum.photos/seed/drum/400/400", audiourl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" }
+        ];
 
         let transition = {
             active: false,
@@ -147,7 +699,8 @@
             radius: 0,
             speed: 2,
             maxRadius: 0,
-            currentPage: 'home'
+            currentPage: 'home',
+            targetHash: null
         };
 
         const mouse = {
@@ -314,50 +867,355 @@
                 p: "We do not store your private audio data. Minimal metadata like User IDs are used solely for configuration persistence and queue management.",
                 b: "Back to Home",
                 id: "privacy"
+            },
+            dashboard: {
+                h: "Audio Dashboard",
+                p: "Explore your audio library and AI-generated masterpieces. Your modular music hub starts here.",
+                b: "Back to Home",
+                id: "dashboard",
+                customContent: `
+                    <div class="dashboard-search-container">
+                        <input type="text" id="dashboardSearch" class="dashboard-search-input" placeholder="Search by track name or artist...">
+                    </div>
+                    <div class="dashboard-grid" id="dashboardGrid">
+                        ${Tracks.map(track => `
+                            <div class="song-card ${currentTrackId === track.id ? 'playing' : ''}" data-track-id="${track.id}" data-name="${track.name.toLowerCase()}" data-artist="${track.artist.toLowerCase()}">
+                                <div class="playing-indicator">Playing</div>
+                                <div class="song-art" style="background-image: url('${track.imageurl}')"></div>
+                                <div class="song-title">${track.name}</div>
+                                <div class="song-artist">${track.artist}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `
+            },
+            signup: {
+                h: "Create Your Account",
+                p: "Join the JaMusic ecosystem. Register now to save your custom modular configurations.",
+                b: "Back to Home",
+                id: "signup",
+                form: `
+                    <form id="signupForm">
+                        <div class="form-group"><label>First Name</label><input type="text" id="regFirst" required placeholder="John"></div>
+                        <div class="form-group"><label>Last Name</label><input type="text" id="regLast" required placeholder="Doe"></div>
+                        <div class="form-group"><label>Email Address</label><input type="email" id="regEmail" required placeholder="john@example.com"></div>
+                        <div class="form-group"><label>Password</label><input type="password" id="regPass" required placeholder="••••••••"></div>
+                        <div class="form-group">
+                            <label>Gender</label>
+                            <select id="regGender" required>
+                                <option value="">Select Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Birthdate</label><input type="date" id="regDob" required></div>
+                        <div id="signupError" class="error-msg"></div>
+                        <button type="submit" class="submit-btn" id="signupSubmit">Submit Registration</button>
+                    </form>
+                `
+            },
+            login: {
+                h: "Welcome Back",
+                p: "Sign in to manage your bot instances and access your personalized dashboard.",
+                b: "Back to Home",
+                id: "login",
+                form: `
+                    <form id="loginForm">
+                        <div class="form-group"><label>Email Address</label><input type="email" id="logEmail" required placeholder="john@example.com"></div>
+                        <div class="form-group"><label>Password</label><input type="password" id="logPass" required placeholder="••••••••"></div>
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="logRemember"> Remember me
+                        </label>
+                        <div id="loginError" class="error-msg"></div>
+                        <button type="submit" class="submit-btn" id="loginSubmit">Login</button>
+                    </form>
+                `
             }
         };
 
-        // Function to update content based on current ID
+        function playTrack(trackId) {
+            const track = Tracks.find(t => t.id === trackId);
+            if (!track) return;
+
+            if (currentTrackId === trackId && currentAudio) {
+                togglePlayback();
+                return;
+            }
+
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.ontimeupdate = null;
+            }
+
+            currentAudio = new Audio(track.audiourl);
+            currentAudio.volume = volumeSlider.value;
+            currentTrackId = trackId;
+            currentAudio.play();
+
+            currentAudio.ontimeupdate = () => {
+                if (currentAudio.duration) {
+                    const pct = (currentAudio.currentTime / currentAudio.duration) * 100;
+                    progressBar.style.width = pct + '%';
+                }
+            };
+
+            currentAudio.onended = () => {
+                progressBar.style.width = '0%';
+                updatePlaybackIcons(false);
+            };
+
+            playerArt.style.backgroundImage = `url('${track.imageurl}')`;
+            playerTitle.textContent = track.name;
+            playerArtist.textContent = track.artist;
+            
+            playerBar.classList.add('visible');
+            updatePlaybackIcons(true);
+
+            if (transition.currentPage === 'dashboard') {
+                updateDashboardUI();
+            }
+            
+            triggerDrop(window.innerWidth / 2, window.innerHeight / 2, 40);
+        }
+
+        function togglePlayback() {
+            if (!currentAudio) return;
+            if (currentAudio.paused) {
+                currentAudio.play();
+                updatePlaybackIcons(true);
+            } else {
+                currentAudio.pause();
+                updatePlaybackIcons(false);
+            }
+        }
+
+        function updatePlaybackIcons(isPlaying) {
+            playIcon.style.display = isPlaying ? 'none' : 'block';
+            pauseIcon.style.display = isPlaying ? 'block' : 'none';
+        }
+
+        function updateDashboardUI() {
+            const cards = document.querySelectorAll('.song-card');
+            cards.forEach(card => {
+                const id = card.getAttribute('data-track-id');
+                if (id === currentTrackId) {
+                    card.classList.add('playing');
+                } else {
+                    card.classList.remove('playing');
+                }
+            });
+        }
+
+        function handleSearch(e) {
+            const term = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.song-card');
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                const artist = card.getAttribute('data-artist');
+                if (name.includes(term) || artist.includes(term)) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        playPauseControl.addEventListener('click', togglePlayback);
+        
+        volumeSlider.addEventListener('input', (e) => {
+            if (currentAudio) currentAudio.volume = e.target.value;
+        });
+
+        progressContainer.addEventListener('click', (e) => {
+            if (!currentAudio) return;
+            const rect = progressContainer.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            currentAudio.currentTime = pos * currentAudio.duration;
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user && !user.isAnonymous) {
+                authCtaContainer.innerHTML = `Welcome back, <span class="auth-link">${user.email}</span>! Enjoy your modular session.`;
+                if (transition.currentPage === 'home') {
+                    signOutBtn.style.display = 'block';
+                    mainButton.textContent = "Read Terms"; 
+                    dashboardButton.style.display = 'block';
+                }
+                // Redirect away from login if user is already authenticated
+                if (window.location.hash === '#login' || window.location.hash === '#signup') {
+                   window.location.hash = '';
+                }
+            } else {
+                authCtaContainer.innerHTML = `No account? <span class="auth-link" id="linkSignup">Create yours today!</span> ...or if you already have an account, click <span class="auth-link" id="linkLogin">here!</span>`;
+                document.getElementById('linkSignup')?.addEventListener('click', (e) => handleAuthNav('signup', e));
+                document.getElementById('linkLogin')?.addEventListener('click', (e) => handleAuthNav('login', e));
+                signOutBtn.style.display = 'none';
+                dashboardButton.style.display = 'none';
+                if (transition.currentPage === 'home') {
+                    mainButton.textContent = "Read Terms";
+                }
+                // If the user isn't logged in at all, ensure we have an anonymous session for functionality
+                if (!user) {
+                    signInAnonymously(auth).catch(() => {});
+                }
+            }
+        });
+
+        signOutBtn.addEventListener('click', async (e) => {
+            const rect = signOutBtn.getBoundingClientRect();
+            triggerDrop(rect.left + rect.width / 2, rect.top + rect.height / 2, 80);
+            await signOut(auth);
+            try {
+                await signInAnonymously(auth);
+            } catch (err) {}
+        });
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const pass = document.getElementById('regPass').value;
+            const firstName = document.getElementById('regFirst').value;
+            const lastName = document.getElementById('regLast').value;
+            const gender = document.getElementById('regGender').value;
+            const dob = document.getElementById('regDob').value;
+            const errorDiv = document.getElementById('signupError');
+            const submitBtn = document.getElementById('signupSubmit');
+
+            errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
+                await sendEmailVerification(user);
+                await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info'), {
+                    firstName, lastName, gender, dob, createdAt: new Date().toISOString()
+                });
+                alert("Registration successful! A verification email has been sent to " + email);
+                window.location.hash = ''; 
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('logEmail').value;
+            const pass = document.getElementById('logPass').value;
+            const remember = document.getElementById('logRemember').checked;
+            const errorDiv = document.getElementById('loginError');
+            const submitBtn = document.getElementById('loginSubmit');
+
+            errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+
+            try {
+                // EXPLICIT PERSISTENCE HANDLING:
+                // browserLocalPersistence = Remembered even after window closes
+                // browserSessionPersistence = Remembered until window closes
+                const pType = remember ? browserLocalPersistence : browserSessionPersistence;
+                await setPersistence(auth, pType);
+                await signInWithEmailAndPassword(auth, email, pass);
+                window.location.hash = '';
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
         function updateUI(id) {
             transition.currentPage = id;
             headline.textContent = contentData[id].h;
             subline.textContent = contentData[id].p;
-            mainButton.textContent = contentData[id].b;
+            
+            if (id === 'home') {
+                mainButton.textContent = "Read Terms";
+                homeButtons.style.display = 'flex';
+                dashboardButton.style.display = (currentUser && !currentUser.isAnonymous) ? 'block' : 'none';
+                signOutBtn.style.display = (currentUser && !currentUser.isAnonymous) ? 'block' : 'none';
+            } else if (id === 'tos' || id === 'privacy') {
+                mainButton.textContent = contentData[id].b;
+                homeButtons.style.display = 'flex'; 
+                dashboardButton.style.display = 'none';
+                signOutBtn.style.display = 'none';
+            } else if (id === 'dashboard') {
+                homeButtons.style.display = 'none'; 
+                dashboardButton.style.display = 'none';
+                signOutBtn.style.display = 'none';
+            } else {
+                mainButton.textContent = contentData[id].b;
+                homeButtons.style.display = 'none';
+                signOutBtn.style.display = 'none';
+            }
+            
+            if (contentData[id].customContent) {
+                dynamicFormContainer.innerHTML = contentData[id].customContent;
+                dynamicFormContainer.style.display = 'block';
+                subline.style.marginBottom = '2rem';
+                
+                if (id === 'dashboard') {
+                    document.getElementById('dashboardSearch').addEventListener('input', handleSearch);
+                    document.querySelectorAll('.song-card').forEach(card => {
+                        card.addEventListener('click', () => {
+                            const trackId = card.getAttribute('data-track-id');
+                            playTrack(trackId);
+                        });
+                    });
+                }
+            } else if (contentData[id].form) {
+                dynamicFormContainer.innerHTML = contentData[id].form;
+                dynamicFormContainer.style.display = 'block';
+                subline.style.marginBottom = '1.5rem';
+                if (id === 'signup') document.getElementById('signupForm').addEventListener('submit', handleSignup);
+                if (id === 'login') document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            } else {
+                dynamicFormContainer.style.display = 'none';
+                subline.style.marginBottom = '2.5rem';
+            }
+
             heroContent.classList.remove('hidden');
+            doneButton.style.display = (id === 'home') ? 'block' : 'none';
         }
 
-        // Check hash and route accordingly
         function handleRouting() {
             const hash = window.location.hash;
-            if (hash === '#terms') {
-                updateUI('tos');
-            } else if (hash === '#privacy') {
-                updateUI('privacy');
-            } else {
-                updateUI('home');
-            }
+            if (hash === '#terms') updateUI('tos');
+            else if (hash === '#privacy') updateUI('privacy');
+            else if (hash === '#signup') updateUI('signup');
+            else if (hash === '#login') updateUI('login');
+            else if (hash === '#dashboard') updateUI('dashboard');
+            else updateUI('home');
         }
 
         function performNavigation() {
             let next;
-            if (transition.currentPage === 'home') next = 'terms';
-            else if (transition.currentPage === 'tos') next = 'privacy';
-            else next = '';
-            
-            // This will trigger the hashchange listener
+            if (transition.targetHash !== null) {
+                next = transition.targetHash;
+                transition.targetHash = null;
+            } else {
+                if (transition.currentPage === 'home') next = 'terms';
+                else if (transition.currentPage === 'tos') next = 'privacy';
+                else next = '';
+            }
             window.location.hash = next;
-            
-            // In case the hash doesn't change (e.g. going from home to home), 
-            // we call the handler manually
             handleRouting();
         }
 
-        function startTransition(e) {
+        function startTransition(e, forcedHash = null) {
             if (transition.active) return;
-            const rect = mainButton.getBoundingClientRect();
+            const target = e.target;
+            const rect = target.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
             
+            transition.targetHash = forcedHash;
             triggerDrop(centerX, centerY, 80);
             transition.active = true;
             transition.phase = 'out';
@@ -368,21 +1226,47 @@
             heroContent.classList.add('hidden');
         }
 
-        mainButton.addEventListener('click', startTransition);
+        window.handleAuthNav = (page, e) => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => { startTransition(e, page); }, 300);
+        };
+
+        mainButton.addEventListener('click', (e) => {
+            if (transition.currentPage === 'home') startTransition(e, 'terms');
+            else if (transition.currentPage === 'tos') startTransition(e, 'privacy');
+            else if (transition.currentPage === 'privacy') startTransition(e, '');
+            else startTransition(e, '');
+        });
+
+        dashboardButton.addEventListener('click', (e) => {
+            startTransition(e, 'dashboard');
+        });
+        
+        doneButton.addEventListener('click', () => {
+            document.body.classList.remove('no-scroll');
+            document.getElementById('headlines').scrollIntoView({ behavior: 'smooth' });
+            triggerDrop(window.innerWidth/2, window.innerHeight/2, 10);
+        });
 
         window.addEventListener('resize', resize);
         window.addEventListener('mousemove', (e) => { mouse.targetX = e.clientX; mouse.targetY = e.clientY; });
         window.addEventListener('mousedown', (e) => {
-            if (e.target.tagName !== 'BUTTON' && !transition.active) triggerDrop(e.clientX, e.clientY, 15);
+            const isInteractive = (e.target.closest && (
+                e.target.closest('button') || 
+                e.target.closest('input') || 
+                e.target.closest('select') || 
+                e.target.closest('.auth-link') ||
+                e.target.closest('#player-bar')
+            ));
+            if (!isInteractive && !transition.active) triggerDrop(e.clientX, e.clientY, 15);
         });
 
-        // Listen for back/forward browser buttons or manual URL changes
         window.addEventListener('hashchange', handleRouting);
 
         resize();
-        // Initial route check on load
         handleRouting();
         requestAnimationFrame(animate);
+
     </script>
 </body>
 </html>
