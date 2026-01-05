@@ -684,11 +684,13 @@
         let currentAudio = null;
         let currentTrackId = null;
 
-        const Tracks = [
-            { id: "t1", name: "Synthwave Echoes", artist: "AI Generator 1", imageurl: "https://picsum.photos/seed/synth/400/400", audiourl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-            { id: "t2", name: "Neo-Metal Core", artist: "AI Generator 2", imageurl: "https://picsum.photos/seed/metal/400/400", audiourl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-            { id: "t3", name: "LoFi Midnight", artist: "Modular Bot V2", imageurl: "https://picsum.photos/seed/lofi/400/400", audiourl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
-            { id: "t4", name: "Drum & Bass Drive", artist: "Local User Library", imageurl: "https://picsum.photos/seed/drum/400/400", audiourl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" }
+        const tracks = [
+            { id: "t1", title: 'Never Gonna Give You Up', artist: 'Rick Astley', imageurl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', audiourl: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
+            { id: "t2", title: 'End of Beginning', artist: 'Djo', imageurl: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', audiourl: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
+            { id: "t3", title: 'Heat Waves', artist: 'Glass Animals', imageurl: 'https://i.scdn.co/image/ab67616d0000b2739e495fb707973f3390850eea', audiourl: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3' },
+            { id: "t4", title: 'Stereo Hearts', artist: 'Gym Class Heroes', imageurl: 'https://i.scdn.co/image/ab67616d0000b273706dcf46953a040b8ed4b333', audiourl: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3' },
+            { id: "t5", title: 'Get Lucky', artist: 'Daft Punk', imageurl: 'https://images-ext-1.discordapp.net/external/xR3pl2SlUtADo9357RJ1lvKlsgnie7faJtruZyDKNu8/%3Fcb%3D20140421225330%26path-prefix%3Des/https/static.wikia.nocookie.net/daftpunk/images/7/71/Get_Lucky.jpg/revision/latest?format=png', audiourl: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3' },
+            { id: "t6", title: 'Rap God', artist: 'Eminem', imageurl: 'https://images-ext-1.discordapp.net/external/5NjINKSPrPYMPecFhmRVSyb_aMQAQTUEB_7EmfB9EME/https/i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2?format=webp', audiourl: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3' }
         ];
 
         let transition = {
@@ -1270,3 +1272,4 @@
     </script>
 </body>
 </html>
+
