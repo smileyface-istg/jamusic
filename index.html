@@ -93,6 +93,20 @@
             filter: blur(15px);
             opacity: 0;
         }
+        /* ===== Fix input text visibility & placeholder color =====
+   Put this inside the <style> tag, right BEFORE the
+   existing input[type=range] block. */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+  color: inherit; /* ensure input text follows page color (fix invisible text) */
+  caret-color: var(--accent);
+}
+
+::placeholder {
+  color: rgba(255,255,255,0.5);
+}
 
         input[type=range] {
             -webkit-appearance: none;
@@ -673,6 +687,34 @@
         // Storage helpers & admin default
         // ---------------------------
         const ADMIN_EMAIL = 'aidilzafri2013@gmail.com';
+        /* ===== Broadcast channel for cross-tab realtime updates =====
+   Insert this right after `const ADMIN_EMAIL = 'aidilzafri2013@gmail.com';` */
+let bc = null;
+try {
+  if ('BroadcastChannel' in window) {
+    bc = new BroadcastChannel('jamusic_channel');
+    bc.onmessage = (ev) => {
+      const data = ev.data;
+      if (!data) return;
+      if (data.type === 'new_broadcast' && data.msg) {
+        // add to local storage if not already present
+        try {
+          const messages = readMessages();
+          if (!messages.find(m => m.id === data.msg.id)) {
+            messages.push(data.msg);
+            saveMessages(messages);
+          }
+        } catch(e){}
+        // update UI
+        updateNotifBanner();
+        const panel = document.getElementById('inbox-panel');
+        if (panel && panel.classList.contains('open')) renderInboxList();
+      }
+    };
+  }
+} catch(e) {
+  // ignore if BroadcastChannel unsupported
+}
 
         function readMessages(){
             try{return JSON.parse(localStorage.getItem('jamusic_messages') || '[]');}
@@ -1060,18 +1102,36 @@
         }
 
         function sendBroadcast() {
-            const subject = (document.getElementById('admin-subject').value || '').trim();
-            const title = (document.getElementById('admin-title').value || '').trim();
-            const body = (document.getElementById('admin-body').value || '').trim();
-            if (!subject || !title || !body) { alertBox('Please fill subject, title and description.'); return; }
-            const messages = readMessages();
-            const msg = { id: 'm_' + Date.now() + '_' + Math.floor(Math.random()*9999), from: getCurrentUser().email, to: 'all', subject, title, body, ts: Date.now(), readBy: [], dismissedBy: [] };
-            messages.push(msg);
-            saveMessages(messages);
-            alertBox('Broadcast sent to all users.');
-            closeAdminModal();
-            updateNotifBanner();
-        }
+    const subject = (document.getElementById('admin-subject').value || '').trim();
+    const title = (document.getElementById('admin-title').value || '').trim();
+    const body = (document.getElementById('admin-body').value || '').trim();
+    if (!subject || !title || !body) { alertBox('Please fill subject, title and description.'); return; }
+
+    const messages = readMessages();
+    const msg = {
+        id: 'm_' + Date.now() + '_' + Math.floor(Math.random()*9999),
+        from: (getCurrentUser() || {}).email || 'unknown',
+        to: 'all',
+        subject,
+        title,
+        body,
+        ts: Date.now(),
+        readBy: [],
+        dismissedBy: []
+    };
+    messages.push(msg);
+    saveMessages(messages);
+
+    // 1) Broadcast via BroadcastChannel if available for immediate cross-tab update
+    try { if (bc) bc.postMessage({ type: 'new_broadcast', msg }); } catch (e) {}
+
+    // 2) Storage fallback (some contexts will respond to storage event)
+    try { localStorage.setItem('jamusic_last_broadcast_ts', Date.now().toString()); } catch(e) {}
+
+    alertBox('Broadcast sent to all users.');
+    closeAdminModal();
+    updateNotifBanner();
+}
 
         function countUnreadForUser(email) {
             if (!email) return 0;
@@ -1143,6 +1203,14 @@
         // DOM wiring (preserve original behaviour; attach new handlers)
         // ---------------------------
         document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+  searchInput.setAttribute('autocomplete', 'off');
+  searchInput.setAttribute('spellcheck', 'false');
+  // ensure color is inherited
+  searchInput.style.color = 'inherit';
+}
+
             // ensure saved user shown
             const savedUser = localStorage.getItem('jamusic_user');
             if (savedUser) showApp(JSON.parse(savedUser));
@@ -1216,6 +1284,13 @@
                     else { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; }
                 }
             } catch(e){}
+
+            // ensure profile dropdown buttons do not behave like form submit or steal focus
+try {
+  const profButtons = document.querySelectorAll('#profile-dropdown button');
+  profButtons.forEach(b => { if (!b.hasAttribute('type')) b.setAttribute('type', 'button'); });
+} catch(e) {}
+
             document.getElementById('theme-light-btn') && document.getElementById('theme-light-btn').addEventListener('click', ()=>{ document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; try{ localStorage.setItem('jamusic_theme','light'); }catch(e){} });
             document.getElementById('theme-dark-btn') && document.getElementById('theme-dark-btn').addEventListener('click', ()=>{ document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; try{ localStorage.setItem('jamusic_theme','dark'); }catch(e){} });
 
@@ -1266,22 +1341,32 @@
                 });
             }
             dnNo && dnNo.addEventListener('click', ()=> { dnOverlay.classList.remove('show'); dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
-            dnYes && dnYes.addEventListener('click', ()=> { dnWarningView.style.display='none'; dnInputView.style.display='block'; dnError.style.display='none'; dnInput.value=''; });
+            dnYes && dnYes.addEventListener('click', () => {
+  dnWarningView.classList.add('hidden');
+  dnInputView.classList.remove('hidden');
+  dnError.classList.add('hidden');
+  dnInput.value = '';
+  setTimeout(() => dnInput.focus(), 50);
+});
+
             dnCancel && dnCancel.addEventListener('click', ()=> { dnOverlay.classList.remove('show'); dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
             dnOverlay && dnOverlay.addEventListener('click', (e)=> { if(e.target===dnOverlay){ dnOverlay.classList.remove('show'); dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); } });
             dnSubmit && dnSubmit.addEventListener('click', ()=> {
                 const val = (dnInput.value || '').trim();
-                const r = /^[A-Za-z0-9 _-]{2,30}$/;
-                if (!r.test(val)) { dnError.style.display='block'; return; }
-                const ddn = document.getElementById('dropdown-name'); const ud = document.getElementById('user-display');
-                if (ddn) ddn.innerText = val; if (ud) ud.innerText = val;
-                try {
-                    const su = localStorage.getItem('jamusic_user');
-                    if (su) { const obj = JSON.parse(su); obj.name = val; localStorage.setItem('jamusic_user', JSON.stringify(obj)); }
-                    else localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
-                } catch(e){}
-                dnModal.classList.remove('show');
-                setTimeout(()=>{ dnOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); dnModal.classList.add('show'); }, 220);
+    const validRegex = /^[A-Za-z0-9 _-]{2,30}$/;
+    if (!validRegex.test(val)) { if (dnError) dnError.style.display = 'block'; return; }
+    // update UI
+    const ud = document.getElementById('user-display'); const ddn = document.getElementById('dropdown-name');
+    if (ud) ud.innerText = val; if (ddn) ddn.innerText = val;
+    // persist to localStorage user object
+    try {
+        const s = localStorage.getItem('jamusic_user');
+        if (s) { const o = JSON.parse(s); o.name = val; localStorage.setItem('jamusic_user', JSON.stringify(o)); }
+        else localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
+    } catch(e){}
+    // close modal
+    if (dnModal) dnModal.classList.remove('show');
+    setTimeout(() => { if (dnOverlay) dnOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); }, 220);
             });
 
             // init admin button visibility
@@ -1289,6 +1374,7 @@
             // start inbox loop
             startInboxLoop();
         });
+
 
         // safety: attach inbox if button exists
         document.getElementById('inbox-btn') && document.getElementById('inbox-btn').addEventListener('click', ()=> openInbox());
@@ -1299,3 +1385,4 @@
     </script>
 </body>
 </html>
+
