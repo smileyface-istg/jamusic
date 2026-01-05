@@ -275,6 +275,7 @@
                     transition.speed = transition.speed * 1.045 + 0.1; 
                     if (transition.radius >= transition.maxRadius) {
                         performNavigation();
+                        transition.active = false; // Prevent double trigger
                     }
                 }
 
@@ -295,12 +296,22 @@
 
         function performNavigation() {
             let nextUrl;
-            if (transition.currentPage === 'home') nextUrl = pages.tos.url;
-            else if (transition.currentPage === 'tos') nextUrl = pages.privacy.url;
-            else nextUrl = pages.home.url;
+            // Cycle logic: Home -> Terms -> Privacy -> Home
+            if (transition.currentPage === 'home') {
+                nextUrl = pages.tos.url;
+                transition.currentPage = 'tos';
+            } else if (transition.currentPage === 'tos') {
+                nextUrl = pages.privacy.url;
+                transition.currentPage = 'privacy';
+            } else {
+                nextUrl = pages.home.url;
+                transition.currentPage = 'home';
+            }
             
-            // Straight redirect once the screen is white
-            window.location.href = nextUrl;
+            // Re-evaluating redirection strategy:
+            // Since sub-paths on Vercel might return 404 if not configured,
+            // we use window.location.assign for a fresh load.
+            window.location.assign(nextUrl);
         }
 
         function startTransition(e) {
@@ -315,7 +326,7 @@
             transition.x = centerX;
             transition.y = centerY;
             transition.radius = 0;
-            transition.speed = 1.5; // Dramatic slow start
+            transition.speed = 1.5;
             heroContent.classList.add('hidden');
         }
 
