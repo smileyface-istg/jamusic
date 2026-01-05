@@ -491,34 +491,6 @@
             cursor: pointer;
         }
 
-        /* New (minimal) Headlines Section */
-        .news-section {
-            position: relative;
-            z-index: 10;
-            padding: 100px 20px;
-            max-width: 800px;
-            margin: 0 auto;
-            text-align: left;
-        }
-
-        .auth-cta {
-            margin-top: 1rem;
-            font-size: 1rem;
-            color: #94a3b8;
-        }
-
-        .auth-link {
-            color: var(--accent);
-            text-decoration: underline;
-            cursor: pointer;
-            font-weight: 600;
-            transition: filter 0.3s ease;
-        }
-
-        .auth-link:hover {
-            filter: brightness(1.3);
-        }
-
         .noise {
             position: fixed;
             top: 0;
@@ -529,6 +501,28 @@
             opacity: 0.05;
             z-index: 2;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* Go Back button styling (visible only in dashboard) */
+        #goBackBtn {
+            position: fixed;
+            left: 16px;
+            top: 16px;
+            z-index: 200;
+            display: none;
+            padding: 0.6rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(0,0,0,0.4);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            backdrop-filter: blur(6px);
+        }
+        #goBackBtn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            transform: scale(1.03);
         }
     </style>
 </head>
@@ -587,17 +581,8 @@
         </div>
     </div>
 
-    <!-- Minimal headlines section: only the "stuck on the audio dashboard" message remains.
-         authCtaContainer is retained because the JS updates it at runtime. -->
-    <section class="news-section" id="headlines">
-        <div class="text-body" style="text-align: left;">
-            <p>Stuck on the audio dashboard and cannot redirect to homepage? <a href="#" style="color: var(--accent); text-decoration: underline;" id="stuckRedirect">Click here to redirect back.</a></p>
-            <div id="authCtaContainer" class="auth-cta">
-                No account? <span class="auth-link" id="linkSignup">Create yours today!</span> 
-                ...or if you already have an account, click <span class="auth-link" id="linkLogin">here!</span>
-            </div>
-        </div>
-    </section>
+    <!-- Go Back button (will be shown only when dashboard is active) -->
+    <button id="goBackBtn" aria-label="Go back to home">Go Back</button>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
@@ -652,7 +637,7 @@
         const headline = document.getElementById('headline');
         const subline = document.getElementById('subline');
         const dynamicFormContainer = document.getElementById('dynamicFormContainer');
-        const authCtaContainer = document.getElementById('authCtaContainer');
+        const goBackBtn = document.getElementById('goBackBtn');
         const ctx = canvas.getContext('2d');
         
         const playerBar = document.getElementById('player-bar');
@@ -1033,29 +1018,26 @@
             currentAudio.currentTime = pos * currentAudio.duration;
         });
 
+        // Keep auth state handling but don't manipulate any removed DOM elements
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             if (user && !user.isAnonymous) {
-                authCtaContainer.innerHTML = `Welcome back, <span class="auth-link">${user.email}</span>! Enjoy your modular session.`;
+                // show/hide controls based on auth
                 if (transition.currentPage === 'home') {
                     signOutBtn.style.display = 'block';
                     mainButton.textContent = "Read Terms"; 
                     dashboardButton.style.display = 'block';
                 }
-                // Redirect away from login if user is already authenticated
                 if (window.location.hash === '#login' || window.location.hash === '#signup') {
                    window.location.hash = '';
                 }
             } else {
-                authCtaContainer.innerHTML = `No account? <span class="auth-link" id="linkSignup">Create yours today!</span> ...or if you already have an account, click <span class="auth-link" id="linkLogin">here!</span>`;
-                document.getElementById('linkSignup')?.addEventListener('click', (e) => handleAuthNav('signup', e));
-                document.getElementById('linkLogin')?.addEventListener('click', (e) => handleAuthNav('login', e));
+                // not signed in: hide user-specific controls
                 signOutBtn.style.display = 'none';
                 dashboardButton.style.display = 'none';
                 if (transition.currentPage === 'home') {
                     mainButton.textContent = "Read Terms";
                 }
-                // If the user isn't logged in at all, ensure we have an anonymous session for functionality
                 if (!user) {
                     signInAnonymously(auth).catch(() => {});
                 }
@@ -1106,7 +1088,7 @@
             e.preventDefault();
             const email = document.getElementById('logEmail').value;
             const pass = document.getElementById('logPass').value;
-            const remember = document.getElementById('logRemember').checked;
+            const remember = document.getElementById('logRemember')?.checked;
             const errorDiv = document.getElementById('loginError');
             const submitBtn = document.getElementById('loginSubmit');
 
@@ -1114,9 +1096,6 @@
             submitBtn.disabled = true;
 
             try {
-                // EXPLICIT PERSISTENCE HANDLING:
-                // browserLocalPersistence = Remembered even after window closes
-                // browserSessionPersistence = Remembered until window closes
                 const pType = remember ? browserLocalPersistence : browserSessionPersistence;
                 await setPersistence(auth, pType);
                 await signInWithEmailAndPassword(auth, email, pass);
@@ -1139,19 +1118,23 @@
                 homeButtons.style.display = 'flex';
                 dashboardButton.style.display = (currentUser && !currentUser.isAnonymous) ? 'block' : 'none';
                 signOutBtn.style.display = (currentUser && !currentUser.isAnonymous) ? 'block' : 'none';
+                goBackBtn.style.display = 'none';
             } else if (id === 'tos' || id === 'privacy') {
                 mainButton.textContent = contentData[id].b;
                 homeButtons.style.display = 'flex'; 
                 dashboardButton.style.display = 'none';
                 signOutBtn.style.display = 'none';
+                goBackBtn.style.display = 'none';
             } else if (id === 'dashboard') {
                 homeButtons.style.display = 'none'; 
                 dashboardButton.style.display = 'none';
                 signOutBtn.style.display = 'none';
+                goBackBtn.style.display = 'block';
             } else {
                 mainButton.textContent = contentData[id].b;
                 homeButtons.style.display = 'none';
                 signOutBtn.style.display = 'none';
+                goBackBtn.style.display = 'none';
             }
             
             if (contentData[id].customContent) {
@@ -1242,18 +1225,17 @@
         });
         
         doneButton.addEventListener('click', () => {
+            // headlines removed — make this collapse the intro scroll and allow scrolling
             document.body.classList.remove('no-scroll');
-            document.getElementById('headlines').scrollIntoView({ behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             triggerDrop(window.innerWidth/2, window.innerHeight/2, 10);
         });
 
-        // make the stuck redirect link scroll to top/home (simple behavior)
-        document.getElementById('stuckRedirect')?.addEventListener('click', (e) => {
-            e.preventDefault();
+        // Go Back button behavior: sets hash to home (#)
+        goBackBtn.addEventListener('click', () => {
             window.location.hash = '';
             updateUI('home');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            triggerDrop(window.innerWidth/2, window.innerHeight/2, 20);
+            triggerDrop(window.innerWidth/2, window.innerHeight/2, 25);
         });
 
         window.addEventListener('resize', resize);
@@ -1263,7 +1245,6 @@
                 e.target.closest('button') || 
                 e.target.closest('input') || 
                 e.target.closest('select') || 
-                e.target.closest('.auth-link') ||
                 e.target.closest('#player-bar')
             ));
             if (!isInteractive && !transition.active) triggerDrop(e.clientX, e.clientY, 15);
