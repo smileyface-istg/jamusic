@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>JaMusic v2 | Premium Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -239,18 +239,81 @@
         .admin-modal { width:640px; max-width:92%; background:var(--card-bg); padding:18px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 40px rgba(0,0,0,0.6); transform: translateY(-6px); opacity:0; transition:all .2s; }
         #admin-modal.show { transform: translateY(0); opacity:1; }
 
-        /* notification banner (shiny animated) */
-        #notif-banner {
-          display:inline-block; font-weight:800; font-style:italic; letter-spacing:.6px;
-          background: linear-gradient(90deg, #fff7 0%, #fff2 20%, #fff 50%, #fff2 80%, #fff7 100%);
-          -webkit-background-clip: text; background-clip: text; color: transparent;
-          text-shadow: 0 0 12px rgba(56,189,248,0.25);
-          animation: shine 2.4s infinite linear;
+        /* ---------- Shiny notification bar (replace old #notif-banner) ---------- */
+        .notif-bar {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 14px;
+          padding: 12px 22px;
+          border-radius: 14px;
+          background: linear-gradient(90deg, #06a6ff 0%, #0369a1 60%);
+          box-shadow: 0 14px 40px rgba(3,105,161,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+          -webkit-backdrop-filter: blur(6px);
+          backdrop-filter: blur(6px);
+          overflow: hidden;
+          transform-origin: center;
+          animation: notif-pop 2s ease-in-out infinite;
         }
-        @keyframes shine {
-          0% { filter: brightness(1); transform: translateY(0) scale(1); }
-          50% { filter: brightness(1.25); transform: translateY(-2px) scale(1.02); }
-          100% { filter: brightness(1); transform: translateY(0) scale(1); }
+
+        .notif-text {
+          color: #fff;
+          font-weight: 800;
+          font-style: italic;
+          font-size: 18px;
+          letter-spacing: 0.6px;
+          text-shadow: 0 6px 20px rgba(3,105,161,0.25);
+        }
+
+        @keyframes notif-pop {
+          0%   { transform: translateY(0) scale(1); filter: brightness(1); }
+          45%  { transform: translateY(-4px) scale(1.02); filter: brightness(1.08); }
+          100% { transform: translateY(0) scale(1); filter: brightness(1); }
+        }
+
+        .notif-bar::before {
+          content: "";
+          position: absolute;
+          top: -40%;
+          left: -60%;
+          width: 220%;
+          height: 220%;
+          background:
+            radial-gradient(circle at 10% 20%, rgba(255,255,255,0.85) 0 2%, transparent 8%),
+            radial-gradient(circle at 50% 10%, rgba(255,255,255,0.45) 0 1%, transparent 3%);
+          transform: rotate(28deg) translateX(-100%);
+          mix-blend-mode: screen;
+          opacity: 0;
+          filter: blur(6px);
+          animation: notif-sparkle 2.2s linear infinite;
+          pointer-events: none;
+        }
+
+        @keyframes notif-sparkle {
+          0%   { transform: rotate(28deg) translateX(-110%); opacity: 0; }
+          30%  { opacity: 0.85; }
+          60%  { transform: rotate(28deg) translateX(10%); opacity: 0.85; }
+          100% { transform: rotate(28deg) translateX(110%); opacity: 0; }
+        }
+
+        .notif-bar::after {
+          content: "";
+          position: absolute;
+          right: 8%;
+          top: 10%;
+          width: 18px;
+          height: 18px;
+          background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95) 0 10%, transparent 40%);
+          transform: rotate(20deg) scale(0.9);
+          opacity: .9;
+          filter: blur(.6px);
+          animation: notif-glint 1.6s ease-in-out infinite;
+          pointer-events: none;
+        }
+        @keyframes notif-glint {
+          0% { transform: rotate(10deg) scale(.9); opacity: .6; }
+          50% { transform: rotate(10deg) scale(1.15); opacity: 1; }
+          100% { transform: rotate(10deg) scale(.9); opacity: .6; }
         }
 
         /* prevent page zoom weirdness small screens */
@@ -260,6 +323,17 @@
             #inbox-panel { width: 92%; }
             .read-modal, .admin-modal { width: 92%; }
         }
+
+        /* Mobile frame tweaks: reduces padding / font-size for smaller devices */
+        body.mobile-frame {
+            font-size: 14px;
+        }
+        body.mobile-frame main { padding: 12px !important; }
+        body.mobile-frame header .w-full.max-w-xl { max-width: 100% !important; }
+        body.mobile-frame #player-bar { padding: 8px !important; }
+        body.mobile-frame .music-card { padding: 14px !important; }
+        body.mobile-frame .glass { border-radius: 12px; }
+        body.mobile-frame .tab-btn { padding: .3rem .4rem; font-size:14px; }
 
         .no-scroll { overflow: hidden !important; }
     </style>
@@ -575,674 +649,430 @@
     </div>
 
     <script>
-        /********************************************************************
-         * Full single-file app:
-         * - keeps your original UI & scripts
-         * - adds Inbox & Admin broadcast (localStorage)
-         * - adds inbox loop polling
-         * - adds repeat (loop) track toggle
-         ********************************************************************/
+    /********************************************************************
+     * Full single-file app:
+     * - preserves full original UI
+     * - adds proper signup/login validation (jamusic_users)
+     * - adds inbox broadcast (admin) visible to all users
+     * - adds storage-event wiring and polling loop
+     * - fixes mobile keyboard open by blurring focus before opening panels
+     * - uses mobile-frame class for mobile optimizations
+     ********************************************************************/
 
-        /* -------------------------
-           Core player + app variables
-        ------------------------- */
-        const audio = new Audio();
-        let currentTrackIndex = 0;
-        let isPlaying = false;
-        let authMode = 'login';
-        let repeatTracks = false; // new: repeat toggle
+    const audio = new Audio();
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    let authMode = 'login';
+    let repeatTracks = false;
+    const ADMIN_EMAIL = 'aidilzafri2013@gmail.com';
 
-        const tracks = [
-            { title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
-            { title: 'End of Beginning', artist: 'Djo', img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
-            { title: 'Heat Waves', artist: 'Glass Animals', img: 'https://i.scdn.co/image/ab67616d0000b2739e495fb707973f3390850eea', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3' },
-            { title: 'Stereo Hearts', artist: 'Gym Class Heroes', img: 'https://i.scdn.co/image/ab67616d0000b273706dcf46953a040b8ed4b333', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3' },
-            { title: 'Get Lucky', artist: 'Daft Punk', img: 'https://images-ext-1.discordapp.net/external/xR3pl2SlUtADo9357RJ1lvKlsgnie7faJtruZyDKNu8/%3Fcb%3D20140421225330%26path-prefix%3Des/https/static.wikia.nocookie.net/daftpunk/images/7/71/Get_Lucky.jpg/revision/latest?format=png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3' },
-            { title: 'Rap God', artist: 'Eminem', img: 'https://images-ext-1.discordapp.net/external/5NjINKSPrPYMPecFhmRVSyb_aMQAQTUEB_7EmfB9EME/https/i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2?format=webp', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3' }
-        ];
+    /* sample tracks (kept) */
+    const tracks = [
+        { title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
+        { title: 'End of Beginning', artist: 'Djo', img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
+        { title: 'Heat Waves', artist: 'Glass Animals', img: 'https://i.scdn.co/image/ab67616d0000b2739e495fb707973f3390850eea', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3' },
+        { title: 'Stereo Hearts', artist: 'Gym Class Heroes', img: 'https://i.scdn.co/image/ab67616d0000b273706dcf46953a040b8ed4b333', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3' },
+        { title: 'Get Lucky', artist: 'Daft Punk', img: 'https://images-ext-1.discordapp.net/external/xR3pl2SlUtADo9357RJ1lvKlsgnie7faJtruZyDKNu8/%3Fcb%3D20140421225330%26path-prefix%3Des/https/static.wikia.nocookie.net/daftpunk/images/7/71/Get_Lucky.jpg/revision/latest?format=png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3' },
+        { title: 'Rap God', artist: 'Eminem', img: 'https://images-ext-1.discordapp.net/external/5NjINKSPrPYMPecFhmRVSyb_aMQAQTUEB_7EmfB9EME/https/i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2?format=webp', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3' }
+    ];
 
-        /***********************
-         * Storage helpers
-         ***********************/
-        const ADMIN_EMAIL = 'aidilzafri2013@gmail.com';
-        function readMessages(){
-            try { return JSON.parse(localStorage.getItem('jamusic_messages') || '[]'); } catch(e) { return []; }
-        }
-        function saveMessages(arr){ try { localStorage.setItem('jamusic_messages', JSON.stringify(arr)); } catch(e) {} }
-        function getCurrentUser(){
-            try { const s = localStorage.getItem('jamusic_user'); return s ? JSON.parse(s) : null; } catch(e){ return null; }
-        }
+    /* Local storage helpers */
+    function readMessages(){ try{return JSON.parse(localStorage.getItem('jamusic_messages')||'[]')}catch(e){return []} }
+    function saveMessages(arr){ try{ localStorage.setItem('jamusic_messages', JSON.stringify(arr)); localStorage.setItem('jamusic_last_broadcast', Date.now().toString()); }catch(e){} }
+    function readUsers(){ try { return JSON.parse(localStorage.getItem('jamusic_users') || '[]'); } catch(e){ return []; } }
+    function saveUsers(arr){ try { localStorage.setItem('jamusic_users', JSON.stringify(arr)); } catch(e){} }
+    function getCurrentUser(){ try{ const s=localStorage.getItem('jamusic_user'); return s ? JSON.parse(s) : null }catch(e){return null} }
 
-        /***********************
-         * Utils & UI helpers
-         ***********************/
-        function alertBox(msg){
-            const banner = document.createElement('div');
-            banner.className = 'fixed top-10 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-xl z-[20000] animate-fade-in font-bold';
-            banner.innerText = msg;
-            document.body.appendChild(banner);
-            setTimeout(() => banner.remove(), 2500);
-        }
+    /* UI helpers */
+    function alertBox(msg){
+        const node = document.createElement('div');
+        node.className = 'fixed top-10 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-xl z-[30000] animate-fade-in font-bold';
+        node.innerText = msg;
+        document.body.appendChild(node);
+        setTimeout(()=>node.remove(), 2500);
+    }
 
-        /* Escape html */
-        function escapeHtml(str){ return (str+'').replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s]); }
+    function escapeHtml(str){ return (str+'').replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s]); }
 
-        /***********************
-         * Render tracks
-         ***********************/
-        function renderTracks(data){
-            const grid = document.getElementById('musicGrid');
-            if(!grid) return;
-            grid.innerHTML = data.map((track, index) => `
-                <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in" onclick="playTrack(${index})">
-                    <div class="relative overflow-hidden rounded-2xl mb-5">
-                        <img src="${track.img}" alt="${track.title}" class="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div class="play-btn-float w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                                <svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                            </div>
+    /* Render tracks (unchanged) */
+    function renderTracks(data){
+        const grid = document.getElementById('musicGrid');
+        if(!grid) return;
+        grid.innerHTML = data.map((track, index) => `
+            <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in" onclick="playTrack(${index})">
+                <div class="relative overflow-hidden rounded-2xl mb-5">
+                    <img src="${track.img}" alt="${track.title}" class="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700">
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div class="play-btn-float w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                            <svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
                         </div>
                     </div>
-                    <h4 class="font-bold text-lg truncate group-hover:text-blue-400 transition-colors">${escapeHtml(track.title)}</h4>
-                    <p class="text-xs text-slate-500 font-semibold uppercase">${escapeHtml(track.artist)}</p>
                 </div>
-            `).join('');
-        }
+                <h4 class="font-bold text-lg truncate group-hover:text-blue-400 transition-colors">${escapeHtml(track.title)}</h4>
+                <p class="text-xs text-slate-500 font-semibold uppercase">${escapeHtml(track.artist)}</p>
+            </div>
+        `).join('');
+    }
 
-        /***********************
-         * Player functions
-         ***********************/
-        function playTrack(index){
-            currentTrackIndex = index;
-            const track = tracks[index];
-            document.getElementById('player-bar').style.transform = 'translateY(0)';
-            document.getElementById('player-img').src = track.img;
-            document.getElementById('player-title').innerText = track.title;
-            document.getElementById('player-artist').innerText = track.artist;
-            audio.src = track.src;
-            audio.play().catch(()=>{/* ignore autoplay errors */});
-            updatePlayUI(true);
-            animateVisualizer();
-        }
+    /* Player functions */
+    function playTrack(index){
+        currentTrackIndex = index;
+        const track = tracks[index];
+        document.getElementById('player-bar').style.transform = 'translateY(0)';
+        document.getElementById('player-img').src = track.img;
+        document.getElementById('player-title').innerText = track.title;
+        document.getElementById('player-artist').innerText = track.artist;
+        audio.src = track.src;
+        audio.play().catch(()=>{});
+        updatePlayUI(true);
+        animateVisualizer();
+    }
 
-        function togglePlay(){
-            if (!audio.src) {
-                playTrack(0);
-                return;
-            }
-            if (audio.paused) { audio.play().catch(()=>{}); updatePlayUI(true); } 
-            else { audio.pause(); updatePlayUI(false); }
-        }
+    function togglePlay(){ if(!audio.src) { playTrack(0); return; } if(audio.paused){ audio.play().catch(()=>{}); updatePlayUI(true); } else { audio.pause(); updatePlayUI(false); } }
+    function updatePlayUI(playing){ isPlaying = playing; const p=document.getElementById('play-icon'), q=document.getElementById('pause-icon'); if(p&&q){ p.classList.toggle('hidden', playing); q.classList.toggle('hidden', !playing); } }
+    function nextTrack(){ currentTrackIndex = (currentTrackIndex + 1) % tracks.length; playTrack(currentTrackIndex); }
+    function prevTrack(){ currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length; playTrack(currentTrackIndex); }
+    audio.ontimeupdate = () => {
+        const seekSlider = document.getElementById('seek-slider');
+        if(!seekSlider) return;
+        if(audio.duration){ seekSlider.max = Math.floor(audio.duration); seekSlider.value = Math.floor(audio.currentTime); const c=document.getElementById('curr-time'), d=document.getElementById('dur-time'); if(c) c.innerText = formatTime(audio.currentTime); if(d) d.innerText = formatTime(audio.duration); }
+    };
 
-        function updatePlayUI(playing){
-            isPlaying = playing;
-            const playIcon = document.getElementById('play-icon');
-            const pauseIcon = document.getElementById('pause-icon');
-            if (playIcon && pauseIcon) {
-                playIcon.classList.toggle('hidden', playing);
-                pauseIcon.classList.toggle('hidden', !playing);
-            }
-        }
+    audio.onended = () => {
+        if(repeatTracks){ audio.currentTime = 0; audio.play().catch(()=>{}); } else nextTrack();
+    };
 
-        function nextTrack(){
-            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
-            playTrack(currentTrackIndex);
-        }
+    function formatTime(secs){ const min = Math.floor(secs/60); const sec = Math.floor(secs%60); return `${min}:${sec<10?'0':''}${sec}`; }
+    function animateVisualizer(){ const bars=document.querySelectorAll('.visualizer-bar'); bars.forEach(bar=>{ if(isPlaying){ const h=Math.random()*80+20; bar.style.height = h + '%'; } else bar.style.height = '20%'; }); if(isPlaying) setTimeout(animateVisualizer, 150); }
 
-        function prevTrack(){
-            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-            playTrack(currentTrackIndex);
-        }
+    /********** AUTH logic (signup/login validation) **********/
+    function toggleAuthMode(mode){
+        authMode = mode;
+        document.getElementById('login-tab').classList.toggle('active', mode === 'login');
+        document.getElementById('signup-tab').classList.toggle('active', mode === 'signup');
+        const btn = document.getElementById('submit-btn'); if(btn) btn.innerText = mode==='login' ? 'Sign In' : 'Create Account';
+    }
 
-        audio.ontimeupdate = () => {
-            const seekSlider = document.getElementById('seek-slider');
-            if (!seekSlider) return;
-            if (audio.duration) {
-                seekSlider.max = Math.floor(audio.duration);
-                seekSlider.value = Math.floor(audio.currentTime);
-                const c = document.getElementById('curr-time');
-                const d = document.getElementById('dur-time');
-                if (c) c.innerText = formatTime(audio.currentTime);
-                if (d) d.innerText = formatTime(audio.duration);
-            }
-        };
+    function handleAuth(){
+        const emailEl = document.getElementById('auth-email');
+        const passEl = document.getElementById('auth-pass');
+        const rememberEl = document.getElementById('remember-me');
+        if(!emailEl || !passEl) return;
+        const email = emailEl.value.trim();
+        const pass = passEl.value.trim();
+        const remember = rememberEl ? rememberEl.checked : false;
+        if(!email || !pass){ alertBox('Please fill in all fields.'); return; }
+        const users = readUsers();
 
-        // when track ends, either repeat or next
-        audio.onended = () => {
-            if (repeatTracks) {
-                audio.currentTime = 0;
-                audio.play().catch(()=>{});
-            } else {
-                nextTrack();
-            }
-        };
-
-        // seek & volume wiring (safe guard)
-        document.addEventListener('DOMContentLoaded', () => {
-            const seek = document.getElementById('seek-slider');
-            if (seek) seek.oninput = (e) => { audio.currentTime = e.target.value; };
-
-            const vol = document.getElementById('volume-slider');
-            if (vol) vol.oninput = (e) => { audio.volume = e.target.value / 100; };
-
-            renderTracks(tracks);
-        });
-
-        function formatTime(secs){
-            const min = Math.floor(secs / 60);
-            const sec = Math.floor(secs % 60);
-            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
-        }
-
-        function animateVisualizer(){
-            const bars = document.querySelectorAll('.visualizer-bar');
-            bars.forEach(bar => {
-                if (isPlaying) {
-                    const randomHeight = Math.random() * 80 + 20;
-                    bar.style.height = randomHeight + '%';
-                } else {
-                    bar.style.height = '20%';
-                }
-            });
-            if (isPlaying) setTimeout(animateVisualizer, 150);
-        }
-
-        /***********************
-         * Auth & UI state
-         ***********************/
-        function toggleProfileMenu(){
-            const dd = document.getElementById('profile-dropdown');
-            if (dd) dd.classList.toggle('active');
-        }
-
-        window.onclick = (e) => {
-            const dropdown = document.getElementById('profile-dropdown');
-            const trigger = document.getElementById('profile-trigger');
-            if (dropdown && trigger && !trigger.contains(e.target) && !dropdown.contains(e.target)) {
-                dropdown.classList.remove('active');
-            }
-        };
-
-        function toggleAuthMode(mode){
-            authMode = mode;
-            const loginTab = document.getElementById('login-tab');
-            const signupTab = document.getElementById('signup-tab');
-            if (loginTab && signupTab) {
-                loginTab.classList.toggle('active', mode === 'login');
-                signupTab.classList.toggle('active', mode === 'signup');
-            }
-            const submitBtn = document.getElementById('submit-btn');
-            if (submitBtn) submitBtn.innerText = mode === 'login' ? 'Sign In' : 'Create Account';
-        }
-
-        function handleAuth(){
-            const emailEl = document.getElementById('auth-email');
-            const passEl = document.getElementById('auth-pass');
-            const rememberEl = document.getElementById('remember-me');
-            if (!emailEl || !passEl) return;
-            const email = emailEl.value.trim();
-            const pass = passEl.value.trim();
-            const remember = rememberEl ? rememberEl.checked : false;
-            if (!email || !pass) { alertBox("Please fill in all fields."); return; }
+        if(authMode === 'signup'){
+            // validate email not in use
+            const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+            if(exists){ alertBox('Email already registered. Try logging in.'); return; }
+            // create user
+            users.push({ email, password: pass, name: email.split('@')[0] });
+            saveUsers(users);
+            // auto-login
             const user = { email, name: email.split('@')[0] };
-            if (remember) localStorage.setItem('jamusic_user', JSON.stringify(user));
+            if(remember) localStorage.setItem('jamusic_user', JSON.stringify(user));
+            else localStorage.setItem('jamusic_user', JSON.stringify(user));
             showApp(user);
+            alertBox('Account created and signed in.');
+            return;
+        } else {
+            // login: check credentials
+            const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === pass);
+            if(!found){ alertBox('Invalid email or password.'); return; }
+            const user = { email: found.email, name: found.name };
+            if(remember) localStorage.setItem('jamusic_user', JSON.stringify(user));
+            else localStorage.setItem('jamusic_user', JSON.stringify(user));
+            showApp(user);
+            return;
         }
+    }
 
-        function showApp(user){
-            if (!user) return;
-            const authOverlay = document.getElementById('auth-overlay');
-            if (authOverlay) authOverlay.style.opacity = '0';
-            const userDisplay = document.getElementById('user-display');
-            const dropdownName = document.getElementById('dropdown-name');
-            const dropdownEmail = document.getElementById('dropdown-email');
-            if (userDisplay) userDisplay.innerText = user.name;
-            if (dropdownName) dropdownName.innerText = user.name;
-            if (dropdownEmail) dropdownEmail.innerText = user.email;
+    function showApp(user){
+        if(!user) return;
+        const authOverlay = document.getElementById('auth-overlay'); if(authOverlay) authOverlay.style.opacity = '0';
+        const userDisplay = document.getElementById('user-display'); if(userDisplay) userDisplay.innerText = user.name;
+        const ddn = document.getElementById('dropdown-name'); if(ddn) ddn.innerText = user.name;
+        const dde = document.getElementById('dropdown-email'); if(dde) dde.innerText = user.email;
 
-            const app = document.getElementById('main-app');
-            if (app) {
-                app.classList.remove('hidden-state');
-                app.style.opacity = '1';
-                app.style.pointerEvents = 'auto';
-            }
-            renderTracks(tracks);
-            setTimeout(() => { if (authOverlay) authOverlay.style.display = 'none'; }, 600);
+        const app = document.getElementById('main-app'); if(app){ app.classList.remove('hidden-state'); app.style.opacity = '1'; app.style.pointerEvents = 'auto'; }
+        renderTracks(tracks);
+        setTimeout(()=> { if(authOverlay) authOverlay.style.display = 'none'; }, 600);
 
-            // update notification & admin
-            updateNotifBanner();
-            maybeShowAdminBtn();
-            startInboxLoop();
-        }
+        updateNotifBanner();
+        maybeShowAdminBtn();
+        startInboxLoop();
+    }
 
-        function logout(){
-            localStorage.removeItem('jamusic_user');
-            location.reload();
-        }
+    function logout(){ localStorage.removeItem('jamusic_user'); location.reload(); }
 
-        /***********************
-         * Repeat toggle
-         ***********************/
-        function toggleRepeat(){
-            repeatTracks = !repeatTracks;
-            const el = document.getElementById('repeat-icon');
-            if (el) {
-                if (repeatTracks) el.style.color = 'var(--accent)';
-                else el.style.color = '';
-            }
-            alertBox(repeatTracks ? 'Repeat ON' : 'Repeat OFF');
-        }
+    /********** Repeat toggle **********/
+    function toggleRepeat(){ repeatTracks = !repeatTracks; const el = document.getElementById('repeat-icon'); if(el) el.style.color = repeatTracks ? 'var(--accent)' : ''; alertBox(repeatTracks ? 'Repeat ON' : 'Repeat OFF'); }
 
-        /***********************
-         * Inbox & Admin logic
-         *
-         * Data model (jamusic_messages: array of messages):
-         * {
-         *   id: 'm_12345',
-         *   from: 'sender@example.com',
-         *   to: 'all' or specific email,
-         *   subject: 'subject',
-         *   title: 'title',
-         *   body: 'text',
-         *   ts: timestamp,
-         *   readBy: [emails],
-         *   dismissedBy: [emails]
-         * }
-         ***********************/
+    /********** Inbox & Admin **********/
+    function openInbox(){
+        // blur active element to avoid mobile keyboard popup
+        try { if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); } catch(e){}
+        const overlay = document.getElementById('inbox-overlay'); const panel = document.getElementById('inbox-panel');
+        if(overlay) overlay.classList.add('show'); if(panel) panel.classList.add('open');
+        document.body.classList.add('no-scroll');
+        renderInboxList();
+    }
+    function closeInbox(){ const overlay=document.getElementById('inbox-overlay'); const panel=document.getElementById('inbox-panel'); if(overlay) overlay.classList.remove('show'); if(panel) panel.classList.remove('open'); document.body.classList.remove('no-scroll'); }
 
-        function openInbox(){
-            const overlay = document.getElementById('inbox-overlay');
-            const panel = document.getElementById('inbox-panel');
-            if(overlay) overlay.classList.add('show');
-            if(panel) panel.classList.add('open');
-            document.body.classList.add('no-scroll');
-            renderInboxList();
-        }
+    function renderInboxList(){
+        const listEl = document.getElementById('inbox-list'); if(!listEl) return; listEl.innerHTML = '';
+        const user = getCurrentUser(); if(!user){ listEl.innerHTML = `<div class="text-slate-400">You must sign in to view inbox.</div>`; return; }
+        const msgs = readMessages();
+        const visible = msgs.filter(m => {
+            const dismissed = m.dismissedBy || [];
+            if(dismissed.includes(user.email)) return false;
+            return m.to === 'all' || m.to === user.email;
+        }).sort((a,b)=> b.ts - a.ts);
 
-        function closeInbox(){
-            const overlay = document.getElementById('inbox-overlay');
-            const panel = document.getElementById('inbox-panel');
-            if(overlay) overlay.classList.remove('show');
-            if(panel) panel.classList.remove('open');
-            document.body.classList.remove('no-scroll');
-        }
+        if(visible.length === 0){ listEl.innerHTML = `<div class="text-slate-400">You have no emails.</div>`; return; }
 
-        function renderInboxList(){
-            const listEl = document.getElementById('inbox-list');
-            if(!listEl) return;
-            listEl.innerHTML = '';
-            const user = getCurrentUser();
-            if(!user){
-                listEl.innerHTML = `<div class="text-slate-400">You must sign in to view inbox.</div>`;
-                return;
-            }
-            const msgs = readMessages();
-            const visible = msgs.filter(m => {
-                const dismissed = m.dismissedBy || [];
-                if (dismissed.includes(user.email)) return false;
-                return m.to === 'all' || m.to === user.email;
-            }).sort((a,b)=> b.ts - a.ts);
-
-            if (visible.length === 0){
-                listEl.innerHTML = `<div class="text-slate-400">You have no emails.</div>`;
-                return;
-            }
-
-            visible.forEach(m => {
-                const unread = !(m.readBy || []).includes(user.email);
-                const item = document.createElement('div');
-                item.className = 'email-item';
-                item.innerHTML = `
-                    <div style="display:flex; gap:10px; align-items:center; flex:1;">
-                        <div style="width:10px;height:10px;border-radius:999px;background:${unread? 'var(--accent)':'#64748b'}"></div>
-                        <div style="flex:1;">
-                            <div style="font-weight:700;">${escapeHtml(m.title)}</div>
-                            <div class="email-sub">${escapeHtml(m.subject)}</div>
-                        </div>
+        visible.forEach(m => {
+            const unread = !(m.readBy || []).includes(user.email);
+            const item = document.createElement('div');
+            item.className = 'email-item';
+            item.innerHTML = `
+                <div style="display:flex; gap:10px; align-items:center; flex:1;">
+                    <div style="width:10px;height:10px;border-radius:999px;background:${unread? 'var(--accent)':'#64748b'}"></div>
+                    <div style="flex:1;">
+                        <div style="font-weight:700;">${escapeHtml(m.title)}</div>
+                        <div class="email-sub">${escapeHtml(m.subject)}</div>
                     </div>
-                    <div style="text-align:right;">
-                        <div class="email-time">${new Date(m.ts).toLocaleString()}</div>
-                    </div>
-                `;
-                item.addEventListener('click', ()=> openReadModal(m.id));
-                listEl.appendChild(item);
-            });
+                </div>
+                <div style="text-align:right;">
+                    <div class="email-time">${new Date(m.ts).toLocaleString()}</div>
+                </div>
+            `;
+            item.addEventListener('click', ()=> openReadModal(m.id));
+            listEl.appendChild(item);
+        });
+    }
+
+    function openReadModal(id){
+        const msgs = readMessages(); const m = msgs.find(x => x.id === id); if(!m) return;
+        const user = getCurrentUser(); if(!user) return;
+        m.readBy = m.readBy || []; if(!m.readBy.includes(user.email)) m.readBy.push(user.email);
+        saveMessages(msgs);
+
+        const overlay = document.getElementById('read-overlay'); const title = document.getElementById('read-title'); const sub = document.getElementById('read-sub'); const bodyNode = document.getElementById('read-body');
+        if(title) title.innerText = m.title; if(sub) sub.innerText = m.subject; if(bodyNode) bodyNode.innerText = m.body;
+        if(overlay) { overlay.classList.add('show'); overlay.style.display = 'flex'; }
+
+        updateNotifBanner();
+
+        const dismissBtn = document.getElementById('read-dismiss'); const closeBtn = document.getElementById('read-close');
+        dismissBtn.onclick = () => { m.dismissedBy = m.dismissedBy || []; if(!m.dismissedBy.includes(user.email)) m.dismissedBy.push(user.email); saveMessages(msgs); closeReadModal(); renderInboxList(); updateNotifBanner(); };
+        closeBtn.onclick = () => { closeReadModal(); renderInboxList(); updateNotifBanner(); };
+    }
+    function closeReadModal(){ const overlay = document.getElementById('read-overlay'); if(overlay){ overlay.classList.remove('show'); overlay.style.display = 'none'; } }
+
+    /* Admin panel */
+    function maybeShowAdminBtn(){ const user = getCurrentUser(); const btn = document.getElementById('admin-panel-btn'); if(user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){ if(btn) btn.style.display = 'block'; } else { if(btn) btn.style.display = 'none'; } }
+
+    function openAdminModal(){ try{ if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); }catch(e){} const overlay=document.getElementById('admin-overlay'); const modal=document.getElementById('admin-modal'); if(overlay) overlay.classList.add('show'); if(modal) modal.classList.add('show'); document.body.classList.add('no-scroll'); }
+    function closeAdminModal(){ const overlay=document.getElementById('admin-overlay'); const modal=document.getElementById('admin-modal'); if(overlay) overlay.classList.remove('show'); if(modal) modal.classList.remove('show'); document.body.classList.remove('no-scroll'); }
+
+    function sendBroadcast(){
+        const subject = (document.getElementById('admin-subject').value || '').trim();
+        const title = (document.getElementById('admin-title').value || '').trim();
+        const body = (document.getElementById('admin-body').value || '').trim();
+        if(!subject || !title || !body){ alertBox('Please fill subject, title and description.'); return; }
+        const messages = readMessages();
+        const msg = { id: 'm_' + Date.now() + '_' + Math.floor(Math.random()*9999), from: getCurrentUser().email, to: 'all', subject, title, body, ts: Date.now(), readBy: [], dismissedBy: [] };
+        messages.push(msg);
+        saveMessages(messages);
+        alertBox('Broadcast sent to all users.');
+        closeAdminModal();
+        updateNotifBanner();
+        // ensure other tabs/windows notice - we already set jamusic_last_broadcast in saveMessages
+    }
+
+    /********** Notification banner (shiny) **********/
+    function countUnreadForUser(email){
+        if(!email) return 0;
+        const msgs = readMessages();
+        return msgs.filter(m=>{
+            if(m.to !== 'all' && m.to !== email) return false;
+            const dismissed = m.dismissedBy || []; if(dismissed.includes(email)) return false;
+            const read = m.readBy || []; return !read.includes(email);
+        }).length;
+    }
+
+    function updateNotifBanner(){
+        const container = document.getElementById('notif-container');
+        if(!container) return;
+        const user = getCurrentUser();
+        if(!user){ container.innerHTML = ''; return; }
+        const count = countUnreadForUser(user.email);
+        if(count > 0){
+            container.innerHTML = `<div class="notif-bar" role="status" aria-live="polite" onclick="openInbox()" style="cursor:pointer;"><span class="notif-text"><strong><em>${count} NEW NOTIFICATIONS!</em></strong></span></div>`;
+        } else {
+            container.innerHTML = '';
         }
+    }
 
-        function openReadModal(id){
-            const msgs = readMessages();
-            const m = msgs.find(x => x.id === id);
-            if (!m) return;
-            const user = getCurrentUser();
-            if (!user) return;
-            m.readBy = m.readBy || [];
-            if (!m.readBy.includes(user.email)) m.readBy.push(user.email);
-            saveMessages(msgs);
-
-            const overlay = document.getElementById('read-overlay');
-            const modalTitle = document.getElementById('read-title');
-            const modalSub = document.getElementById('read-sub');
-            const modalBody = document.getElementById('read-body');
-            if (modalTitle) modalTitle.innerText = m.title;
-            if (modalSub) modalSub.innerText = m.subject;
-            if (modalBody) modalBody.innerText = m.body;
-
-            if (overlay) { overlay.classList.add('show'); overlay.style.display = 'flex'; }
+    /* Poll loop and storage event */
+    let inboxLoopHandle = null;
+    function startInboxLoop(){
+        if(inboxLoopHandle) clearInterval(inboxLoopHandle);
+        updateNotifBanner();
+        inboxLoopHandle = setInterval(() => {
             updateNotifBanner();
+            const panel = document.getElementById('inbox-panel');
+            if(panel && panel.classList.contains('open')) renderInboxList();
+        }, 5000);
+    }
+    function stopInboxLoop(){ if(inboxLoopHandle) clearInterval(inboxLoopHandle); inboxLoopHandle = null; }
 
-            // wire dismiss & close
-            const dismissBtn = document.getElementById('read-dismiss');
-            const closeBtn = document.getElementById('read-close');
-            dismissBtn.onclick = () => {
-                m.dismissedBy = m.dismissedBy || [];
-                if (!m.dismissedBy.includes(user.email)) m.dismissedBy.push(user.email);
-                saveMessages(msgs);
-                closeReadModal();
-                renderInboxList();
-                updateNotifBanner();
-            };
-            closeBtn.onclick = () => {
-                closeReadModal();
-                renderInboxList();
-                updateNotifBanner();
-            };
+    // listen to storage events so other tabs/windows see new broadcasts
+    window.addEventListener('storage', (e) => {
+        if(!e.key) return;
+        if(e.key === 'jamusic_messages' || e.key === 'jamusic_last_broadcast'){
+            updateNotifBanner();
+            const panel = document.getElementById('inbox-panel');
+            if(panel && panel.classList.contains('open')) renderInboxList();
         }
+    });
 
-        function closeReadModal(){
-            const overlay = document.getElementById('read-overlay');
-            if (overlay) { overlay.classList.remove('show'); overlay.style.display = 'none'; }
-        }
+    /********** Display name flow (same but safe) **********/
+    function isEmailLike(name){ if(!name) return false; return /@.+\./.test(name); }
 
-        // Admin UI
-        function maybeShowAdminBtn(){
-            const user = getCurrentUser();
-            const btn = document.getElementById('admin-panel-btn');
-            if (user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-                if (btn) btn.style.display = 'block';
-            } else {
-                if (btn) btn.style.display = 'none';
+    /********** DOM wiring **********/
+    document.addEventListener('DOMContentLoaded', () => {
+        // mobile detection: add mobile-frame class if mobile
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/.test(ua) || window.innerWidth <= 760;
+        if(isMobile) document.body.classList.add('mobile-frame');
+
+        // restore user if any
+        const su = localStorage.getItem('jamusic_user');
+        if(su) showApp(JSON.parse(su));
+        renderTracks(tracks);
+
+        // ensure jamusic_users exists, if not initialize with a default admin user (if you want)
+        try {
+            const users = readUsers();
+            if(users.length === 0){
+                // create a default admin account if none exists (password = admin)
+                users.push({ email: ADMIN_EMAIL, password: 'admin', name: ADMIN_EMAIL.split('@')[0] });
+                saveUsers(users);
             }
-        }
+        } catch(e){}
 
-        function openAdminModal(){
-            document.getElementById('admin-overlay').classList.add('show');
-            document.getElementById('admin-modal').classList.add('show');
+        // settings wiring (blur active element before opening)
+        const settingsBtn = document.getElementById('account-settings-btn');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const settingsPanel = document.getElementById('settings-sidebar');
+        const settingsClose = document.getElementById('settings-close');
+
+        if(settingsBtn) settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            try { if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); } catch(e){}
+            if(settingsPanel) settingsPanel.classList.add('open');
+            if(settingsOverlay) settingsOverlay.classList.add('show');
             document.body.classList.add('no-scroll');
-        }
-        function closeAdminModal(){
-            document.getElementById('admin-overlay').classList.remove('show');
-            document.getElementById('admin-modal').classList.remove('show');
-            document.body.classList.remove('no-scroll');
-        }
-        function sendBroadcast(){
-            const subject = (document.getElementById('admin-subject').value || '').trim();
-            const title = (document.getElementById('admin-title').value || '').trim();
-            const body = (document.getElementById('admin-body').value || '').trim();
-            if (!subject || !title || !body) { alertBox('Please fill subject, title and description.'); return; }
-            const messages = readMessages();
-            const msg = { id: 'm_' + Date.now() + '_' + Math.floor(Math.random()*9999), from: getCurrentUser().email, to: 'all', subject, title, body, ts: Date.now(), readBy: [], dismissedBy: [] };
-            messages.push(msg);
-            saveMessages(messages);
-            alertBox('Broadcast sent to all users.');
-            closeAdminModal();
-            updateNotifBanner();
-        }
+            const dd = document.getElementById('profile-dropdown'); if(dd) dd.classList.remove('active');
+        });
+        if(settingsClose) settingsClose.addEventListener('click', ()=>{ if(settingsPanel) settingsPanel.classList.remove('open'); if(settingsOverlay) settingsOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); });
+        if(settingsOverlay) settingsOverlay.addEventListener('click', ()=>{ if(settingsPanel) settingsPanel.classList.remove('open'); if(settingsOverlay) settingsOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); });
 
-        /***********************
-         * Notifications & Loop
-         ***********************/
-        function countUnreadForUser(email){
-            if (!email) return 0;
-            const msgs = readMessages();
-            return msgs.filter(m => {
-                if (m.to !== 'all' && m.to !== email) return false;
-                const dismissed = m.dismissedBy || [];
-                if (dismissed.includes(email)) return false;
-                const read = m.readBy || [];
-                return !read.includes(email);
-            }).length;
-        }
+        // settings tabs
+        const tabGeneral = document.getElementById('tab-general'), tabZoom = document.getElementById('tab-zoom');
+        if(tabGeneral) tabGeneral.addEventListener('click', ()=> { document.getElementById('settings-general').classList.remove('hidden'); document.getElementById('settings-zoom').classList.add('hidden'); tabGeneral.classList.add('active'); tabZoom.classList.remove('active'); });
+        if(tabZoom) tabZoom.addEventListener('click', ()=> { document.getElementById('settings-general').classList.add('hidden'); document.getElementById('settings-zoom').classList.remove('hidden'); tabGeneral.classList.remove('active'); tabZoom.classList.add('active'); });
 
-        function updateNotifBanner(){
-            const container = document.getElementById('notif-container');
-            if (!container) return;
-            const user = getCurrentUser();
-            if (!user) { container.innerHTML = ''; return; }
-            const n = countUnreadForUser(user.email);
-            if (n > 0){
-                container.innerHTML = `<span id="notif-banner">*** ${n} NEW NOTIFICATIONS! ***</span>`;
-            } else {
-                container.innerHTML = '';
-            }
-        }
+        // volume sync
+        const vslider = document.getElementById('settings-volume');
+        if(vslider){ vslider.value = Math.round((audio.volume || 1) * 100); vslider.addEventListener('input', (e)=>{ audio.volume = e.target.value / 100; const mv = document.getElementById('volume-slider'); if(mv) mv.value = e.target.value; }); }
+        const mainV = document.getElementById('volume-slider');
+        if(mainV) mainV.addEventListener('input', (e)=>{ audio.volume = e.target.value / 100; if(vslider) vslider.value = e.target.value; });
 
-        // inbox loop (poll)
-        let inboxLoopHandle = null;
-        function startInboxLoop(){
-            if (inboxLoopHandle) clearInterval(inboxLoopHandle);
-            updateNotifBanner();
-            inboxLoopHandle = setInterval(()=>{
-                updateNotifBanner();
-                // if inbox is open refresh
-                const panel = document.getElementById('inbox-panel');
-                if (panel && panel.classList.contains('open')) renderInboxList();
-            }, 5000);
-        }
-        function stopInboxLoop(){
-            if (inboxLoopHandle) clearInterval(inboxLoopHandle);
-            inboxLoopHandle = null;
-        }
+        // zoom slider
+        const zoomSlider = document.getElementById('settings-zoom-slider');
+        if(zoomSlider){ const saved = localStorage.getItem('jamusic_zoom'); if(saved) document.body.style.zoom = saved; zoomSlider.value = document.body.style.zoom || 1; zoomSlider.addEventListener('input', (e)=>{ document.body.style.zoom = e.target.value; try{ localStorage.setItem('jamusic_zoom', e.target.value);}catch(e){} }); }
 
-        /***********************
-         * Display name flow (kept)
-         ***********************/
-        function isEmailLike(name){
-            if (!name) return false;
-            return /@.+\./.test(name);
-        }
+        // theme restore
+        try{ const savedTheme = localStorage.getItem('jamusic_theme'); if(savedTheme){ if(savedTheme==='light'){ document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; } else { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; } } } catch(e){}
 
-        /***********************
-         * DOM wiring on ready
-         ***********************/
-        document.addEventListener('DOMContentLoaded', () => {
-            // restore saved user if present
-            const savedUser = localStorage.getItem('jamusic_user');
-            if (savedUser) showApp(JSON.parse(savedUser));
+        const themeLightBtn = document.getElementById('theme-light-btn');
+        const themeDarkBtn = document.getElementById('theme-dark-btn');
+        if(themeLightBtn) themeLightBtn.addEventListener('click', ()=>{ document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; try{ localStorage.setItem('jamusic_theme','light'); }catch(e){} });
+        if(themeDarkBtn) themeDarkBtn.addEventListener('click', ()=>{ document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; try{ localStorage.setItem('jamusic_theme','dark'); }catch(e){} });
 
-            // settings wiring
-            const settingsBtn = document.getElementById('account-settings-btn');
-            const settingsOverlay = document.getElementById('settings-overlay');
-            const settingsPanel = document.getElementById('settings-sidebar');
-            const settingsClose = document.getElementById('settings-close');
+        // Inbox wiring
+        const inboxBtn = document.getElementById('inbox-btn'); const inboxOverlay = document.getElementById('inbox-overlay'); const inboxPanel = document.getElementById('inbox-panel'); const inboxClose = document.getElementById('inbox-close'); const inboxRefresh = document.getElementById('inbox-refresh');
+        if(inboxBtn) inboxBtn.addEventListener('click', ()=> openInbox());
+        if(inboxClose) inboxClose.addEventListener('click', ()=> closeInbox());
+        if(inboxOverlay) inboxOverlay.addEventListener('click', ()=> closeInbox());
+        if(inboxRefresh) inboxRefresh.addEventListener('click', ()=> renderInboxList());
 
-            if (settingsBtn) settingsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (settingsPanel) settingsPanel.classList.add('open');
-                if (settingsOverlay) settingsOverlay.classList.add('show');
-                document.body.classList.add('no-scroll');
-                const dd = document.getElementById('profile-dropdown'); if (dd) dd.classList.remove('active');
-            });
-            if (settingsClose) settingsClose.addEventListener('click', () => { if (settingsPanel) settingsPanel.classList.remove('open'); if (settingsOverlay) settingsOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); });
-            if (settingsOverlay) settingsOverlay.addEventListener('click', () => { if (settingsPanel) settingsPanel.classList.remove('open'); if (settingsOverlay) settingsOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); });
+        // read-overlay click close
+        const readOverlay = document.getElementById('read-overlay');
+        if(readOverlay) readOverlay.addEventListener('click', (e)=>{ if(e.target === readOverlay) closeReadModal(); });
 
-            // settings tabs
-            const tabGeneral = document.getElementById('tab-general'), tabZoom = document.getElementById('tab-zoom');
-            if (tabGeneral) tabGeneral.addEventListener('click', () => { document.getElementById('settings-general').classList.remove('hidden'); document.getElementById('settings-zoom').classList.add('hidden'); tabGeneral.classList.add('active'); tabZoom.classList.remove('active'); });
-            if (tabZoom) tabZoom.addEventListener('click', () => { document.getElementById('settings-general').classList.add('hidden'); document.getElementById('settings-zoom').classList.remove('hidden'); tabGeneral.classList.remove('active'); tabZoom.classList.add('active'); });
+        // admin wires
+        const adminBtn = document.getElementById('admin-panel-btn'); const adminOverlay = document.getElementById('admin-overlay'); const adminModal = document.getElementById('admin-modal'); const adminCancel = document.getElementById('admin-cancel'); const adminSend = document.getElementById('admin-send');
+        if(adminBtn) adminBtn.addEventListener('click', ()=> { const u = getCurrentUser(); if(u && u.email && u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){ openAdminModal(); } else alertBox('Not authorized'); });
+        if(adminCancel) adminCancel.addEventListener('click', ()=> closeAdminModal());
+        if(adminSend) adminSend.addEventListener('click', ()=> sendBroadcast());
+        if(adminOverlay) adminOverlay.addEventListener('click', ()=> closeAdminModal());
 
-            // volume sync
-            const vslider = document.getElementById('settings-volume');
-            if (vslider) {
-                vslider.value = Math.round((audio.volume || 1) * 100);
-                vslider.addEventListener('input', (e) => {
-                    audio.volume = e.target.value / 100;
-                    const mainVol = document.getElementById('volume-slider');
-                    if (mainVol) mainVol.value = e.target.value;
-                });
-            }
-            const mainVol = document.getElementById('volume-slider');
-            if (mainVol) mainVol.addEventListener('input', (e) => {
-                audio.volume = e.target.value / 100;
-                if (vslider) vslider.value = e.target.value;
-            });
+        // display name wiring (keeps previous logic)
+        const displayNameBtn = document.getElementById('display-name-btn');
+        const dnOverlay = document.getElementById('displayname-overlay');
+        const dnModal = document.getElementById('displayname-modal');
+        const dnWarningView = document.getElementById('dn-warning-view');
+        const dnInputView = document.getElementById('dn-input-view');
+        const dnYes = document.getElementById('dn-yes');
+        const dnNo = document.getElementById('dn-no');
+        const dnCancel = document.getElementById('dn-cancel');
+        const dnSubmit = document.getElementById('dn-submit');
+        const dnInput = document.getElementById('dn-input');
+        const dnError = document.getElementById('dn-error');
 
-            // zoom slider
-            const zoomSlider = document.getElementById('settings-zoom-slider');
-            if (zoomSlider) {
-                const saved = localStorage.getItem('jamusic_zoom');
-                if (saved) document.body.style.zoom = saved;
-                zoomSlider.value = document.body.style.zoom || 1;
-                zoomSlider.addEventListener('input', (e) => {
-                    document.body.style.zoom = e.target.value;
-                    try { localStorage.setItem('jamusic_zoom', e.target.value); } catch(e){}
-                });
-            }
-
-            // theme buttons restore
-            const themeLightBtn = document.getElementById('theme-light-btn');
-            const themeDarkBtn = document.getElementById('theme-dark-btn');
-            try {
-                const savedTheme = localStorage.getItem('jamusic_theme');
-                if (savedTheme) {
-                    if (savedTheme === 'light') { document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; }
-                    else { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; }
-                }
-            } catch(e){}
-            if (themeLightBtn) themeLightBtn.addEventListener('click', () => { document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; try{ localStorage.setItem('jamusic_theme', 'light'); }catch(e){} });
-            if (themeDarkBtn) themeDarkBtn.addEventListener('click', () => { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; try{ localStorage.setItem('jamusic_theme', 'dark'); }catch(e){} });
-
-            // Inbox wiring
-            const inboxBtn = document.getElementById('inbox-btn');
-            const inboxOverlay = document.getElementById('inbox-overlay');
-            const inboxPanel = document.getElementById('inbox-panel');
-            const inboxClose = document.getElementById('inbox-close');
-            const inboxRefresh = document.getElementById('inbox-refresh');
-
-            if (inboxBtn) inboxBtn.addEventListener('click', () => openInbox());
-            if (inboxClose) inboxClose.addEventListener('click', () => closeInbox());
-            if (inboxOverlay) inboxOverlay.addEventListener('click', () => closeInbox());
-            if (inboxRefresh) inboxRefresh.addEventListener('click', () => renderInboxList());
-
-            // read-modal overlay click
-            const readOverlay = document.getElementById('read-overlay');
-            if (readOverlay) {
-                readOverlay.addEventListener('click', (e) => {
-                    if (e.target === readOverlay) closeReadModal();
-                });
-            }
-
-            // admin wires
-            const adminBtn = document.getElementById('admin-panel-btn');
-            const adminOverlay = document.getElementById('admin-overlay');
-            const adminModal = document.getElementById('admin-modal');
-            const adminCancel = document.getElementById('admin-cancel');
-            const adminSend = document.getElementById('admin-send');
-
-            if (adminBtn) adminBtn.addEventListener('click', () => {
-                // open admin modal (only for admin)
-                const user = getCurrentUser();
-                if (user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-                    if (adminOverlay) adminOverlay.classList.add('show');
-                    if (adminModal) adminModal.classList.add('show');
-                    document.body.classList.add('no-scroll');
-                } else {
-                    alertBox('Not authorized');
-                }
-            });
-            if (adminCancel) adminCancel.addEventListener('click', () => closeAdminModal());
-            if (adminSend) adminSend.addEventListener('click', () => sendBroadcast());
-            if (adminOverlay) adminOverlay.addEventListener('click', () => closeAdminModal());
-
-            // display name wiring
-            const displayNameBtn = document.getElementById('display-name-btn');
-            const dnOverlay = document.getElementById('displayname-overlay');
-            const dnModal = document.getElementById('displayname-modal');
-            const dnWarningView = document.getElementById('dn-warning-view');
-            const dnInputView = document.getElementById('dn-input-view');
-            const dnYes = document.getElementById('dn-yes');
-            const dnNo = document.getElementById('dn-no');
-            const dnCancel = document.getElementById('dn-cancel');
-            const dnSubmit = document.getElementById('dn-submit');
-            const dnInput = document.getElementById('dn-input');
-            const dnError = document.getElementById('dn-error');
-
-            if (displayNameBtn) {
-                displayNameBtn.addEventListener('click', (ev) => {
-                    ev.stopPropagation();
-                    const dd = document.getElementById('profile-dropdown'); if (dd) dd.classList.remove('active');
-
-                    let currentName = '';
-                    try { const su = localStorage.getItem('jamusic_user'); if (su) currentName = JSON.parse(su).name || ''; } catch(e){}
-
-                    if (dnOverlay) dnOverlay.classList.add('show');
-                    if (dnModal) dnModal.classList.add('show');
-                    document.body.classList.add('no-scroll');
-
-                    if (isEmailLike(currentName)) {
-                        if (dnWarningView) dnWarningView.style.display = 'block';
-                        if (dnInputView) dnInputView.style.display = 'none';
-                    } else {
-                        if (dnWarningView) dnWarningView.style.display = 'none';
-                        if (dnInputView) dnInputView.style.display = 'block';
-                    }
-                });
-            }
-
-            if (dnNo) dnNo.addEventListener('click', () => { if (dnOverlay) dnOverlay.classList.remove('show'); if (dnModal) dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
-            if (dnYes) dnYes.addEventListener('click', () => { if (dnWarningView) dnWarningView.style.display = 'none'; if (dnInputView) dnInputView.style.display = 'block'; if (dnError) dnError.style.display = 'none'; if (dnInput) dnInput.value = ''; });
-            if (dnCancel) dnCancel.addEventListener('click', () => { if (dnOverlay) dnOverlay.classList.remove('show'); if (dnModal) dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
-            if (dnOverlay) dnOverlay.addEventListener('click', (e) => { if (e.target === dnOverlay) { if (dnOverlay) dnOverlay.classList.remove('show'); if (dnModal) dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); }});
-            if (dnSubmit) dnSubmit.addEventListener('click', () => {
-                const val = (dnInput.value || '').trim();
-                const validRegex = /^[A-Za-z0-9 _-]{2,30}$/;
-                if (!validRegex.test(val)) { if (dnError) dnError.style.display = 'block'; return; }
-                const userDisplay = document.getElementById('user-display');
-                const ddn = document.getElementById('dropdown-name');
-                if (userDisplay) userDisplay.innerText = val;
-                if (ddn) ddn.innerText = val;
-                try {
-                    const su = localStorage.getItem('jamusic_user');
-                    if (su) {
-                        const obj = JSON.parse(su);
-                        obj.name = val;
-                        localStorage.setItem('jamusic_user', JSON.stringify(obj));
-                    } else {
-                        localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
-                    }
-                } catch(e){}
-                if (dnModal) dnModal.classList.remove('show');
-                setTimeout(() => { if (dnOverlay) dnOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); if (dnModal) dnModal.classList.add('show'); }, 220);
-            });
-
-            // wire profile dropdown close on outside
-            const profileDropdown = document.getElementById('profile-dropdown');
-            const accountBtn = document.getElementById('account-settings-btn');
-            if (accountBtn && profileDropdown) {
-                accountBtn.addEventListener('click', () => profileDropdown.classList.remove('active'));
-            }
-
-            // admin button show logic
-            maybeShowAdminBtn();
-
-            // start polling loop
-            startInboxLoop();
+        if(displayNameBtn) displayNameBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            try { if(document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) document.activeElement.blur(); } catch(e){}
+            let currentName = '';
+            try{ const s = localStorage.getItem('jamusic_user'); if(s) currentName = JSON.parse(s).name || ''; } catch(e){}
+            if(dnOverlay) dnOverlay.classList.add('show'); if(dnModal) dnModal.classList.add('show'); document.body.classList.add('no-scroll');
+            if(isEmailLike(currentName)){ if(dnWarningView) dnWarningView.style.display='block'; if(dnInputView) dnInputView.style.display='none'; } else { if(dnWarningView) dnWarningView.style.display='none'; if(dnInputView) dnInputView.style.display='block'; }
         });
 
-        /***********************
-         * Small helper: attach click to inbox icon (safe)
-         ***********************/
-        (function attachInboxBtn(){
-            const btn = document.getElementById('inbox-btn');
-            if (btn) btn.addEventListener('click', () => openInbox());
-        })();
+        if(dnNo) dnNo.addEventListener('click', ()=> { if(dnOverlay) dnOverlay.classList.remove('show'); if(dnModal) dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
+        if(dnYes) dnYes.addEventListener('click', ()=> { if(dnWarningView) dnWarningView.style.display='none'; if(dnInputView) dnInputView.style.display='block'; if(dnError) dnError.style.display='none'; if(dnInput) dnInput.value=''; });
+        if(dnCancel) dnCancel.addEventListener('click', ()=> { if(dnOverlay) dnOverlay.classList.remove('show'); if(dnModal) dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); });
+        if(dnOverlay) dnOverlay.addEventListener('click', (e)=> { if(e.target === dnOverlay){ if(dnOverlay) dnOverlay.classList.remove('show'); if(dnModal) dnModal.classList.remove('show'); document.body.classList.remove('no-scroll'); } });
 
-        /***********************
-         * Small helper: wire read-overlay initial hide
-         ***********************/
-        (function initReadOverlay(){
-            const ro = document.getElementById('read-overlay');
-            if (ro) { ro.style.opacity = '0'; ro.style.pointerEvents = 'none'; ro.classList.remove('show'); }
-        })();
+        if(dnSubmit) dnSubmit.addEventListener('click', ()=> {
+            const val = (dnInput.value || '').trim(); const validRegex = /^[A-Za-z0-9 _-]{2,30}$/;
+            if(!validRegex.test(val)){ if(dnError) dnError.style.display='block'; return; }
+            const ud = document.getElementById('user-display'); const ddn = document.getElementById('dropdown-name');
+            if(ud) ud.innerText = val; if(ddn) ddn.innerText = val;
+            try{ const s = localStorage.getItem('jamusic_user'); if(s){ const o = JSON.parse(s); o.name = val; localStorage.setItem('jamusic_user', JSON.stringify(o)); } else localStorage.setItem('jamusic_user', JSON.stringify({name:val, email:''})); } catch(e){}
+            if(dnModal) dnModal.classList.remove('show');
+            setTimeout(()=>{ if(dnOverlay) dnOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); if(dnModal) dnModal.classList.add('show'); }, 220);
+        });
+
+        // admin button visibility
+        maybeShowAdminBtn();
+
+        // start loop
+        startInboxLoop();
+    });
+
+    /* Helper to attach inbox icon safely */
+    (function attachInboxBtn(){ const b = document.getElementById('inbox-btn'); if(b) b.addEventListener('click', ()=> openInbox()); })();
+
+    /* init read overlay hide */
+    (function initReadOverlay(){ const ro = document.getElementById('read-overlay'); if(ro){ ro.style.opacity='0'; ro.style.pointerEvents='none'; ro.classList.remove('show'); } })();
 
     </script>
 </body>
