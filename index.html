@@ -510,52 +510,6 @@
             .lyrics-container { padding: 40vh 24px; }
         }
 
-        /* Full text mode for Genius lyrics */
-        .lyrics-container.full-text-mode {
-            padding: 10vh 20px 20vh;
-            mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
-            -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent);
-            scrollbar-width: none;
-        }
-
-        .lyrics-container.full-text-mode::-webkit-scrollbar {
-            display: none;
-        }
-
-        .lyrics-container.full-text-mode .lyric-line {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #fff;
-            opacity: 1;
-            cursor: default;
-            transform: none !important;
-            text-shadow: none !important;
-            padding: 10px 0;
-            text-align: left;
-            transition: opacity 0.3s;
-            line-height: 1.3;
-        }
-
-        .lyrics-container.full-text-mode .lyric-line:hover {
-            opacity: 0.7;
-        }
-
-        .lyrics-container.full-text-mode .lyric-section-header {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-top: 40px;
-            margin-bottom: 10px;
-            text-align: left;
-            display: block;
-        }
-
-        @media (max-width: 768px) {
-            .lyrics-container.full-text-mode .lyric-line { font-size: 1.75rem; }
-        }
-
         /* Spotify-like Animations */
         @keyframes spotify-fade-in {
             from { opacity: 0; transform: translateY(10px); }
@@ -595,87 +549,6 @@
             background: rgba(255, 255, 255, 0.2);
             border: 3px solid transparent;
             background-clip: padding-box;
-        }
-
-        /* Lyrics Loader & Results Selection */
-        .lyrics-results-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .lyrics-result-item {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.3, 0, 0, 1);
-        }
-
-        .lyrics-result-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: scale(1.02);
-        }
-
-        .lyrics-result-item img {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
-            object-cover: cover;
-        }
-
-        .lyrics-result-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .lyrics-result-title {
-            font-weight: 700;
-            color: white;
-            truncate: true;
-        }
-
-        .lyrics-result-artist {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .lyrics-loader {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #64748b;
-            gap: 20px;
-        }
-
-        .lyrics-loader svg {
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .lyrics-error {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            text-align: center;
-            color: #94a3b8;
-            gap: 15px;
         }
 
         #lyrics-close {
@@ -1074,7 +947,7 @@
                     </div>
 
                     <p class="font-semibold text-[11px] text-slate-400 mb-2 uppercase tracking-wider">Analysis Sensitivity</p>
-                    <input type="range" id="transcription-sensitivity" min="0" max="100" value="50" class="w-full mb-4">
+                    <input type="range" id="transcription-sensitivity-slider" min="0" max="100" value="50" class="w-full mb-4">
                     
                     <div class="flex items-center justify-between mb-2">
                         <p class="font-semibold text-[11px] text-slate-400 uppercase tracking-wider">Vocal Isolation</p>
@@ -1091,11 +964,7 @@
                     </div>
                 </div>
 
-                <p class="font-semibold text-sm text-slate-400 mb-2">Genius API Token (Fallback)</p>
-                <input type="password" id="genius-token-input" placeholder="Paste your token here..." class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-blue-500 outline-none transition-colors mb-2">
-                <p class="text-[10px] text-slate-500">Only used if audio analysis cannot find high-confidence matches.</p>
-                
-                <button id="save-token-btn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20">Save Settings</button>
+                <button id="save-lyrics-settings-btn" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20">Apply Settings</button>
             </div>
         </div>
     </div>
@@ -1222,10 +1091,8 @@
         let repeatTracks = false; 
         let currentView = 'home'; // 'home', 'search', 'trending'
         let searchTimeout = null;
-        let lyricsVisible = false;
         let currentLyrics = [];
-        let lyricsCache = {};
-        let GENIUS_ACCESS_TOKEN = localStorage.getItem('genius_token') || '';
+        let lyricsVisible = false;
 
         /***********************
          * Audio Analysis & Transcription Engine
@@ -1378,6 +1245,8 @@
                 this.recognition = null;
                 this.isTranscribing = false;
                 this.transcript = [];
+                this.retryCount = 0;
+                this.maxRetries = 5;
                 this.initRecognition();
             }
 
@@ -1396,41 +1265,150 @@
                                 this.addLyricLine(text);
                             } else {
                                 interimTranscript += event.results[i][0].transcript;
+                                this.showInterim(interimTranscript);
                             }
                         }
                     };
+
+                    this.recognition.onstart = () => {
+                        this.retryCount = 0;
+                        this.updateStatusDot('#10b981'); // Success green
+                    };
+
+                    this.recognition.onend = () => {
+                        if (this.isTranscribing) {
+                            console.log("Transcription connection closed, restarting...");
+                            this.updateStatusDot('#f59e0b'); // Warning orange
+                            this.handleRestart();
+                        }
+                    };
+
+                    this.recognition.onerror = (event) => {
+                        console.error("Transcription Error:", event.error);
+                        this.updateStatusDot('#ef4444'); // Error red
+                        
+                        if (['network', 'no-speech'].includes(event.error) && this.isTranscribing) {
+                            this.handleRestart();
+                        }
+                    };
+                }
+            }
+
+            updateStatusDot(color) {
+                const dot = document.querySelector('.transcription-status-dot');
+                if (dot) {
+                    dot.style.background = color;
+                    dot.style.boxShadow = `0 0 10px ${color}`;
+                }
+            }
+
+            handleRestart() {
+                if (this.retryCount < this.maxRetries) {
+                    this.retryCount++;
+                    const delay = Math.min(1000 * Math.pow(2, this.retryCount), 10000);
+                    setTimeout(() => {
+                        if (this.isTranscribing) {
+                            try {
+                                this.recognition.start();
+                            } catch (e) {
+                                console.warn("Restart failed, retrying...");
+                            }
+                        }
+                    }, delay);
+                }
+            }
+
+            showInterim(text) {
+                if (!text.trim()) return;
+                const loading = document.getElementById('transcription-loading');
+                if (loading) loading.remove();
+
+                let interimEl = document.getElementById('interim-transcription');
+                if (!interimEl) {
+                    const contentDiv = document.getElementById('lyrics-content');
+                    interimEl = document.createElement('div');
+                    interimEl.id = 'interim-transcription';
+                    interimEl.className = 'lyric-line interim opacity-40 italic transition-all duration-300 scale-95 origin-left mb-8 text-2xl md:text-3xl font-bold';
+                    contentDiv.appendChild(interimEl);
+                }
+                interimEl.innerText = text;
+                
+                const container = document.getElementById('lyrics-container');
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
                 }
             }
 
             addLyricLine(text) {
                 if (!text.trim()) return;
                 
-                // Clear loading state on first line
                 const loading = document.getElementById('transcription-loading');
                 if (loading) loading.remove();
 
+                const interimEl = document.getElementById('interim-transcription');
+                if (interimEl) interimEl.remove();
+
                 const time = audio.currentTime;
                 currentLyrics.push({ time, content: text.trim() });
-                renderLyrics(currentLyrics);
+                this.renderLine(text.trim(), currentLyrics.length - 1);
+            }
+
+            renderLine(text, index) {
+                const contentDiv = document.getElementById('lyrics-content');
+                if (!contentDiv) return;
+
+                const line = document.createElement('div');
+                line.className = 'lyric-line active animate-spotify mb-10 text-3xl md:text-5xl font-black transition-all duration-700 opacity-20 hover:opacity-100 cursor-default tracking-tight';
+                line.id = `lyric-${index}`;
+                line.innerText = text;
+                contentDiv.appendChild(line);
+
+                const container = document.getElementById('lyrics-container');
+                if (container) {
+                    const scrollTarget = line.offsetTop - (container.offsetHeight / 3);
+                    container.scrollTo({
+                        top: scrollTarget > 0 ? scrollTarget : 0,
+                        behavior: 'smooth'
+                    });
+                }
+
+                setTimeout(() => {
+                    line.style.opacity = '1';
+                    line.style.transform = 'scale(1.02)';
+                    setTimeout(() => {
+                        line.style.transform = 'scale(1)';
+                    }, 400);
+                }, 50);
             }
 
             async start() {
                 if (this.isTranscribing) return;
-                await analysisEngine.init();
+                
+                if (!analysisEngine.isInitialized) {
+                    await analysisEngine.init();
+                }
+
                 if (this.recognition) {
                     try {
-                        this.recognition.start();
                         this.isTranscribing = true;
+                        this.retryCount = 0;
+                        currentLyrics = [];
+                        const contentDiv = document.getElementById('lyrics-content');
+                        if (contentDiv) contentDiv.innerHTML = '';
+                        this.recognition.start();
                     } catch (e) {
                         console.error("Transcription Start Failed:", e);
+                        if (e.name === 'InvalidStateError') {
+                            this.isTranscribing = true;
+                        }
                     }
                 }
             }
 
             stop() {
-                if (this.recognition && this.isTranscribing) {
-                    this.recognition.stop();
-                    this.isTranscribing = false;
+                this.isTranscribing = false;
+                if (this.recognition) {
+                    try { this.recognition.stop(); } catch(e) {}
                 }
             }
         }
@@ -1438,209 +1416,8 @@
         const transcriptionEngine = new TranscriptionEngine();
 
         /***********************
-         * Genius API Integration
+         * Track Data
          ***********************/
-        async function fetchLyricsFromGenius(track) {
-            if (!GENIUS_ACCESS_TOKEN) {
-                const mockTracks = ['Never Gonna Give You Up', 'End of Beginning', 'Heat Waves', 'Stereo Hearts'];
-                if (mockTracks.includes(track.title)) {
-                    return fetchMockLyrics(track);
-                }
-                throw new Error("No Genius API token found. Please add one in settings.");
-            }
-
-            try {
-                const query = encodeURIComponent(`${track.title} ${track.artist}`);
-                const searchRes = await fetch(`https://api.genius.com/search?q=${query}&access_token=${GENIUS_ACCESS_TOKEN}`);
-                const searchData = await searchRes.json();
-                
-                if (!searchData.response.hits.length) throw new Error("Song not found on Genius");
-
-                // If multiple hits, show selection
-                if (searchData.response.hits.length > 1) {
-                    showLyricsSelection(searchData.response.hits, track);
-                    return { type: 'selecting' };
-                }
-
-                const result = searchData.response.hits[0].result;
-                return fetchLyricsFromUrl(result.url, {
-                    title: result.title,
-                    artist: result.primary_artist.name,
-                    full_title: result.full_title
-                });
-            } catch (err) {
-                console.error("Genius Fetch Error:", err);
-                throw err;
-            }
-        }
-
-        function showLyricsSelection(hits, track) {
-            const contentDiv = document.getElementById('lyrics-content');
-            contentDiv.innerHTML = `
-                <div class="lyrics-results-container animate-spotify">
-                    <h3 class="text-xl font-bold mb-4 text-center">Select the correct song</h3>
-                    ${hits.map((hit, idx) => `
-                        <div class="lyrics-result-item" onclick="loadSelectedLyrics('${hit.result.url}', '${track.id}', ${idx})">
-                            <img src="${hit.result.song_art_image_thumbnail_url}" alt="${hit.result.title}">
-                            <div class="lyrics-result-info">
-                                <div class="lyrics-result-title">${escapeHtml(hit.result.title)}</div>
-                                <div class="lyrics-result-artist">${escapeHtml(hit.result.primary_artist.name)}</div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            
-            // Define global selection handler
-            window.loadSelectedLyrics = async (url, trackId, hitIdx) => {
-                const track = tracks.find(t => t.id === trackId);
-                const hit = hits[hitIdx].result;
-                const metadata = {
-                    title: hit.title,
-                    artist: hit.primary_artist.name,
-                    full_title: hit.full_title
-                };
-                
-                contentDiv.innerHTML = `
-                    <div class="lyrics-loader">
-                        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p class="mt-4 text-slate-400">Loading lyrics...</p>
-                    </div>
-                `;
-                
-                try {
-                    const lyricsData = await fetchLyricsFromUrl(url, metadata);
-                    lyricsCache[trackId] = lyricsData;
-                    updatePlayerMetadata(metadata);
-                    renderLyrics(lyricsData);
-                } catch (err) {
-                    contentDiv.innerHTML = `<div class="lyrics-error"><p>${err.message}</p></div>`;
-                }
-            };
-        }
-
-        async function fetchLyricsFromUrl(songUrl, metadata) {
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(songUrl)}`;
-            const pageRes = await fetch(proxyUrl);
-            const pageData = await pageRes.json();
-            const html = pageData.contents;
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            // Try multiple selectors for better resilience
-            const containers = doc.querySelectorAll('[class^="Lyrics__Container"], [data-lyrics-container="true"], .lyrics, .Lyrics__Container-sc-170p6dt-0');
-            let lyricsText = "";
-
-            if (containers.length > 0) {
-                containers.forEach(c => {
-                    // Clean up the HTML to get clean text with line breaks
-                    let content = c.innerHTML
-                        .replace(/<br\s*\/?>/gi, '\n') // Replace <br> with \n
-                        .replace(/<\/div>/gi, '\n')   // Replace </div> with \n
-                        .replace(/<p[^>]*>/gi, '')     // Remove <p> tags
-                        .replace(/<\/p>/gi, '\n')     // Replace </p> with \n
-                        .replace(/<[^>]*>/g, '');      // Strip all other HTML tags
-                    
-                    // Decode HTML entities (like &amp; or &quot;)
-                    const textArea = document.createElement('textarea');
-                    textArea.innerHTML = content;
-                    content = textArea.value;
-
-                    lyricsText += content.trim() + "\n\n";
-                });
-            } else {
-                // Fallback to older Genius layouts or simpler containers
-                const fallback = doc.querySelector('.lyrics') || doc.querySelector('#lyrics-root');
-                if (fallback) lyricsText = fallback.innerText;
-            }
-
-            if (!lyricsText || lyricsText.trim().length < 10) {
-                throw new Error("Could not parse lyrics. The song might be instrumental or Genius changed their layout.");
-            }
-
-            return { 
-                type: 'full', 
-                content: lyricsText.trim(),
-                metadata: metadata
-            };
-        }
-
-        async function fetchMockLyrics(track) {
-            await new Promise(r => setTimeout(r, 800)); 
-            
-            if (track.title === 'Never Gonna Give You Up') {
-                return [
-                    { time: 0, content: "[Intro]" },
-                    { time: 18.5, content: "We're no strangers to love" },
-                    { time: 22.5, content: "You know the rules and so do I" },
-                    { time: 27.0, content: "A full commitment's what I'm thinkin' of" },
-                    { time: 31.0, content: "You wouldn't get this from any other guy" },
-                    { time: 35.0, content: "I just wanna tell you how I'm feeling" },
-                    { time: 40.0, content: "Gotta make you understand" },
-                    { time: 43.0, content: "Never gonna give you up" },
-                    { time: 47.0, content: "Never gonna let you down" },
-                    { time: 51.0, content: "Never gonna run around and desert you" },
-                    { time: 55.0, content: "Never gonna make you cry" },
-                    { time: 59.0, content: "Never gonna say goodbye" },
-                    { time: 63.0, content: "Never gonna tell a lie and hurt you" },
-                    { time: 67.0, content: "We've known each other for so long" },
-                    { time: 71.0, content: "Your heart's been aching, but you're too shy to say it" },
-                    { time: 76.0, content: "Inside, we both know what's been going on" },
-                    { time: 80.0, content: "We know the game and we're gonna play it" },
-                    { time: 84.0, content: "And if you ask me how I'm feeling" },
-                    { time: 89.0, content: "Don't tell me you're too blind to see" },
-                    { time: 92.0, content: "Never gonna give you up" },
-                    { time: 96.0, content: "Never gonna let you down" }
-                ];
-            } else if (track.title === 'End of Beginning') {
-                return [
-                    { time: 0, content: "[Intro]" },
-                    { time: 10.0, content: "Just like that, I'm back in the city" },
-                    { time: 14.0, content: "The wind is cold and the lights are pretty" },
-                    { time: 18.0, content: "It's been a while, but I still remember" },
-                    { time: 22.0, content: "How it felt in the late November" },
-                    { time: 26.0, content: "And I know, I know" },
-                    { time: 30.0, content: "That I'm not the same as I was before" },
-                    { time: 34.0, content: "But I'm home, I'm home" },
-                    { time: 38.0, content: "And I'm not running anymore" },
-                    { time: 42.0, content: "And when I'm back in Chicago, I feel it" },
-                    { time: 46.0, content: "Another version of me, I was in it" },
-                    { time: 50.0, content: "I wave goodbye to the end of beginning" }
-                ];
-            } else if (track.title === 'Heat Waves') {
-                return [
-                    { time: 0, content: "(Road shimmer wigglin' the vision)" },
-                    { time: 2.5, content: "(Heat waves, I'm swimming in a mirror)" },
-                    { time: 5.0, content: "(Road shimmer wigglin' the vision)" },
-                    { time: 7.5, content: "(Heat waves, I'm swimming in a mirror)" },
-                    { time: 11.0, content: "Sometimes, all I think about is you" },
-                    { time: 15.0, content: "Late nights in the middle of June" },
-                    { time: 19.0, content: "Heat waves been faking me out" },
-                    { time: 23.0, content: "Can't make you happier now" },
-                    { time: 27.0, content: "Sometimes, all I think about is you" },
-                    { time: 31.0, content: "Late nights in the middle of June" },
-                    { time: 35.0, content: "Heat waves been faking me out" },
-                    { time: 39.0, content: "Can't make you happier now" }
-                ];
-            } else if (track.title === 'Stereo Hearts') {
-                return [
-                    { time: 0, content: "[Chorus]" },
-                    { time: 0.5, content: "My heart's a stereo" },
-                    { time: 3.5, content: "It beats for you, so listen close" },
-                    { time: 7.5, content: "Hear my thoughts in every no-o-o-te" },
-                    { time: 11.5, content: "Make me your radio" },
-                    { time: 14.5, content: "And turn me up when you feel low" },
-                    { time: 18.5, content: "This melody was meant for you" },
-                    { time: 22.5, content: "Just sing along to my stereo" },
-                    { time: 26.5, content: "[Verse 1]" },
-                    { time: 27.5, content: "If I was just another dusty record on the shelf" },
-                    { time: 31.5, content: "Would you blow me off and play me like everybody else?" }
-                ];
-            }
-            
-            throw new Error("Complete lyrics not available for this track yet.");
-        }
-
         const tracks = [
             { id: '1', title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
             { id: '2', title: 'End of Beginning', artist: 'Djo', img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
@@ -1816,170 +1593,12 @@
         }
 
         /***********************
-         * Lyrics Logic
+         * Lyrics Logic (Pure Audio Transcription)
          ***********************/
         async function fetchLyrics(track) {
-            const contentDiv = document.getElementById('lyrics-content');
-            const container = document.querySelector('.lyrics-container');
-            
-            if (lyricsCache[track.id]) {
-                const cached = lyricsCache[track.id];
-                if (cached.metadata) {
-                    updatePlayerMetadata(cached.metadata);
-                }
-                renderLyrics(cached);
-                return;
+            if (lyricsVisible) {
+                await startTranscriptionFlow(track);
             }
-
-            contentDiv.innerHTML = `
-                <div class="lyrics-loader">
-                    <svg class="w-12 h-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    <p class="text-slate-400 font-bold text-xl">Fetching from Genius...</p>
-                </div>
-            `;
-
-            try {
-                const lyricsData = await fetchLyricsFromGenius(track);
-                lyricsCache[track.id] = lyricsData;
-                
-                if (lyricsData.metadata) {
-                    updatePlayerMetadata(lyricsData.metadata);
-                }
-                
-                renderLyrics(lyricsData);
-            } catch (err) {
-                contentDiv.innerHTML = `
-                    <div class="lyrics-error">
-                        <svg class="w-20 h-20 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <h4 class="text-2xl font-bold text-slate-300">Lyrics Unavailable</h4>
-                        <p class="text-slate-500 max-w-xs">${err.message}</p>
-                    </div>
-                `;
-            }
-        }
-
-        function updatePlayerMetadata(metadata) {
-            const titleEl = document.getElementById('player-title');
-            const artistEl = document.getElementById('player-artist');
-            if (titleEl && artistEl) {
-                // Formatting as per user request: " ${artist} - ${song name} "
-                // But we keep them in separate elements for Spotify UI parity, 
-                // just updating the content to the official Genius versions.
-                titleEl.innerText = metadata.title;
-                artistEl.innerText = metadata.artist;
-                
-                // If we wanted the combined string in one place:
-                // titleEl.innerText = `${metadata.artist} - ${metadata.title}`;
-                // But Spotify uses separate lines. Let's make it optional via a title attribute for the full string.
-                titleEl.title = `${metadata.artist} - ${metadata.title}`;
-            }
-        }
-
-        function parseLyrics(text) {
-            if (!text) return [];
-            const lines = text.split('\n');
-            const result = [];
-            // Regex to match timestamps like [00:00.00] or [00:00.000]
-            // Can handle multiple timestamps per line: [00:12.34][00:45.67] text
-            const timeRegex = /\[(\d{1,2}):(\d{2}(?:\.\d{1,3})?)\]/g;
-
-            lines.forEach(line => {
-                const timestamps = [];
-                let match;
-                
-                // Reset regex lastIndex because of 'g' flag
-                timeRegex.lastIndex = 0;
-                
-                // Extract all timestamps from the line
-                while ((match = timeRegex.exec(line)) !== null) {
-                    const minutes = parseInt(match[1]);
-                    const seconds = parseFloat(match[2]);
-                    const time = minutes * 60 + seconds;
-                    timestamps.push(time);
-                }
-
-                // The content is what's left after removing all timestamps
-                const content = line.replace(timeRegex, '').trim();
-                
-                if (content && timestamps.length > 0) {
-                    timestamps.forEach(time => {
-                        result.push({ time, content });
-                    });
-                }
-            });
-
-            // Sort by time and filter out invalid entries
-            return result
-                .filter(item => !isNaN(item.time))
-                .sort((a, b) => a.time - b.time);
-        }
-
-        function renderLyrics(lyricsData) {
-            const contentDiv = document.getElementById('lyrics-content');
-            const container = document.getElementById('lyrics-container');
-            
-            if (!contentDiv || !container) return;
-
-            // Reset
-            currentLyrics = [];
-            lastActiveIndex = -1;
-            container.classList.remove('full-text-mode');
-
-            if (!lyricsData) {
-                contentDiv.innerHTML = `
-                    <div class="lyrics-error">
-                        <h4 class="text-2xl font-bold text-slate-300">No Lyrics Found</h4>
-                        <p class="text-slate-500">We couldn't find any lyrics for this track.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Determine if data is synchronized (array) or full text (object with type: 'full')
-            if (Array.isArray(lyricsData)) {
-                if (lyricsData.length === 0) {
-                    contentDiv.innerHTML = `<div class="lyrics-error"><p>Lyrics format not recognized.</p></div>`;
-                    return;
-                }
-                currentLyrics = lyricsData;
-                contentDiv.innerHTML = currentLyrics.map((l, i) => `
-                    <div class="lyric-line" 
-                         id="lyric-${i}" 
-                         onclick="seekToLyric(${l.time})">
-                        ${escapeHtml(l.content)}
-                    </div>
-                `).join('');
-            } else if (lyricsData && lyricsData.type === 'full') {
-                if (!lyricsData.content) {
-                    contentDiv.innerHTML = `<div class="lyrics-error"><p>Empty lyrics received.</p></div>`;
-                    return;
-                }
-                container.classList.add('full-text-mode');
-                const lines = lyricsData.content.split('\n');
-                contentDiv.innerHTML = lines.map(line => {
-                    const trimmed = line.trim();
-                    if (!trimmed) return '<div class="h-6"></div>';
-                    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-                        return `<div class="lyric-section-header">${escapeHtml(trimmed)}</div>`;
-                    }
-                    return `<div class="lyric-line">${escapeHtml(trimmed)}</div>`;
-                }).join('');
-            } else if (lyricsData && lyricsData.type === 'selecting') {
-                // Keep the selection UI
-                return;
-            } else {
-                contentDiv.innerHTML = `<div class="lyrics-error"><p>Unsupported lyrics data type.</p></div>`;
-            }
-
-            // Scroll to top on load
-            container.scrollTo({ top: 0, behavior: 'instant' });
-            
-            // Initial sync update
-            updateLyricsSync();
         }
 
         async function toggleLyrics() {
@@ -1987,12 +1606,16 @@
             const btn = document.getElementById('lyrics-btn');
             if (!overlay) return;
 
+            if (!('webkitSpeechRecognition' in window)) {
+                alertBox("Your browser doesn't support real-time audio transcription. Please use Chrome or Edge.");
+                return;
+            }
+
             lyricsVisible = !lyricsVisible;
             
             if (lyricsVisible) {
                 overlay.style.display = 'flex';
                 document.body.classList.add('no-scroll');
-                // Force reflow for animation
                 overlay.offsetHeight;
                 overlay.classList.add('show');
                 btn?.classList.add('text-[#1db954]');
@@ -2005,110 +1628,61 @@
                 btn?.classList.remove('text-[#1db954]');
                 transcriptionEngine.stop();
                 setTimeout(() => {
-                    if (!lyricsVisible) overlay.style.display = 'none';
+                    if (!lyricsVisible) {
+                        overlay.style.display = 'none';
+                        const contentDiv = document.getElementById('lyrics-content');
+                        if (contentDiv) contentDiv.innerHTML = '';
+                    }
                 }, 500);
             }
         }
 
         async function startTranscriptionFlow(track) {
             const contentDiv = document.getElementById('lyrics-content');
+            if (!contentDiv) return;
             
-            // UI setup for transcription
             contentDiv.innerHTML = `
                 <div id="transcription-loading" class="text-center py-20 animate-pulse">
-                    <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-8 relative">
+                        <div class="absolute inset-0 border-4 border-blue-500/30 rounded-full animate-ping"></div>
+                        <svg class="w-10 h-10 text-blue-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
                         </svg>
                     </div>
-                    <p class="text-white font-bold text-xl mb-2">Analyzing Audio Stream</p>
-                    <p class="text-slate-400 text-sm">Identifying vocals and transcribing in real-time...</p>
+                    <h3 class="text-white font-black text-3xl mb-4 tracking-tight">Listening to Audio...</h3>
+                    <p class="text-slate-400 text-lg max-w-xs mx-auto">Our AI is transcribing the lyrics from ${track.title} in real-time.</p>
                 </div>
             `;
 
-            // Start the engines
             await analysisEngine.init();
             
-            // Set up low confidence handler for graceful degradation
             analysisEngine.onLowConfidence = (score) => {
                 const statusDot = document.querySelector('.transcription-status-dot');
+                const accuracyEl = document.getElementById('transcription-accuracy');
+                
+                if (accuracyEl) accuracyEl.innerText = (score * 100).toFixed(1);
+                
                 if (statusDot) {
-                    statusDot.style.background = score < 0.86 ? '#ef4444' : (score < 0.88 ? '#f59e0b' : '#10b981');
-                    statusDot.style.boxShadow = `0 0 10px ${statusDot.style.background}`;
+                    const color = score < 0.86 ? '#ef4444' : (score < 0.88 ? '#f59e0b' : '#10b981');
+                    statusDot.style.background = color;
+                    statusDot.style.boxShadow = `0 0 10px ${color}`;
                 }
             };
 
             await transcriptionEngine.start();
-
-            // Check for pre-analyzed high-confidence data (Demo tracks)
-            const mockTracks = ['Never Gonna Give You Up', 'End of Beginning', 'Heat Waves', 'Stereo Hearts'];
-            if (mockTracks.includes(track.title)) {
-                const lyrics = await fetchMockLyrics(track);
-                currentLyrics = lyrics;
-                renderLyrics(lyrics);
-            } else {
-                currentLyrics = [];
-            }
         }
 
         function seekToLyric(time) {
             audio.currentTime = time;
             if (audio.paused) audio.play();
-            
-            // Immediate UI update for responsiveness
-            lastActiveIndex = -1; // Reset to force update
-            updateLyricsSync();
         }
 
-        const LYRIC_OFFSET = 0.1; // 100ms offset for latency
+        const LYRIC_OFFSET = 0.1;
         let lastActiveIndex = -1;
         function updateLyricsSync() {
+            // Simplified sync for transcription
             if (!lyricsVisible || !currentLyrics || currentLyrics.length === 0) return;
-
-            const currentTime = audio.currentTime + LYRIC_OFFSET;
-            let activeIndex = -1;
-
-            // Efficiently find the active index
-            // Since currentLyrics is sorted, we can find the last index where time <= currentTime
-            for (let i = 0; i < currentLyrics.length; i++) {
-                if (currentTime >= currentLyrics[i].time) {
-                    activeIndex = i;
-                } else {
-                    break;
-                }
-            }
-
-            if (activeIndex !== lastActiveIndex) {
-                const lines = document.querySelectorAll('.lyric-line');
-                const container = document.getElementById('lyrics-container');
-                
-                if (activeIndex !== -1) {
-                    lines.forEach((line, i) => {
-                        line.classList.toggle('active', i === activeIndex);
-                        line.classList.toggle('passed', i < activeIndex);
-                    });
-
-                    const activeLine = document.getElementById(`lyric-${activeIndex}`);
-                    if (activeLine && container) {
-                        const containerHeight = container.offsetHeight;
-                        const lineOffset = activeLine.offsetTop;
-                        const lineHeight = activeLine.offsetHeight;
-                        
-                        // Centering scroll
-                        container.scrollTo({
-                            top: lineOffset - (containerHeight / 2) + (lineHeight / 2),
-                            behavior: 'smooth'
-                        });
-                    }
-                } else {
-                    // Before first lyric
-                    lines.forEach(l => {
-                        l.classList.remove('active');
-                        l.classList.remove('passed');
-                    });
-                }
-                lastActiveIndex = activeIndex;
-            }
+            // The engine now handles rendering directly for better responsiveness
         }
 
         /***********************
@@ -2938,19 +2512,11 @@
                 tabLyrics.classList.add('active'); 
             });
 
-            // Lyrics token logic
-            const tokenInput = document.getElementById('genius-token-input');
-            const saveTokenBtn = document.getElementById('save-token-btn');
-            const transcriptionSensitivity = document.getElementById('transcription-sensitivity');
+            // Lyrics settings logic
+            const saveLyricsBtn = document.getElementById('save-lyrics-settings-btn');
+            const transcriptionSensitivity = document.getElementById('transcription-sensitivity-slider');
             const vocalIsolationToggle = document.getElementById('vocal-isolation-toggle');
             const noiseReductionToggle = document.getElementById('noise-reduction-toggle');
-
-            // Restore settings from localStorage
-            const savedToken = localStorage.getItem('genius_access_token');
-            if (savedToken) {
-                GENIUS_ACCESS_TOKEN = savedToken;
-                if (tokenInput) tokenInput.value = savedToken;
-            }
 
             if (transcriptionSensitivity) {
                 transcriptionSensitivity.value = analysisEngine.sensitivity * 100;
@@ -2962,12 +2528,13 @@
             const updateToggleUI = (el, enabled) => {
                 const dot = el.querySelector('.toggle-dot');
                 if (enabled) {
-                    el.classList.replace('bg-slate-700', 'bg-blue-600');
-                    dot.classList.replace('left-1', 'right-1');
+                    el.classList.remove('bg-slate-700');
+                    el.classList.add('bg-blue-600');
+                    dot.style.transform = 'translateX(16px)';
                 } else {
                     el.classList.add('bg-slate-700');
                     el.classList.remove('bg-blue-600');
-                    dot.classList.replace('right-1', 'left-1');
+                    dot.style.transform = 'translateX(0)';
                 }
             };
 
@@ -2989,18 +2556,14 @@
                 });
             }
 
-            if (saveTokenBtn && tokenInput) {
-                saveTokenBtn.addEventListener('click', () => {
-                    const token = tokenInput.value.trim();
-                    GENIUS_ACCESS_TOKEN = token;
-                    localStorage.setItem('genius_access_token', token);
-                    
+            if (saveLyricsBtn) {
+                saveLyricsBtn.addEventListener('click', () => {
                     // Visual feedback
-                    saveTokenBtn.innerText = 'Saved!';
-                    saveTokenBtn.classList.replace('bg-blue-600', 'bg-green-600');
+                    saveLyricsBtn.innerText = 'Applied!';
+                    saveLyricsBtn.classList.replace('bg-blue-600', 'bg-green-600');
                     setTimeout(() => {
-                        saveTokenBtn.innerText = 'Save Settings';
-                        saveTokenBtn.classList.replace('bg-green-600', 'bg-blue-600');
+                        saveLyricsBtn.innerText = 'Apply Settings';
+                        saveLyricsBtn.classList.replace('bg-green-600', 'bg-blue-600');
                     }, 2000);
                 });
             }
