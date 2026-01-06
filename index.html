@@ -332,6 +332,7 @@
         }
 
         .no-scroll { overflow: hidden !important; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     </style>
 </head>
 <body class="selection:bg-blue-500/30">
@@ -482,6 +483,63 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- MOBILE APP INTERFACE -->
+    <div id="mobile-app" class="hidden-state transition-all duration-700 md:hidden" style="display:none;">
+        <div class="min-h-screen pb-32">
+             <!-- Mobile Header -->
+             <header class="p-6 flex items-center justify-between sticky top-0 z-40 glass border-b border-white/5">
+                 <div class="flex items-center gap-3">
+                     <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-600/30">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                     </div>
+                     <span class="text-lg font-bold tracking-tighter">JaMusic</span>
+                 </div>
+                 <button onclick="toggleProfileMenu()" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                     <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                 </button>
+             </header>
+
+             <!-- Mobile Content -->
+             <div class="p-6 space-y-8">
+                 <!-- Welcome Banner Mobile -->
+                 <div class="relative rounded-[2rem] overflow-hidden group h-[180px] shadow-2xl">
+                     <img src="https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover">
+                     <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-6 flex flex-col justify-end">
+                         <h2 class="text-2xl font-black mb-1 text-white">Welcome Back</h2>
+                         <p class="text-sm text-blue-300 font-medium">Your daily mix is ready.</p>
+                     </div>
+                 </div>
+
+                 <!-- Mobile Track List -->
+                 <section>
+                     <h3 class="text-xl font-bold mb-5 flex items-center gap-2">
+                        <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
+                        Recommended
+                     </h3>
+                     <div id="mobileMusicList" class="space-y-4">
+                         <!-- Tracks render here -->
+                     </div>
+                 </section>
+             </div>
+        </div>
+        
+        <!-- Mobile Bottom Nav -->
+        <div class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-2 flex justify-around items-center z-[90] pb-safe">
+             <button class="flex flex-col items-center gap-1 p-2 rounded-xl text-blue-400">
+                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                 <span class="text-[10px] font-bold">Home</span>
+             </button>
+             <button class="flex flex-col items-center gap-1 p-2 rounded-xl text-slate-500 hover:text-slate-300">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                 <span class="text-[10px] font-bold">Search</span>
+             </button>
+             <button class="flex flex-col items-center gap-1 p-2 rounded-xl text-slate-500 hover:text-slate-300">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+                 <span class="text-[10px] font-bold">Library</span>
+             </button>
+        </div>
     </div>
 
     <!-- PLAYER BAR -->
@@ -706,8 +764,10 @@
          ***********************/
         function renderTracks(data){
             const grid = document.getElementById('musicGrid');
-            if(!grid) return;
-            grid.innerHTML = data.map((track, index) => `
+            const mobileList = document.getElementById('mobileMusicList');
+
+            if(grid) {
+                grid.innerHTML = data.map((track, index) => `
                 <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in" onclick="playTrack(${index})">
                     <div class="relative overflow-hidden rounded-2xl mb-5">
                         <img src="${track.img}" alt="${track.title}" class="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700">
@@ -721,6 +781,22 @@
                     <p class="text-xs text-slate-500 font-semibold uppercase">${escapeHtml(track.artist)}</p>
                 </div>
             `).join('');
+            }
+
+            if(mobileList) {
+                mobileList.innerHTML = data.map((track, index) => `
+                    <div class="flex items-center gap-4 p-3 bg-white/5 rounded-2xl active:scale-95 transition-transform border border-white/5" onclick="playTrack(${index})">
+                        <img src="${track.img}" class="w-16 h-16 rounded-xl object-cover shadow-md">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-white truncate text-base">${escapeHtml(track.title)}</h4>
+                            <p class="text-xs text-slate-400 truncate">${escapeHtml(track.artist)}</p>
+                        </div>
+                        <button class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white shadow-lg">
+                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                        </button>
+                    </div>
+                `).join('');
+            }
         }
 
         /***********************
@@ -874,12 +950,8 @@
             if (dropdownName) dropdownName.innerText = user.name;
             if (dropdownEmail) dropdownEmail.innerText = user.email;
 
-            const app = document.getElementById('main-app');
-            if (app) {
-                app.classList.remove('hidden-state');
-                app.style.opacity = '1';
-                app.style.pointerEvents = 'auto';
-            }
+            updateViewMode();
+
             renderTracks(tracks);
             setTimeout(() => { if (authOverlay) authOverlay.style.display = 'none'; }, 600);
 
@@ -888,6 +960,68 @@
             maybeShowAdminBtn();
             startInboxLoop();
         }
+
+        function updateViewMode() {
+            const isMobile = window.innerWidth <= 768;
+            const desktopApp = document.getElementById('main-app');
+            const mobileApp = document.getElementById('mobile-app');
+            const playerBar = document.getElementById('player-bar');
+
+            if (isMobile) {
+                // Mobile Mode
+                if (mobileApp) {
+                    mobileApp.style.display = 'block';
+                    // small delay to allow display block to apply before opacity transition
+                    requestAnimationFrame(() => {
+                        mobileApp.classList.remove('hidden-state');
+                        mobileApp.style.opacity = '1';
+                        mobileApp.style.pointerEvents = 'auto';
+                    });
+                }
+                if (desktopApp) desktopApp.style.display = 'none';
+                
+                // Adjust player bar to sit above bottom nav
+                if (playerBar) {
+                    // Check if player is active (translatedY)
+                    // We just set the style.bottom
+                    playerBar.style.bottom = 'calc(80px + env(safe-area-inset-bottom, 20px))'; 
+                    playerBar.style.width = '94%';
+                    playerBar.style.left = '3%';
+                    playerBar.style.borderRadius = '20px';
+                    playerBar.style.border = '1px solid rgba(255,255,255,0.1)';
+                    playerBar.style.backdropFilter = 'blur(20px)';
+                }
+            } else {
+                // Desktop Mode
+                if (desktopApp) {
+                    desktopApp.style.display = 'block';
+                    requestAnimationFrame(() => {
+                        desktopApp.classList.remove('hidden-state');
+                        desktopApp.style.opacity = '1';
+                        desktopApp.style.pointerEvents = 'auto';
+                    });
+                }
+                if (mobileApp) mobileApp.style.display = 'none';
+                
+                if (playerBar) {
+                    playerBar.style.bottom = '0';
+                    playerBar.style.width = '100%';
+                    playerBar.style.left = '0';
+                    playerBar.style.borderRadius = '0';
+                    playerBar.style.border = '';
+                    playerBar.style.borderTop = '1px solid rgba(255,255,255,0.1)';
+                }
+            }
+        }
+
+        window.addEventListener('resize', () => {
+             // check if logged in by checking auth overlay opacity or localStorage
+             // simplistic check: if auth overlay is hidden/opacity 0
+             const authOverlay = document.getElementById('auth-overlay');
+             if (authOverlay && getComputedStyle(authOverlay).opacity === '0') {
+                 updateViewMode();
+             }
+        });
 
         function logout(){
             localStorage.removeItem('jamusic_user');
@@ -1327,6 +1461,3 @@
     </script>
 </body>
 </html>
-
-
-
