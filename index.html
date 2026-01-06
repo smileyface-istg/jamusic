@@ -704,16 +704,16 @@
     </div>
 
     <!-- ADMIN modal -->
-    <div id="admin-overlay"></div>
-    <div id="admin-modal" class="admin-modal" style="position:fixed; left:50%; top:12%; transform:translateX(-50%); z-index:2001;">
+    <div id="admin-overlay" class="hidden md:block" style="display:none;"></div>
+    <div id="admin-modal" class="admin-modal hidden md:block" style="position:fixed; left:50%; top:12%; transform:translateX(-50%); z-index:2001; display:none;">
         <h3 class="text-lg font-bold mb-2">Admin - Send Broadcast</h3>
         <div class="space-y-2">
             <input id="admin-subject" placeholder="Subject" class="dn-input" />
             <input id="admin-title" placeholder="Title" class="dn-input" />
             <textarea id="admin-body" placeholder="Description / Body" class="dn-input" style="height:140px; resize:none;"></textarea>
             <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:6px;">
-                <button id="admin-cancel" class="px-3 py-2 rounded-xl bg-white/5">Cancel</button>
-                <button id="admin-send" class="px-3 py-2 rounded-xl bg-blue-600 text-white">Send</button>
+                <button type="button" id="admin-cancel" class="px-3 py-2 rounded-xl bg-white/5">Cancel</button>
+                <button type="button" id="admin-send" class="px-3 py-2 rounded-xl bg-blue-600 text-white">Send</button>
             </div>
         </div>
     </div>
@@ -1238,13 +1238,42 @@
         }
 
         function openAdminModal(){
-            document.getElementById('admin-overlay').classList.add('show');
-            document.getElementById('admin-modal').classList.add('show');
+            const overlay = document.getElementById('admin-overlay');
+            const modal = document.getElementById('admin-modal');
+            
+            if (overlay) {
+                overlay.style.display = 'block';
+                // force layout reflow
+                void overlay.offsetWidth;
+                overlay.classList.add('show');
+                overlay.classList.remove('hidden');
+            }
+            if (modal) {
+                modal.style.display = 'block';
+                void modal.offsetWidth;
+                modal.classList.add('show');
+                modal.classList.remove('hidden');
+            }
             document.body.classList.add('no-scroll');
         }
         function closeAdminModal(){
-            document.getElementById('admin-overlay').classList.remove('show');
-            document.getElementById('admin-modal').classList.remove('show');
+            const overlay = document.getElementById('admin-overlay');
+            const modal = document.getElementById('admin-modal');
+            
+            if (overlay) {
+                overlay.classList.remove('show');
+                setTimeout(() => { 
+                    overlay.style.display = 'none'; 
+                    overlay.classList.add('hidden');
+                }, 200);
+            }
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => { 
+                    modal.style.display = 'none'; 
+                    modal.classList.add('hidden');
+                }, 200);
+            }
             document.body.classList.remove('no-scroll');
         }
         function sendBroadcast(){
