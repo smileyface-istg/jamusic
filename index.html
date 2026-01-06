@@ -252,21 +252,24 @@
 
         .marquee-text {
             display: inline-block;
-            padding-left: 0;
+            white-space: nowrap;
             will-change: transform;
         }
 
-        /* Desktop: only marquee on card hover */
+        /* Desktop: only marquee on card/bar hover */
         @media (min-width: 769px) {
-            .music-card:hover .marquee-text {
-                animation: marquee 8s linear infinite;
+            .music-card:hover .marquee-text,
+            #player-bar:hover .marquee-text {
+                animation: marquee linear infinite;
+                animation-duration: inherit; /* Use duration set by JS */
             }
         }
 
-        /* Mobile: marquee if text overflows (handled by JS check or always on if simple) */
+        /* Mobile: marquee active class */
         @media (max-width: 768px) {
             .marquee-text-active {
-                animation: marquee 8s linear infinite;
+                animation: marquee linear infinite;
+                animation-duration: inherit;
             }
         }
 
@@ -922,7 +925,7 @@
     </div>
 
     <!-- PLAYER BAR -->
-    <div id="player-bar" class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 px-4 py-3 lg:px-6 lg:py-4 z-[2100] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.3,0,0,1)]">
+    <div id="player-bar" onclick="handlePlayerBarClick(event)" class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 px-4 py-3 lg:px-6 lg:py-4 z-[2100] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.3,0,0,1)]">
         <div class="max-w-[1800px] mx-auto grid grid-cols-3 items-center gap-4">
             
             <!-- Info (Left) -->
@@ -933,7 +936,7 @@
                         <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z"/></svg>
                     </div>
                 </div>
-                <div class="min-w-0">
+                <div class="min-w-0 marquee-container">
                     <h4 id="player-title" class="font-bold text-sm truncate text-white hover:underline cursor-pointer">Song Title</h4>
                     <p id="player-artist" class="text-xs text-slate-400 truncate hover:text-white transition-colors cursor-pointer">Artist Name</p>
                 </div>
@@ -2448,27 +2451,26 @@ Ready?`
             const track = tracks[currentTrackIndex];
             if (!track) return;
 
-            // Desktop UI updates
-            const artImg = document.getElementById('art-img');
-            const songTitle = document.getElementById('song-title');
-            const songArtist = document.getElementById('song-artist');
-            const playPauseBtn = document.getElementById('play-pause-btn');
+            // Player Bar updates (Main)
+            const playerImg = document.getElementById('player-img');
+            const playerTitle = document.getElementById('player-title');
+            const playerArtist = document.getElementById('player-artist');
             const playIcon = document.getElementById('play-icon');
             const pauseIcon = document.getElementById('pause-icon');
 
-            if (artImg) artImg.src = track.img;
-            if (songTitle) {
-                songTitle.innerText = track.title;
-                checkMarquee(songTitle);
+            if (playerImg) playerImg.src = track.img;
+            if (playerTitle) {
+                playerTitle.innerText = track.title;
+                checkMarquee(playerTitle);
             }
-            if (songArtist) songArtist.innerText = track.artist;
+            if (playerArtist) playerArtist.innerText = track.artist;
 
             if (playIcon && pauseIcon) {
                 playIcon.classList.toggle('hidden', isPlaying);
                 pauseIcon.classList.toggle('hidden', !isPlaying);
             }
 
-            // Mobile Player updates
+            // Mobile Fullscreen Player updates
             const mobileFullImg = document.getElementById('mobile-full-img');
             const mobileFullTitle = document.getElementById('mobile-full-title');
             const mobileFullArtist = document.getElementById('mobile-full-artist');
@@ -2492,25 +2494,6 @@ Ready?`
                 mobileFullPauseIcon.classList.toggle('hidden', !isPlaying);
             }
 
-            // Mobile mini player updates
-            const mobileArt = document.getElementById('mobile-art');
-            const mobileTitle = document.getElementById('mobile-title');
-            const mobileArtist = document.getElementById('mobile-artist');
-            const mobilePlayIcon = document.getElementById('mobile-play-icon');
-            const mobilePauseIcon = document.getElementById('mobile-pause-icon');
-
-            if (mobileArt) mobileArt.src = track.img;
-            if (mobileTitle) {
-                mobileTitle.innerText = track.title;
-                checkMarquee(mobileTitle);
-            }
-            if (mobileArtist) mobileArtist.innerText = track.artist;
-
-            if (mobilePlayIcon && mobilePauseIcon) {
-                mobilePlayIcon.classList.toggle('hidden', isPlaying);
-                mobilePauseIcon.classList.toggle('hidden', !isPlaying);
-            }
-
             // Repeat status
             const repeatBtn = document.getElementById('repeat-btn');
             const mobileRepeatBtn = document.getElementById('mobile-repeat-btn');
@@ -2527,7 +2510,17 @@ Ready?`
             }
         }
 
-        // Marquee Logic Helper
+        function handlePlayerBarClick(e) {
+            // Only trigger on mobile
+            if (window.innerWidth > 768) return;
+            
+            // Don't open if clicking a button or range input
+            if (e.target.closest('button') || e.target.closest('input[type="range"]')) return;
+            
+            openMobilePlayer();
+        }
+
+        /* Marquee Logic Helper */
         function checkMarquee(element) {
             if (!element) return;
             const container = element.parentElement;
@@ -2549,6 +2542,7 @@ Ready?`
                 const duration = Math.max(8, element.scrollWidth / 40);
                 element.style.animationDuration = `${duration}s`;
                 
+                // On mobile, it's always active
                 if (window.innerWidth <= 768) {
                     element.classList.add('marquee-text-active');
                 }
@@ -2680,16 +2674,6 @@ Ready?`
                 mobileFullSlider.oninput = (e) => {
                     const val = e.target.value;
                     audio.currentTime = val;
-                };
-            }
-
-            // Mobile Mini Player Click -> Open Full Player
-            const mobilePlayerBar = document.getElementById('mobile-player-bar');
-            if (mobilePlayerBar) {
-                mobilePlayerBar.onclick = (e) => {
-                    // Don't open if clicking the play button itself
-                    if (e.target.closest('button')) return;
-                    openMobilePlayer();
                 };
             }
 
