@@ -358,6 +358,128 @@
             .read-modal, .admin-modal { width: 92%; }
         }
 
+        /* Mobile Player Bar Fixes */
+        @media (max-width: 768px) {
+            #player-bar {
+                padding: 10px 12px;
+                height: 72px; /* Fixed height for a compact feel */
+                bottom: 64px; /* Above mobile bottom nav */
+                display: flex;
+                align-items: center;
+            }
+            #player-bar .max-w-\[1800px\] {
+                display: flex;
+                flex-direction: row; /* Horizontal layout */
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                gap: 8px;
+            }
+            #player-bar .grid-cols-3 {
+                display: contents; /* Break the grid for flex layout */
+            }
+            /* Left side: Image + Title/Artist */
+            #player-bar .flex.items-center.gap-4.min-w-0 {
+                flex: 1;
+                gap: 10px;
+                order: 1;
+                overflow: hidden;
+            }
+            #player-img {
+                width: 44px;
+                height: 44px;
+                border-radius: 8px;
+                flex-shrink: 0;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+            #player-title {
+                font-size: 13px;
+                max-width: 100%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                font-weight: 700;
+            }
+            #player-artist {
+                font-size: 11px;
+                max-width: 100%;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                color: rgba(255,255,255,0.5);
+            }
+            /* Middle side: Controls (compact) */
+            #player-bar .flex.flex-col.items-center.gap-1\.5.w-full {
+                width: auto;
+                flex-direction: row;
+                gap: 12px;
+                order: 2; /* Put controls in the middle */
+            }
+            #player-bar .flex.items-center.gap-4.lg\:gap-8 {
+                gap: 10px;
+            }
+            #player-bar button[onclick="prevTrack()"], 
+            #player-bar button[onclick="nextTrack()"] {
+                padding: 4px;
+            }
+            #player-bar button[onclick="prevTrack()"] svg, 
+            #player-bar button[onclick="nextTrack()"] svg {
+                width: 20px;
+                height: 20px;
+            }
+            #play-pause-btn {
+                width: 36px;
+                height: 36px;
+            }
+            #play-pause-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+            /* Progress bar and time - hidden or minimized on mobile bar to save space */
+            #player-bar .flex.items-center.gap-2.w-full.max-w-\[600px\] {
+                position: absolute;
+                top: 0; /* Align with the top edge of the bar */
+                left: 0;
+                right: 0;
+                max-width: none;
+                padding: 0;
+                gap: 0;
+                z-index: 10;
+            }
+            #progress-bar-fill {
+                height: 3px !important;
+                background-color: #1db954 !important; /* Spotify green */
+            }
+            #seek-slider {
+                height: 6px !important;
+            }
+            #seek-thumb {
+                display: none !important;
+            }
+            #curr-time, #dur-time {
+                display: none !important;
+            }
+            #player-bar .group.relative.flex-1.h-1.flex.items-center {
+                height: 3px;
+            }
+            /* Right side: Extras (lyrics only on mobile) */
+            #player-bar .flex.items-center.justify-end.gap-3.lg\:gap-5.min-w-0 {
+                width: auto;
+                gap: 8px;
+                order: 3;
+            }
+            #lyrics-btn {
+                padding: 6px !important;
+            }
+            #lyrics-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+            #volume-slider-container {
+                display: none; /* Hide volume on mobile bar to keep it comfy */
+            }
+        }
+
         .no-scroll { overflow: hidden !important; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
 
@@ -365,7 +487,7 @@
         #lyrics-overlay {
             position: fixed;
             inset: 0;
-            background: #003e54; /* Exact dark teal from user image */
+            background: #1DB954; /* Exact green */
             z-index: 2000;
             display: none;
             flex-direction: column;
@@ -818,7 +940,7 @@
                     </svg>
                 </button>
                 
-                <div class="hidden md:flex items-center gap-2 group w-32">
+                <div id="volume-slider-container" class="hidden md:flex items-center gap-2 group w-32">
                     <button class="text-slate-400 hover:text-white transition-colors" id="mute-btn">
                         <svg id="volume-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
                     </button>
