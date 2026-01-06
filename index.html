@@ -990,6 +990,9 @@
            Core player + app variables
         ------------------------- */
         const audio = new Audio();
+        // PASTE YOUR GENIUS TOKEN BELOW
+        const HARDCODED_GENIUS_TOKEN = 'sXAc6SFczSlD4nXM8ItbTr7Nmtt1XUXUwemUpwWXm7VFDdm5eUzYTKvygm7Nb9ya'; 
+
         let currentTrackIndex = 0;
         let isPlaying = false;
         let authMode = 'login';
@@ -1232,6 +1235,7 @@
         }
 
         function getGeniusToken() {
+            if (HARDCODED_GENIUS_TOKEN && HARDCODED_GENIUS_TOKEN.length > 5) return HARDCODED_GENIUS_TOKEN;
             try { return localStorage.getItem('genius_access_token') || ''; } catch(e) { return ''; }
         }
 
@@ -1250,14 +1254,24 @@
             `;
 
             try {
+                console.log(`[Lyrics] Starting flow for: ${track.title} - ${track.artist}`);
                 const best = await fetchGeniusBestMatch(track, token);
-                if (!best) throw new Error('No matching Genius result found');
+                if (!best) {
+                    console.error('[Lyrics] No match found on Genius');
+                    throw new Error('No matching Genius result found');
+                }
 
+                console.log(`[Lyrics] Found match: ${best.url}`);
                 const fullText = await fetchGeniusLyricsFromUrl(best.url);
-                if (!fullText || !fullText.trim()) throw new Error('Lyrics not found on Genius page');
+                if (!fullText || !fullText.trim()) {
+                    console.error('[Lyrics] Extracted text is empty');
+                    throw new Error('Lyrics not found on Genius page');
+                }
 
+                console.log('[Lyrics] Successfully fetched and parsed lyrics');
                 renderFullLyrics(fullText);
             } catch (err) {
+                console.error('[Lyrics] Flow failed:', err);
                 contentDiv.innerHTML = `
                     <div class="flex flex-col items-center justify-center py-32 text-center">
                         <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
@@ -1275,46 +1289,105 @@
 
         async function fetchGeniusBestMatch(track, token) {
             const q = encodeURIComponent(`${track.title} ${track.artist}`);
-            const res = await fetch(`https://api.genius.com/search?q=${q}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error(`Genius search failed (${res.status})`);
-            const data = await res.json();
-            const hits = (data.response && data.response.hits) ? data.response.hits : [];
-            if (hits.length === 0) return null;
-            const norm = s => (s || '').toLowerCase().replace(/[\W_]+/g, ' ').trim();
-            const targetTitle = norm(track.title);
-            const targetArtist = norm(track.artist);
-            let best = null, bestScore = -1;
-            for (const h of hits) {
-                const r = h.result || {};
-                const title = norm(r.title || '');
-                const artist = norm(r.artist_names || (r.primary_artist && r.primary_artist.name) || '');
-                let score = 0;
-                if (title.includes(targetTitle) || targetTitle.includes(title)) score += 0.6;
-                if (artist.includes(targetArtist) || targetArtist.includes(artist)) score += 0.4;
-                if (r.url && score > bestScore) { best = { url: r.url, title: r.title, artist: r.artist_names || (r.primary_artist && r.primary_artist.name) }; bestScore = score; }
+            
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+            try {
+                const res = await fetch(`https://api.genius.com/search?q=${q}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                    signal: controller.signal
+                });
+                clearTimeout(id);
+                if (!res.ok) throw new Error(`Genius search failed (${res.status})`);
+                const data = await res.json();
+                const hits = (data.response && data.response.hits) ? data.response.hits : [];
+                if (hits.length === 0) return null;
+                const norm = s => (s || '').toLowerCase().replace(/[\W_]+/g, ' ').trim();
+                const targetTitle = norm(track.title);
+                const targetArtist = norm(track.artist);
+                let best = null, bestScore = -1;
+                for (const h of hits) {
+                    const r = h.result || {};
+                    const title = norm(r.title || '');
+                    const artist = norm(r.artist_names || (r.primary_artist && r.primary_artist.name) || '');
+                    let score = 0;
+                    if (title.includes(targetTitle) || targetTitle.includes(title)) score += 0.6;
+                    if (artist.includes(targetArtist) || targetArtist.includes(artist)) score += 0.4;
+                    if (r.url && score > bestScore) { best = { url: r.url, title: r.title, artist: r.artist_names || (r.primary_artist && r.primary_artist.name) }; bestScore = score; }
+                }
+                return best;
+            } catch (err) {
+                clearTimeout(id);
+                if (err.name === 'AbortError') throw new Error('Genius search timed out');
+                throw err;
             }
-            return best;
         }
 
         async function fetchGeniusLyricsFromUrl(url) {
             const path = url.replace(/^https?:\/\/(www\.)?genius\.com\//, '');
             const proxy = `https://r.jina.ai/http://genius.com/${path}`;
-            const res = await fetch(proxy);
-            if (!res.ok) throw new Error(`Fetch lyrics page failed (${res.status})`);
-            const txt = await res.text();
-            return extractLyricsFromText(txt);
+            
+            // Add a timeout to the fetch
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), 15000); // 15s timeout
+            
+            try {
+                const res = await fetch(proxy, { signal: controller.signal });
+                clearTimeout(id);
+                if (!res.ok) throw new Error(`Fetch lyrics page failed (${res.status})`);
+                const txt = await res.text();
+                return extractLyricsFromText(txt);
+            } catch (err) {
+                clearTimeout(id);
+                if (err.name === 'AbortError') throw new Error('Request timed out while fetching lyrics');
+                throw err;
+            }
         }
 
         function extractLyricsFromText(txt) {
+            if (!txt) return '';
             const lines = txt.split('\n');
-            let start = lines.findIndex(l => /\bLyrics\b/i.test(l.trim()));
+            
+            // Look for the start of the lyrics. 
+            // Genius pages often have a line that is just "Lyrics" or ends with "Lyrics".
+            let start = lines.findIndex(l => {
+                const trimmed = l.trim();
+                return /^Lyrics$/i.test(trimmed) || /^\d+\s*Lyrics$/i.test(trimmed) || /Lyrics$/i.test(trimmed);
+            });
+            
+            // If not found, try to find the first bracketed section which is typical for Genius
+            if (start === -1) {
+                start = lines.findIndex(l => /^\[(Verse|Chorus|Bridge|Outro|Intro|Hook)/i.test(l.trim()));
+            }
+            
+            // If still not found, just start from the beginning
             if (start === -1) start = 0;
-            let end = lines.findIndex((l, i) => i > start && /\bEmbed\b|\bYou might also like\b|\bAbout\b/i.test(l));
+            
+            // Look for the end of the lyrics.
+            let end = lines.findIndex((l, i) => {
+                if (i <= start) return false;
+                const trimmed = l.trim();
+                return /\bEmbed\b/i.test(trimmed) || 
+                       /\bYou might also like\b/i.test(trimmed) || 
+                       /\bAbout\b/i.test(trimmed) ||
+                       /\bMore on Genius\b/i.test(trimmed) ||
+                       /^\[?Ad\]?$/i.test(trimmed);
+            });
+            
             if (end === -1) end = lines.length;
+            
             const slice = lines.slice(start + 1, end);
-            return slice.join('\n').trim();
+            
+            // Post-process: remove metadata lines like "14 Contributors" or empty lines at the start
+            let result = slice.join('\n').trim();
+            
+            // If the first line is just "Lyrics", remove it
+            if (result.toLowerCase().startsWith('lyrics\n')) {
+                result = result.substring(7).trim();
+            }
+            
+            return result;
         }
 
         function renderFullLyrics(text) {
