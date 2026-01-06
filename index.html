@@ -850,7 +850,6 @@
         <div class="flex gap-3 mb-4">
             <button id="tab-general" class="tab-btn active">General</button>
             <button id="tab-zoom" class="tab-btn">Zoom</button>
-            <button id="tab-lyrics-settings" class="tab-btn">Lyrics</button>
         </div>
 
         <div id="settings-content" class="flex-1 overflow-y-auto">
@@ -869,19 +868,6 @@
                 <p class="font-semibold text-sm text-slate-400 mb-2">Page Zoom</p>
                 <input type="range" id="settings-zoom-slider" min="0.6" max="1.4" step="0.05" value="1" class="w-full">
                 <p class="text-xs text-slate-500 mt-2">Adjust the page scale for readability on mobile or desktop.</p>
-            </div>
-
-            <div id="settings-lyrics" class="hidden">
-                <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <p class="font-semibold text-[11px] text-slate-400 mb-2 uppercase tracking-wider">Genius Access Token</p>
-                    <input type="text" id="genius-token-input" placeholder="Enter your Genius Client Access Token" class="dn-input" />
-                    <p class="text-[10px] text-slate-500 mt-2">To get a token: 
-                        <a href="https://genius.com/api-clients" target="_blank" class="text-blue-400 hover:underline">1. Create a Genius API Client</a>, 
-                        2. Copy the "Client Access Token".
-                    </p>
-                </div>
-
-                <button id="save-lyrics-settings-btn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20">Apply Settings</button>
             </div>
         </div>
     </div>
@@ -991,7 +977,7 @@
         ------------------------- */
         const audio = new Audio();
         // PASTE YOUR GENIUS TOKEN BELOW
-        const HARDCODED_GENIUS_TOKEN = 'sXAc6SFczSlD4nXM8ItbTr7Nmtt1XUXUwemUpwWXm7VFDdm5eUzYTKvygm7Nb9ya'; 
+        const HARDCODED_GENIUS_TOKEN = ''; 
 
         let currentTrackIndex = 0;
         let isPlaying = false;
@@ -1006,16 +992,262 @@
          * Track Data
          ***********************/
         const tracks = [
-            { id: '1', title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
-            { id: '2', title: 'End of Beginning', artist: 'Djo', img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
-            { id: '3', title: 'Heat Waves', artist: 'Glass Animals', img: 'https://i.scdn.co/image/ab67616d0000b2739e495fb707973f3390850eea', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3' },
-            { id: '4', title: 'Stereo Hearts', artist: 'Gym Class Heroes', img: 'https://i.scdn.co/image/ab67616d0000b273706dcf46953a040b8ed4b333', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3' },
-            { id: '5', title: 'Get Lucky', artist: 'Daft Punk', img: 'https://images-ext-1.discordapp.net/external/xR3pl2SlUtADo9357RJ1lvKlsgnie7faJtruZyDKNu8/%3Fcb%3D20140421225330%26path-prefix%3Des/https/static.wikia.nocookie.net/daftpunk/images/7/71/Get_Lucky.jpg/revision/latest?format=png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3' },
-            { id: '6', title: 'Rap God', artist: 'Eminem', img: 'https://images-ext-1.discordapp.net/external/5NjINKSPrPYMPecFhmRVSyb_aMQAQTUEB_7EmfB9EME/https/i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2?format=webp', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3' },
-            { id: '7', title: 'A LITTLE THEORIZING', artist: 'Stupendium', img: 'https://i.scdn.co/image/ab67616d0000b273bfebcc991d99e277f3260221', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/A%20Little%20Theorizing%20Lyrics.mp3' },
-            { id: '8', title: 'Corrupted', artist: 'Danimal Cannon', img: 'https://i.scdn.co/image/ab67616d0000b27339be440fe5b4ef67f9de6cc7', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Danimal%20Cannon%20&%20Zef%20-%20Corrupted.mp3' },
-            { id: '9', title: 'River Flows In You', artist: 'DJ Herjuana', img: 'https://i.scdn.co/image/ab67616d0000b27371cde6e77fc2d217cbc5f567', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/SpotiDownloader.com%20-%20River%20Flows%20in%20You%20-%20DJ%20HERJUANA.mp3' },
-            { id: '10', title: 'FTW', artist: 'Lets be Friends', img: 'https://upload.wikimedia.org/wikipedia/en/5/53/FTW_Lets_Be_Friends_Orignal_Cover.jpeg', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/%5BElectro%5D%20-%20Lets%20Be%20Friends%20-%20FTW%20%5BMonstercat%20Release%5D.mp3' }
+            { 
+                id: '1', 
+                title: 'Never Gonna Give You Up', 
+                artist: 'Rick Astley', 
+                img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3',
+                lyrics: `[Intro]
+(Ooh, ooh)
+(Ooh, ooh)
+
+[Verse 1]
+We're no strangers to love
+You know the rules and so do I (do I)
+A full commitment's what I'm thinking of
+You wouldn't get this from any other guy
+
+[Pre-Chorus]
+I just wanna tell you how I'm feeling
+Gotta make you understand
+
+[Chorus]
+Never gonna give you up
+Never gonna let you down
+Never gonna run around and desert you
+Never gonna make you cry
+Never gonna say goodbye
+Never gonna tell a lie and hurt you
+
+[Verse 2]
+We've known each other for so long
+Your heart's been aching, but you're too shy to say it (to say it)
+Inside, we both know what's been going on (going on)
+We know the game and we're gonna play it
+
+[Pre-Chorus]
+And if you ask me how I'm feeling
+Don't tell me you're too blind to see
+
+[Chorus]
+Never gonna give you up
+Never gonna let you down
+Never gonna run around and desert you
+Never gonna make you cry
+Never gonna say goodbye
+Never gonna tell a lie and hurt you
+Never gonna give you up
+Never gonna let you down
+Never gonna run around and desert you
+Never gonna make you cry
+Never gonna say goodbye
+Never gonna tell a lie and hurt you
+
+[Bridge]
+(Ooh, give you up)
+(Ooh, give you up)
+(Ooh) Never gonna give, never gonna give (give you up)
+(Ooh) Never gonna give, never gonna give (give you up)
+
+[Verse 3]
+We've known each other for so long
+Your heart's been aching, but you're too shy to say it (to say it)
+Inside, we both know what's been going on (going on)
+We know the game and we're gonna play it
+
+[Pre-Chorus]
+I just wanna tell you how I'm feeling
+Gotta make you understand
+
+[Chorus]
+Never gonna give you up
+Never gonna let you down
+Never gonna run around and desert you
+Never gonna make you cry
+Never gonna say goodbye
+Never gonna tell a lie and hurt you
+Never gonna give you up
+Never gonna let you down
+Never gonna run around and desert you
+Never gonna make you cry
+Never gonna say goodbye
+Never gonna tell a lie and hurt you
+Never gonna give you up
+Never gonna let you down
+Never gonna run around and desert you
+Never gonna make you cry
+Never gonna say goodbye
+Never gonna tell a lie and hurt you`
+            },
+            { 
+                id: '2', 
+                title: 'End of Beginning', 
+                artist: 'Djo', 
+                img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3',
+                lyrics: `[Intro]
+(One, two, three)
+
+[Verse 1]
+Just trust me, you'll be fine
+And you're lucky to be here
+And I'm happy to be there
+And I'm happy to be here
+
+[Verse 2]
+And I'm happy to be there
+And I'm happy to be here
+And I'm happy to be there
+And I'm happy to be here
+
+[Chorus]
+And I'm happy to be there
+And I'm happy to be here
+And I'm happy to be there
+And I'm happy to be here
+
+[Outro]
+(One, two, three)`
+            },
+            { 
+                id: '3', 
+                title: 'Heat Waves', 
+                artist: 'Glass Animals', 
+                img: 'https://i.scdn.co/image/ab67616d0000b2739e495fb707973f3390850eea', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3',
+                lyrics: `[Intro]
+(Road shimmer wigglin' the vision in the heat)
+(Translucent, blue)
+
+[Verse 1]
+Last night, all I think about is you
+Don't stop, baby, you can walk it through
+Don't wanna be alone, don't wanna be alone
+Don't wanna be alone, don't wanna be alone
+
+[Chorus]
+Sometimes, all I think about is you
+Late nights in the middle of June
+Heat waves been faking me out
+Can't make you happier now`
+            },
+            { 
+                id: '4', 
+                title: 'Stereo Hearts', 
+                artist: 'Gym Class Heroes', 
+                img: 'https://i.scdn.co/image/ab67616d0000b273706dcf46953a040b8ed4b333', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3',
+                lyrics: `[Chorus: Adam Levine]
+My heart's a stereo
+It beats for you, so listen close
+Hear my thoughts in every no-te
+Make me your radio
+And turn me up when you feel low
+This melody was meant for you
+Just sing along to my stereo
+
+[Verse 1: Travie McCoy]
+Gym Class Heroes, baby!
+If I was just another dusty record on the shelf
+Would you blow me off and play me like everybody else?
+If I was askin' for a dime, then you find another man
+Would you overspend your money just to hold my hand?`
+            },
+            { 
+                id: '5', 
+                title: 'Get Lucky', 
+                artist: 'Daft Punk', 
+                img: 'https://images-ext-1.discordapp.net/external/xR3pl2SlUtADo9357RJ1lvKlsgnie7faJtruZyDKNu8/%3Fcb%3D20140421225330%26path-prefix%3Des/https/static.wikia.nocookie.net/daftpunk/images/7/71/Get_Lucky.jpg/revision/latest?format=png', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3',
+                lyrics: `[Verse 1: Pharrell Williams]
+Like the legend of the phoenix
+All ends with beginnings
+What keeps the planet spinning (Uh)
+The force of love beginning (Look)
+
+[Pre-Chorus: Pharrell Williams]
+We've come too far to give up who we are
+So let's raise the bar and our cups to the stars
+
+[Chorus: Pharrell Williams]
+She's up all night 'til the sun
+I'm up all night to get some
+She's up all night for good fun
+I'm up all night to get lucky
+We're up all night 'til the sun
+We're up all night to get some
+We're up all night for good fun
+We're up all night to get lucky`
+            },
+            { 
+                id: '6', 
+                title: 'Rap God', 
+                artist: 'Eminem', 
+                img: 'https://images-ext-1.discordapp.net/external/5NjINKSPrPYMPecFhmRVSyb_aMQAQTUEB_7EmfB9EME/https/i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2?format=webp', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3',
+                lyrics: `[Intro]
+Look, I was gonna go easy on you and not to hurt your feelings
+But I'm only going to get this one chance
+Something's wrong, I can feel it (Six minutes, Slim Shady, you're on)
+Just a feeling I've got, like something's about to happen, but I don't know what
+If that means what I think it means, we're in trouble, big trouble
+And if he is as bananas as you say, I'm not taking any chances
+You are just what the doctor ordered
+
+[Chorus]
+I'm beginning to feel like a Rap God, Rap God
+All my people from the front to the back nod, back nod
+Now who thinks their arms are long enough to slap box, slap box?
+They said I rap like a robot, so call me Rap-bot`
+            },
+            { 
+                id: '7', 
+                title: 'A LITTLE THEORIZING', 
+                artist: 'Stupendium', 
+                img: 'https://i.scdn.co/image/ab67616d0000b273bfebcc991d99e277f3260221', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/A%20Little%20Theorizing%20Lyrics.mp3',
+                lyrics: `[Intro]
+(A Little Theorizing)
+
+[Verse 1]
+Welcome to the show
+The curtains are open
+The lights are low
+The audience is hopin'
+For a little theorizing`
+            },
+            { 
+                id: '8', 
+                title: 'Corrupted', 
+                artist: 'Danimal Cannon', 
+                img: 'https://i.scdn.co/image/ab67616d0000b27339be440fe5b4ef67f9de6cc7', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Danimal%20Cannon%20&%20Zef%20-%20Corrupted.mp3',
+                lyrics: `[Instrumental]`
+            },
+            { 
+                id: '9', 
+                title: 'River Flows In You', 
+                artist: 'DJ Herjuana', 
+                img: 'https://i.scdn.co/image/ab67616d0000b27371cde6e77fc2d217cbc5f567', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/SpotiDownloader.com%20-%20River%20Flows%20in%20You%20-%20DJ%20HERJUANA.mp3',
+                lyrics: `[Instrumental]`
+            },
+            { 
+                id: '10', 
+                title: 'FTW', 
+                artist: 'Lets be Friends', 
+                img: 'https://upload.wikimedia.org/wikipedia/en/5/53/FTW_Lets_Be_Friends_Orignal_Cover.jpeg', 
+                src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/%5BElectro%5D%20-%20Lets%20Be%20Friends%20-%20FTW%20%5BMonstercat%20Release%5D.mp3',
+                lyrics: `[Intro]
+Placeholder
+[Intro]
+things and things while
+things and thing shilw
+[Chorus]
+things
+things`
+            }
         ];
 
         // Track statistics (play counts, last played)
@@ -1184,25 +1416,23 @@
          ***********************/
         async function fetchLyrics(track) {
             if (!lyricsVisible) return;
-            const token = getGeniusToken();
-            if (token) {
-                await startGeniusLyricsFlow(track, token);
+            const contentDiv = document.getElementById('lyrics-content');
+            if (!contentDiv) return;
+
+            if (track.lyrics) {
+                renderFullLyrics(track.lyrics);
             } else {
-                const contentDiv = document.getElementById('lyrics-content');
-                if (contentDiv) {
-                    contentDiv.innerHTML = `
-                        <div class="flex flex-col items-center justify-center py-32 text-center">
-                            <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-6">
-                                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-                                </svg>
-                            </div>
-                            <h3 class="text-white font-bold text-2xl mb-2">Genius token required</h3>
-                            <p class="text-slate-400 max-w-sm mb-8">To display full lyrics, you need to add your Genius Client Access Token in the settings.</p>
-                            <button class="px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:scale-105 transition-transform shadow-lg shadow-blue-500/20" onclick="document.getElementById('account-settings-btn').click(); document.getElementById('tab-lyrics-settings').click();">Open Lyrics Settings</button>
+                contentDiv.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-32 text-center">
+                        <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
                         </div>
-                    `;
-                }
+                        <h3 class="text-white font-bold text-2xl mb-2">No lyrics available</h3>
+                        <p class="text-slate-400 max-w-sm mb-8">Lyrics for this track haven't been added yet.</p>
+                    </div>
+                `;
             }
         }
 
@@ -1234,244 +1464,13 @@
             }
         }
 
-        function getGeniusToken() {
-            if (HARDCODED_GENIUS_TOKEN && HARDCODED_GENIUS_TOKEN.length > 5) return HARDCODED_GENIUS_TOKEN;
-            try { return localStorage.getItem('genius_access_token') || ''; } catch(e) { return ''; }
-        }
-
-        async function startGeniusLyricsFlow(track, token) {
-            const contentDiv = document.getElementById('lyrics-content');
-            if (!contentDiv) return;
-            contentDiv.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-32 text-center">
-                    <div class="relative w-16 h-16 mb-8">
-                        <div class="absolute inset-0 border-4 border-white/10 rounded-full"></div>
-                        <div class="absolute inset-0 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                    <h3 class="text-white font-bold text-2xl mb-2">Searching for lyrics...</h3>
-                    <p class="text-slate-400">Fetching the full story from Genius</p>
-                </div>
-            `;
-
-            try {
-                console.log(`[Lyrics] Starting flow for: ${track.title} - ${track.artist}`);
-                const best = await fetchGeniusBestMatch(track, token);
-                if (!best) {
-                    console.error('[Lyrics] No match found on Genius');
-                    throw new Error('No matching Genius result found');
-                }
-
-                console.log(`[Lyrics] Found match: ${best.url}`);
-                const fullText = await fetchGeniusLyricsFromUrl(best.url);
-                if (!fullText || !fullText.trim()) {
-                    console.error('[Lyrics] Extracted text is empty');
-                    throw new Error('Lyrics not found on Genius page');
-                }
-
-                console.log('[Lyrics] Successfully fetched and parsed lyrics');
-                renderFullLyrics(fullText);
-            } catch (err) {
-                console.error('[Lyrics] Flow failed:', err);
-                contentDiv.innerHTML = `
-                    <div class="flex flex-col items-center justify-center py-32 text-center">
-                        <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
-                            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M7.938 4.938a10 10 0 0114.124 14.124M4.938 7.938a10 10 0 0114.124 14.124"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-white font-bold text-2xl mb-2">Couldn't load lyrics</h3>
-                        <p class="text-slate-400 max-w-sm mb-8">${escapeHtml(err.message || 'Unknown error')}</p>
-                        <button onclick="fetchLyrics(tracks[currentTrackIndex])" class="px-8 py-3 bg-white text-black rounded-full font-bold hover:scale-105 transition-transform">Try Again</button>
-                    </div>
-                `;
-            }
-        }
-
-        async function fetchGeniusBestMatch(track, token) {
-            // Clean up title: remove (Remastered), - Radio Edit, etc.
-            const cleanTitle = track.title
-                .replace(/\(Remastered.*?\)/gi, '')
-                .replace(/- .*?Remastered/gi, '')
-                .replace(/\(Radio Edit\)/gi, '')
-                .replace(/- Radio Edit/gi, '')
-                .replace(/\(feat\..*?\)/gi, '')
-                .trim();
-                
-            const q = encodeURIComponent(`${cleanTitle} ${track.artist}`);
-            
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 10000); 
-            
-            try {
-                const res = await fetch(`https://api.genius.com/search?q=${q}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                    signal: controller.signal
-                });
-                clearTimeout(id);
-                if (!res.ok) throw new Error(`Genius search failed (${res.status})`);
-                const data = await res.json();
-                const hits = (data.response && data.response.hits) ? data.response.hits : [];
-                if (hits.length === 0) return null;
-                
-                const norm = s => (s || '').toLowerCase().replace(/[\W_]+/g, ' ').trim();
-                const targetTitle = norm(cleanTitle);
-                const targetArtist = norm(track.artist);
-                
-                let best = null, bestScore = -1;
-                for (const h of hits) {
-                    const r = h.result || {};
-                    const title = norm(r.title || '');
-                    const artist = norm(r.artist_names || (r.primary_artist && r.primary_artist.name) || '');
-                    
-                    let score = 0;
-                    if (title.includes(targetTitle) || targetTitle.includes(title)) score += 0.5;
-                    if (artist.includes(targetArtist) || targetArtist.includes(artist)) score += 0.5;
-                    if (title === targetTitle && artist === targetArtist) score += 1;
-
-                    if (r.url && score > bestScore) { 
-                        best = { url: r.url, title: r.title, artist: r.artist_names || (r.primary_artist && r.primary_artist.name) }; 
-                        bestScore = score; 
-                    }
-                }
-                
-                if (!best && hits.length > 0) {
-                    const r = hits[0].result;
-                    best = { url: r.url, title: r.title, artist: r.artist_names };
-                }
-
-                return best;
-            } catch (err) {
-                clearTimeout(id);
-                if (err.name === 'AbortError') throw new Error('Genius search timed out');
-                throw err;
-            }
-        }
-
-        async function fetchGeniusLyricsFromUrl(url) {
-            // Use a simple CORS proxy. No AI, just raw data.
-            const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-            
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 15000); 
-            
-            try {
-                const res = await fetch(proxy, { signal: controller.signal });
-                clearTimeout(id);
-                if (!res.ok) throw new Error(`Could not reach Genius (${res.status})`);
-                
-                const html = await res.text();
-                if (!html) throw new Error('Genius returned no content');
-                
-                return extractLyricsFromHTML(html);
-            } catch (err) {
-                clearTimeout(id);
-                console.error('[Lyrics] Fetch error:', err);
-                throw err;
-            }
-        }
-
-        function extractLyricsFromHTML(html) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // 1. Try the "Pro" way: Parse the preloaded state script (most reliable)
-            try {
-                const scripts = Array.from(doc.querySelectorAll('script'));
-                const stateScript = scripts.find(s => s.textContent.includes('window.__PRELOADED_STATE__'));
-                if (stateScript) {
-                    const content = stateScript.textContent;
-                    const jsonStart = content.indexOf('{');
-                    const jsonEnd = content.lastIndexOf('}') + 1;
-                    const jsonStr = content.substring(jsonStart, jsonEnd);
-                    const state = JSON.parse(jsonStr);
-                    
-                    // Path to lyrics in Genius state
-                    const songData = state.songPage || state.songs?.song || {};
-                    if (songData.lyricsData?.body?.html) {
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = songData.lyricsData.body.html;
-                        return tempDiv.innerText.trim();
-                    }
-                }
-            } catch (e) {
-                console.warn('[Lyrics] Preloaded state parsing failed, falling back to DOM parsing', e);
-            }
-
-            // 2. Try the "Basic" way: CSS selectors
-            let containers = doc.querySelectorAll('[class^="Lyrics__Container"], .lyrics, [data-lyrics-container="true"]');
-            if (containers.length > 0) {
-                let fullLyrics = '';
-                containers.forEach(c => {
-                    // Replace <br> with newlines for better formatting
-                    const clone = c.cloneNode(true);
-                    clone.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
-                    fullLyrics += clone.innerText + '\n\n';
-                });
-                return fullLyrics.trim();
-            }
-            
-            // 3. Last resort: Clean the body text
-            const bodyText = doc.body.innerText;
-            const cleaned = extractLyricsFromText(bodyText);
-            if (cleaned && cleaned.length > 100) return cleaned;
-
-            throw new Error('Could not find lyrics on the page');
-        }
-
-        function extractLyricsFromText(txt) {
-            if (!txt) return '';
-            const lines = txt.split('\n');
-            
-            // Look for the start of the lyrics. 
-            // Genius pages often have a line that is just "Lyrics" or ends with "Lyrics".
-            let start = lines.findIndex(l => {
-                const trimmed = l.trim();
-                return /^Lyrics$/i.test(trimmed) || /^\d+\s*Lyrics$/i.test(trimmed) || /Lyrics$/i.test(trimmed);
-            });
-            
-            // If not found, try to find the first bracketed section which is typical for Genius
-            if (start === -1) {
-                start = lines.findIndex(l => /^\[(Verse|Chorus|Bridge|Outro|Intro|Hook)/i.test(l.trim()));
-            }
-            
-            // If still not found, just start from the beginning
-            if (start === -1) start = 0;
-            
-            // Look for the end of the lyrics.
-            let end = lines.findIndex((l, i) => {
-                if (i <= start) return false;
-                const trimmed = l.trim();
-                return /\bEmbed\b/i.test(trimmed) || 
-                       /\bYou might also like\b/i.test(trimmed) || 
-                       /\bAbout\b/i.test(trimmed) ||
-                       /\bMore on Genius\b/i.test(trimmed) ||
-                       /^\[?Ad\]?$/i.test(trimmed);
-            });
-            
-            if (end === -1) end = lines.length;
-            
-            const slice = lines.slice(start + 1, end);
-            
-            // Post-process: remove metadata lines like "14 Contributors" or empty lines at the start
-            let result = slice.join('\n').trim();
-            
-            // If the first line is just "Lyrics", remove it
-            if (result.toLowerCase().startsWith('lyrics\n')) {
-                result = result.substring(7).trim();
-            }
-            
-            return result;
-        }
-
         function renderFullLyrics(text) {
             const contentDiv = document.getElementById('lyrics-content');
             if (!contentDiv) return;
             contentDiv.innerHTML = '';
             
-            // Clean up text: remove multiple newlines, trim lines
             const lines = text.split('\n')
-                .map(l => l.trim())
-                .filter(l => l.length > 0 || (l === '' && false)); // filter empty lines if needed, but keeping them for spacing is better
+                .map(l => l.trim());
             
             for (const ln of lines) {
                 if (ln === '') {
@@ -1485,18 +1484,6 @@
                 line.innerText = ln;
                 contentDiv.appendChild(line);
             }
-        }
-
-        function seekToLyric(time) {
-            audio.currentTime = time;
-            if (audio.paused) audio.play();
-        }
-
-        const LYRIC_OFFSET = 0.1;
-        let lastActiveIndex = -1;
-        function updateLyricsSync() {
-            // Static lyrics display for Genius integration
-            if (!lyricsVisible) return;
         }
 
         /***********************
@@ -1741,7 +1728,6 @@
             function sync() {
                 if (!audio.paused) {
                     updatePlayerUIProgress();
-                    if (lyricsVisible) updateLyricsSync();
                 }
                 syncAnimationId = requestAnimationFrame(sync);
             }
@@ -2298,65 +2284,20 @@
 
             // settings tabs
             const tabGeneral = document.getElementById('tab-general'), 
-                  tabZoom = document.getElementById('tab-zoom'),
-                  tabLyrics = document.getElementById('tab-lyrics-settings');
+                  tabZoom = document.getElementById('tab-zoom');
 
             if (tabGeneral) tabGeneral.addEventListener('click', () => { 
                 document.getElementById('settings-general').classList.remove('hidden'); 
                 document.getElementById('settings-zoom').classList.add('hidden'); 
-                document.getElementById('settings-lyrics').classList.add('hidden'); 
                 tabGeneral.classList.add('active'); 
                 tabZoom.classList.remove('active'); 
-                if(tabLyrics) tabLyrics.classList.remove('active');
             });
             if (tabZoom) tabZoom.addEventListener('click', () => { 
                 document.getElementById('settings-general').classList.add('hidden'); 
                 document.getElementById('settings-zoom').classList.remove('hidden'); 
-                document.getElementById('settings-lyrics').classList.add('hidden'); 
                 tabGeneral.classList.remove('active'); 
                 tabZoom.classList.add('active'); 
-                if(tabLyrics) tabLyrics.classList.remove('active');
             });
-            if (tabLyrics) tabLyrics.addEventListener('click', () => { 
-                document.getElementById('settings-general').classList.add('hidden'); 
-                document.getElementById('settings-zoom').classList.add('hidden'); 
-                document.getElementById('settings-lyrics').classList.remove('hidden'); 
-                tabGeneral.classList.remove('active'); 
-                tabZoom.classList.remove('active'); 
-                tabLyrics.classList.add('active'); 
-            });
-
-            // Lyrics settings logic
-            const saveLyricsBtn = document.getElementById('save-lyrics-settings-btn');
-            const geniusTokenInput = document.getElementById('genius-token-input');
-
-            if (geniusTokenInput) {
-                try {
-                    const saved = localStorage.getItem('genius_access_token') || '';
-                    if (saved) {
-                        geniusTokenInput.value = '••••••••••••••••';
-                    }
-                } catch(e){}
-            }
-
-            if (saveLyricsBtn) {
-                saveLyricsBtn.addEventListener('click', () => {
-                    const geniusInput = document.getElementById('genius-token-input');
-                    if (geniusInput) {
-                        const val = (geniusInput.value || '').trim();
-                        if (val && !/^•+$/.test(val)) {
-                            try { localStorage.setItem('genius_access_token', val); } catch(e){}
-                        }
-                    }
-                    // Visual feedback
-                    saveLyricsBtn.innerText = 'Applied!';
-                    saveLyricsBtn.classList.replace('bg-blue-600', 'bg-green-600');
-                    setTimeout(() => {
-                        saveLyricsBtn.innerText = 'Apply Settings';
-                        saveLyricsBtn.classList.replace('bg-green-600', 'bg-blue-600');
-                    }, 2000);
-                });
-            }
 
             // volume sync
             const vslider = document.getElementById('settings-volume');
