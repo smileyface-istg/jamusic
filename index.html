@@ -360,6 +360,92 @@
 
         .no-scroll { overflow: hidden !important; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+
+        /* Lyrics Overlay */
+        #lyrics-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.98);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            padding: 40px 20px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        #lyrics-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .lyrics-container {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            scrollbar-width: none;
+            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            padding: 20vh 0;
+            scroll-behavior: smooth;
+        }
+
+        .lyrics-container::-webkit-scrollbar { display: none; }
+
+        .lyric-line {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1.4;
+            padding: 12px 0;
+            color: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            transform-origin: left;
+        }
+
+        @media (max-width: 768px) {
+            .lyric-line { font-size: 1.75rem; }
+        }
+
+        .lyric-line:hover {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .lyric-line.active {
+            color: #fff;
+            transform: scale(1.05);
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .lyric-line.passed {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        #lyrics-close {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 2001;
+        }
+
+        #lyrics-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 <body class="selection:bg-blue-500/30">
@@ -634,6 +720,11 @@
                         <svg id="repeat-icon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7v4h10V7l4 4-4 4v-4H5V7z"></path></svg>
                     </button>
 
+                    <!-- Lyrics toggle -->
+                    <button id="lyrics-btn" onclick="toggleLyrics()" title="Show Lyrics" aria-label="Show synchronized lyrics" class="text-slate-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 rounded-lg">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"></path></svg>
+                    </button>
+
                 </div>
                 <div class="flex items-center gap-3 w-full max-w-md">
                     <span id="curr-time" class="text-[10px] font-mono text-slate-500 w-8">0:00</span>
@@ -764,6 +855,21 @@
         </div>
     </div>
 
+    <!-- LYRICS OVERLAY -->
+    <div id="lyrics-overlay" role="dialog" aria-labelledby="lyrics-title">
+        <div id="lyrics-close" onclick="toggleLyrics()" aria-label="Close lyrics" role="button" tabindex="0" onkeydown="if(event.key==='Enter') toggleLyrics()">&times;</div>
+        <div class="lyrics-container" id="lyrics-container">
+            <h2 id="lyrics-title" class="sr-only">Synchronized Lyrics</h2>
+            <div id="lyrics-content">
+                <!-- Lyrics lines will be injected here -->
+                <div class="text-center py-20">
+                    <div class="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-6"></div>
+                    <p class="text-slate-400 font-bold text-xl">Loading synchronized lyrics...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         /********************************************************************
          * Full single-file app:
@@ -783,6 +889,9 @@
         let repeatTracks = false; 
         let currentView = 'home'; // 'home', 'search', 'trending'
         let searchTimeout = null;
+        let lyricsVisible = false;
+        let currentLyrics = [];
+        let lyricsCache = {};
 
         const tracks = [
             { id: '1', title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
@@ -946,6 +1055,186 @@
             audio.play().catch(()=>{/* ignore autoplay errors */});
             updatePlayUI(true);
             animateVisualizer();
+
+            if (lyricsVisible) {
+                fetchLyrics(track);
+            }
+        }
+
+        /***********************
+         * Lyrics Logic
+         ***********************/
+        async function fetchLyrics(track) {
+            const container = document.getElementById('lyrics-content');
+            if (lyricsCache[track.id]) {
+                renderLyrics(lyricsCache[track.id]);
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="text-center py-20">
+                    <div class="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-6"></div>
+                    <p class="text-slate-400 font-bold text-xl">Fetching from Musixmatch...</p>
+                </div>
+            `;
+
+            try {
+                // In a real app, you would call Musixmatch API here:
+                // const res = await fetch(`https://api.musixmatch.com/ws/1.1/track.lyrics.get?track_id=${track.id}&apikey=YOUR_KEY`);
+                
+                // For demonstration, we'll provide mock synchronized lyrics for some tracks
+                let mockLyrics = "";
+                if (track.title === 'Never Gonna Give You Up') {
+                    mockLyrics = `
+                        [00:00.00] (Instrumental Intro)
+                        [00:18.50] We're no strangers to love
+                        [00:22.50] You know the rules and so do I
+                        [00:27.00] A full commitment's what I'm thinking of
+                        [00:31.00] You wouldn't get this from any other guy
+                        [00:35.00] I just wanna tell you how I'm feeling
+                        [00:40.00] Gotta make you understand
+                        [00:43.00] Never gonna give you up
+                        [00:45.00] Never gonna let you down
+                        [00:47.50] Never gonna run around and desert you
+                        [00:51.50] Never gonna make you cry
+                        [00:53.50] Never gonna say goodbye
+                        [00:56.00] Never gonna tell a lie and hurt you
+                        [01:00.00] We've known each other for so long
+                        [01:04.50] Your heart's been aching but you're too shy to say it
+                        [01:08.50] Inside we both know what's been going on
+                        [01:12.50] We know the game and we're gonna play it
+                        [01:17.00] And if you ask me how I'm feeling
+                        [01:21.50] Don't tell me you're too blind to see
+                        [01:24.50] Never gonna give you up
+                        [01:27.00] Never gonna let you down
+                        [01:29.50] Never gonna run around and desert you
+                        [01:33.00] Never gonna make you cry
+                        [01:35.50] Never gonna say goodbye
+                        [01:37.50] Never gonna tell a lie and hurt you
+                    `;
+                } else if (track.title === 'End of Beginning') {
+                    mockLyrics = `
+                        [00:00.00] (Music)
+                        [00:12.00] Just like that, I'm back in the city
+                        [00:15.00] The wind is cold and the lights are pretty
+                        [00:19.00] It's been a while, but I still remember
+                        [00:23.00] How it felt in the late November
+                        [00:27.00] And I know, I know
+                        [00:31.00] That I'm not the same as I was before
+                        [00:35.00] But I'm home, I'm home
+                        [00:39.00] And I'm not running anymore
+                        [00:43.00] And when I'm back in Chicago, I feel it
+                        [00:47.00] Another version of me, I was in it
+                        [00:51.00] I wave goodbye to the end of beginning
+                    `;
+                } else {
+                    // Simulate a delay for other tracks
+                    await new Promise(r => setTimeout(r, 1500));
+                    throw new Error("Lyrics not available for this track yet.");
+                }
+
+                const parsed = parseLyrics(mockLyrics);
+                lyricsCache[track.id] = parsed;
+                renderLyrics(parsed);
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="text-center py-20">
+                        <svg class="w-16 h-16 text-slate-700 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <h4 class="text-2xl font-bold text-slate-300 mb-2">No Lyrics Found</h4>
+                        <p class="text-slate-500">${err.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function parseLyrics(text) {
+            const lines = text.split('\n');
+            const result = [];
+            const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2})\]/;
+
+            lines.forEach(line => {
+                const match = line.match(timeRegex);
+                if (match) {
+                    const minutes = parseInt(match[1]);
+                    const seconds = parseInt(match[2]);
+                    const ms = parseInt(match[3]);
+                    const time = minutes * 60 + seconds + ms / 100;
+                    const content = line.replace(timeRegex, '').trim();
+                    if (content) {
+                        result.push({ time, content });
+                    }
+                }
+            });
+            return result.sort((a, b) => a.time - b.time);
+        }
+
+        function renderLyrics(lyrics) {
+            currentLyrics = lyrics;
+            const container = document.getElementById('lyrics-content');
+            container.innerHTML = lyrics.map((l, i) => `
+                <div class="lyric-line" 
+                     id="lyric-${i}" 
+                     onclick="seekToLyric(${l.time})" 
+                     role="button" 
+                     tabindex="0" 
+                     onkeydown="if(event.key==='Enter') seekToLyric(${l.time})"
+                     aria-label="Seek to ${formatTime(l.time)}: ${escapeHtml(l.content)}">
+                    ${escapeHtml(l.content)}
+                </div>
+            `).join('');
+        }
+
+        function toggleLyrics() {
+            const overlay = document.getElementById('lyrics-overlay');
+            lyricsVisible = !lyricsVisible;
+            
+            if (lyricsVisible) {
+                overlay.style.display = 'flex';
+                document.body.classList.add('no-scroll');
+                requestAnimationFrame(() => overlay.classList.add('show'));
+                
+                const track = tracks[currentTrackIndex];
+                if (track) fetchLyrics(track);
+            } else {
+                overlay.classList.remove('show');
+                document.body.classList.remove('no-scroll');
+                setTimeout(() => overlay.style.display = 'none', 400);
+            }
+        }
+
+        function seekToLyric(time) {
+            audio.currentTime = time;
+            if (audio.paused) audio.play();
+        }
+
+        function updateLyricsSync() {
+            if (!lyricsVisible || currentLyrics.length === 0) return;
+
+            const currentTime = audio.currentTime;
+            let activeIndex = -1;
+
+            for (let i = 0; i < currentLyrics.length; i++) {
+                if (currentTime >= currentLyrics[i].time) {
+                    activeIndex = i;
+                } else {
+                    break;
+                }
+            }
+
+            if (activeIndex !== -1) {
+                const lines = document.querySelectorAll('.lyric-line');
+                lines.forEach((line, i) => {
+                    line.classList.toggle('active', i === activeIndex);
+                    line.classList.toggle('passed', i < activeIndex);
+                });
+
+                const activeLine = document.getElementById(`lyric-${activeIndex}`);
+                if (activeLine) {
+                    const container = document.getElementById('lyrics-container');
+                    const offset = activeLine.offsetTop - container.offsetHeight / 2 + activeLine.offsetHeight / 2;
+                    container.scrollTo({ top: offset, behavior: 'smooth' });
+                }
+            }
         }
 
         /***********************
@@ -1193,6 +1482,9 @@
                 const d = document.getElementById('dur-time');
                 if (c) c.innerText = formatTime(audio.currentTime);
                 if (d) d.innerText = formatTime(audio.duration);
+                
+                // Synchronize lyrics
+                updateLyricsSync();
             }
         };
 
