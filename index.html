@@ -1863,6 +1863,14 @@ Ready?`
 
         // Track statistics (play counts, last played)
         let trackStats = {};
+        
+        // GLOBAL SYNC VERSIONING: Clear old local junk to ensure true global data
+        const SYNC_VERSION = '2.1';
+        if (localStorage.getItem('jamusic_sync_v') !== SYNC_VERSION) {
+            localStorage.removeItem('jamusic_stats');
+            localStorage.setItem('jamusic_sync_v', SYNC_VERSION);
+        }
+
         try {
             trackStats = JSON.parse(localStorage.getItem('jamusic_stats') || '{}');
         } catch(e) { trackStats = {}; }
@@ -1872,30 +1880,29 @@ Ready?`
         }
 
         function incrementPlayCount(trackId) {
+            // Update local immediately for snappy UI
             if (!trackStats[trackId]) {
-                trackStats[trackId] = { playCount: 0, lastPlayed: 0, listeners: [] };
+                trackStats[trackId] = { playCount: 0, lastPlayed: 0, lastListener: '' };
             }
             trackStats[trackId].playCount++;
             trackStats[trackId].lastPlayed = Date.now();
+            
+            const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+            const userName = user ? (user.name || user.email.split('@')[0]) : 'Someone';
+            trackStats[trackId].lastListener = userName;
+            
             saveStats();
 
-            // Global Sync
+            // Global Sync to Firebase
             try {
                 if (window.db && window.dbIncrement && window.dbRefPath && window.dbUpdate) {
-                    const user = getCurrentUser();
-                    const userName = user ? (user.name || user.email.split('@')[0]) : 'Someone';
-                    
                     const trackRef = `global_stats/tracks/${trackId}`;
                     const updates = {};
                     updates[`${trackRef}/playCount`] = window.dbIncrement(1);
                     updates[`${trackRef}/lastPlayed`] = Date.now();
+                    updates[`${trackRef}/lastListener`] = userName;
                     
-                    // Keep track of the last 3 unique listeners for the social text
-                    if (user) {
-                        updates[`${trackRef}/lastListener`] = userName;
-                    }
-                    
-                    window.dbUpdate(window.dbRefPath(window.db), updates);
+                    window.dbUpdate(window.dbRefPath(window.db), updates).catch(e => console.error("Firebase update failed:", e));
                 }
             } catch(e) { console.error("Global sync error:", e); }
         }
@@ -1909,18 +1916,19 @@ Ready?`
                     window.dbOnValue(statsRef, (snapshot) => {
                         if (snapshot.exists()) {
                             const globalData = snapshot.val();
+                            // Reset local trackStats to ONLY match global data for true consistency
+                            const newStats = {};
                             for (const trackId in globalData) {
-                                if (!trackStats[trackId]) {
-                                    trackStats[trackId] = { playCount: 0, lastPlayed: 0 };
-                                }
-                                trackStats[trackId].playCount = globalData[trackId].playCount || 0;
-                                trackStats[trackId].lastListener = globalData[trackId].lastListener || '';
-                                if (globalData[trackId].lastPlayed > (trackStats[trackId].lastPlayed || 0)) {
-                                    trackStats[trackId].lastPlayed = globalData[trackId].lastPlayed;
-                                }
+                                newStats[trackId] = {
+                                    playCount: globalData[trackId].playCount || 0,
+                                    lastListener: globalData[trackId].lastListener || 'Someone',
+                                    lastPlayed: globalData[trackId].lastPlayed || 0
+                                };
                             }
+                            trackStats = newStats;
                             saveStats();
-                            // If we are on trending view, re-render to show live updates
+                            
+                            // Live update trending view
                             if (typeof currentView !== 'undefined' && currentView === 'trending') {
                                 renderTracks(getTrendingTracks());
                             }
@@ -1932,24 +1940,21 @@ Ready?`
         }
 
         async function fetchGlobalStats() {
-            // This is now partially handled by initGlobalStatsListener for real-time, 
-            // but we keep a one-time fetch for initial load robustness.
             initGlobalStatsListener();
             try {
-                if (window.db && window.dbGet && window.dbChild && window.dbRef) {
-                    const snapshot = await window.dbGet(window.dbChild(window.dbRef, 'global_stats/tracks'));
+                if (window.db && window.dbGet && window.dbChild && window.dbRefPath) {
+                    const snapshot = await window.dbGet(window.dbRefPath(window.db, 'global_stats/tracks'));
                     if (snapshot.exists()) {
                         const globalData = snapshot.val();
+                        const newStats = {};
                         for (const trackId in globalData) {
-                            if (!trackStats[trackId]) {
-                                trackStats[trackId] = { playCount: 0, lastPlayed: 0 };
-                            }
-                            trackStats[trackId].playCount = globalData[trackId].playCount || 0;
-                            trackStats[trackId].lastListener = globalData[trackId].lastListener || '';
-                            if (globalData[trackId].lastPlayed > (trackStats[trackId].lastPlayed || 0)) {
-                                trackStats[trackId].lastPlayed = globalData[trackId].lastPlayed;
-                            }
+                            newStats[trackId] = {
+                                playCount: globalData[trackId].playCount || 0,
+                                lastListener: globalData[trackId].lastListener || 'Someone',
+                                lastPlayed: globalData[trackId].lastPlayed || 0
+                            };
                         }
+                        trackStats = newStats;
                         saveStats();
                     }
                 }
@@ -2008,10 +2013,13 @@ Ready?`
                     if (stats.playCount > 0) {
                         const count = stats.playCount;
                         const lastUser = stats.lastListener || 'Someone';
-                        if (count === 1) {
+                        
+                        if (lastUser === 'Someone') {
+                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">Popular with listeners!</p>`;
+                        } else if (count === 1) {
                             socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} listened to this!</p>`;
                         } else {
-                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} and ${count - 1} others listened to this!</p>`;
+                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} and ${count - 1} others listened!</p>`;
                         }
                     }
                     
@@ -2052,10 +2060,13 @@ Ready?`
                     if (stats.playCount > 0) {
                         const count = stats.playCount;
                         const lastUser = stats.lastListener || 'Someone';
-                        if (count === 1) {
+                        
+                        if (lastUser === 'Someone') {
+                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">Popular with listeners!</p>`;
+                        } else if (count === 1) {
                             socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} listened!</p>`;
                         } else {
-                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} & ${count - 1} others listened!</p>`;
+                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} & ${count - 1} others!</p>`;
                         }
                     }
                     
