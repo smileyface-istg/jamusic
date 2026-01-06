@@ -89,8 +89,14 @@
             from { transform: translateY(0); opacity: 1; }
             to { transform: translateY(-100%); opacity: 0; }
         }
+        @keyframes notifShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
         .notif-slide-down { animation: slideDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
         .notif-slide-up { animation: slideUp 0.4s cubic-bezier(0.36, 0, 0.66, -0.56) forwards; }
+        .notif-shake { animation: notifShake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 
         .music-card {
             transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
@@ -3158,9 +3164,6 @@ Ready?`
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.7';
 
-            // Clear any existing error notifications
-            hideAuthError();
-
             try {
                 let userCredential;
                 if (currentMode === 'login') {
@@ -3224,8 +3227,23 @@ Ready?`
 
             msgEl.innerText = message;
             
+            // If already showing, just shake it and reset timer
+            if (notif.classList.contains('notif-slide-down') && !notif.classList.contains('notif-slide-up')) {
+                notif.classList.remove('notif-shake');
+                void notif.offsetWidth; // Trigger reflow
+                notif.classList.add('notif-shake');
+                
+                if (window.authNotifTimeout) clearTimeout(window.authNotifTimeout);
+                window.authNotifTimeout = setTimeout(() => hideAuthError(), 6000);
+                return;
+            }
+
             // Reset classes
-            notif.classList.remove('notif-slide-up');
+            if (window.hideTimeout) {
+                clearTimeout(window.hideTimeout);
+                window.hideTimeout = null;
+            }
+            notif.classList.remove('notif-slide-up', 'notif-shake');
             notif.style.display = 'flex';
             
             // Trigger slide down
@@ -3242,13 +3260,18 @@ Ready?`
 
         function hideAuthError() {
             const notif = document.getElementById('auth-error-notif');
-            if (!notif || !notif.classList.contains('notif-slide-down')) return;
+            // Don't hide if it's not even shown or already hiding
+            if (!notif || !notif.classList.contains('notif-slide-down') || notif.classList.contains('notif-slide-up')) return;
 
-            notif.classList.remove('notif-slide-down');
+            notif.classList.remove('notif-slide-down', 'notif-shake');
             notif.classList.add('notif-slide-up');
-            setTimeout(() => {
+            
+            // Store this timeout so we can cancel it if a new error comes in
+            if (window.hideTimeout) clearTimeout(window.hideTimeout);
+            window.hideTimeout = setTimeout(() => {
                 notif.style.display = 'none';
                 notif.classList.remove('notif-slide-up');
+                window.hideTimeout = null;
             }, 500);
         }
 
