@@ -403,31 +403,32 @@
             font-weight: 800;
             line-height: 1.4;
             padding: 12px 0;
-            color: rgba(255, 255, 255, 0.2);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: rgba(255, 255, 255, 0.4); /* Standard grey for inactive */
+            transition: all 0.4s cubic-bezier(0.3, 0, 0, 1);
             cursor: pointer;
             transform-origin: left;
             will-change: transform, color;
+            position: relative;
+        }
+
+        .lyric-line.active {
+            color: #ffffff; /* Pure white when active */
+            transform: scale(1.05);
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
+        }
+
+        .lyric-line.passed {
+            color: rgba(255, 255, 255, 0.8); /* Slightly lighter grey/white for passed */
+        }
+
+        .lyric-line:hover {
+            color: rgba(255, 255, 255, 0.9);
         }
 
         @media (max-width: 768px) {
             .lyric-line { font-size: 1.75rem; }
             #lyrics-close { top: 20px; right: 20px; width: 40px; height: 40px; }
             .lyrics-container { padding: 30vh 20px; }
-        }
-
-        .lyric-line:hover {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .lyric-line.active {
-            color: #fff;
-            transform: scale(1.05);
-            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-        }
-
-        .lyric-line.passed {
-            color: rgba(255, 255, 255, 0.5);
         }
 
         /* Full text mode for Genius lyrics */
@@ -515,6 +516,57 @@
             background: rgba(255, 255, 255, 0.2);
             border: 3px solid transparent;
             background-clip: padding-box;
+        }
+
+        /* Lyrics Loader & Results Selection */
+        .lyrics-results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .lyrics-result-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.3, 0, 0, 1);
+        }
+
+        .lyrics-result-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.02);
+        }
+
+        .lyrics-result-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-cover: cover;
+        }
+
+        .lyrics-result-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .lyrics-result-title {
+            font-weight: 700;
+            color: white;
+            truncate: true;
+        }
+
+        .lyrics-result-artist {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .lyrics-loader {
@@ -1050,67 +1102,120 @@
         let lyricsVisible = false;
         let currentLyrics = [];
         let lyricsCache = {};
-        let GENIUS_ACCESS_TOKEN = ''; // Genius API Client Access Token (Get at https://genius.com/api-clients)
+        let GENIUS_ACCESS_TOKEN = localStorage.getItem('genius_token') || '';
 
         /***********************
          * Genius API Integration
          ***********************/
         async function fetchLyricsFromGenius(track) {
-            // Show local mock if no token provided or for specific demo tracks to ensure "complete" lyrics
-            if (!GENIUS_ACCESS_TOKEN || track.title === 'Never Gonna Give You Up' || track.title === 'End of Beginning') {
-                return fetchMockLyrics(track);
+            if (!GENIUS_ACCESS_TOKEN) {
+                if (track.title === 'Never Gonna Give You Up' || track.title === 'End of Beginning') {
+                    return fetchMockLyrics(track);
+                }
+                throw new Error("No Genius API token found. Please add one in settings.");
             }
 
             try {
-                // 1. Search for the song on Genius
                 const query = encodeURIComponent(`${track.title} ${track.artist}`);
                 const searchRes = await fetch(`https://api.genius.com/search?q=${query}&access_token=${GENIUS_ACCESS_TOKEN}`);
                 const searchData = await searchRes.json();
                 
                 if (!searchData.response.hits.length) throw new Error("Song not found on Genius");
-                
+
+                // If multiple hits, show selection
+                if (searchData.response.hits.length > 1) {
+                    showLyricsSelection(searchData.response.hits, track);
+                    return { type: 'selecting' };
+                }
+
                 const result = searchData.response.hits[0].result;
-                const songUrl = result.url;
-                const geniusMetadata = {
+                return fetchLyricsFromUrl(result.url, {
                     title: result.title,
                     artist: result.primary_artist.name,
                     full_title: result.full_title
-                };
-                
-                // 2. Fetch the lyrics page (requires proxy due to CORS)
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(songUrl)}`;
-                const pageRes = await fetch(proxyUrl);
-                const pageData = await pageRes.json();
-                const html = pageData.contents;
-
-                // 3. Parse lyrics from HTML
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                const containers = doc.querySelectorAll('[class^="Lyrics__Container"], .lyrics');
-                let lyricsText = "";
-                
-                if (containers.length > 0) {
-                    containers.forEach(c => {
-                        const content = c.innerHTML.replace(/<br\s*\/?>/gi, '\n').replace(/<\/?[^>]+(>|$)/g, "");
-                        lyricsText += content + "\n";
-                    });
-                } else {
-                    const oldContainer = doc.querySelector('.lyrics');
-                    if (oldContainer) lyricsText = oldContainer.innerText;
-                }
-
-                if (!lyricsText) throw new Error("Could not parse lyrics from page");
-
-                return { 
-                    type: 'full', 
-                    content: lyricsText.trim(),
-                    metadata: geniusMetadata
-                };
+                });
             } catch (err) {
                 console.error("Genius Fetch Error:", err);
-                throw new Error("Failed to fetch from Genius. Check your connection or API token.");
+                throw err;
             }
+        }
+
+        function showLyricsSelection(hits, track) {
+            const contentDiv = document.getElementById('lyrics-content');
+            contentDiv.innerHTML = `
+                <div class="lyrics-results-container animate-spotify">
+                    <h3 class="text-xl font-bold mb-4 text-center">Select the correct song</h3>
+                    ${hits.map((hit, idx) => `
+                        <div class="lyrics-result-item" onclick="loadSelectedLyrics('${hit.result.url}', '${track.id}', ${idx})">
+                            <img src="${hit.result.song_art_image_thumbnail_url}" alt="${hit.result.title}">
+                            <div class="lyrics-result-info">
+                                <div class="lyrics-result-title">${escapeHtml(hit.result.title)}</div>
+                                <div class="lyrics-result-artist">${escapeHtml(hit.result.primary_artist.name)}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // Define global selection handler
+            window.loadSelectedLyrics = async (url, trackId, hitIdx) => {
+                const track = tracks.find(t => t.id === trackId);
+                const hit = hits[hitIdx].result;
+                const metadata = {
+                    title: hit.title,
+                    artist: hit.primary_artist.name,
+                    full_title: hit.full_title
+                };
+                
+                contentDiv.innerHTML = `
+                    <div class="lyrics-loader">
+                        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p class="mt-4 text-slate-400">Loading lyrics...</p>
+                    </div>
+                `;
+                
+                try {
+                    const lyricsData = await fetchLyricsFromUrl(url, metadata);
+                    lyricsCache[trackId] = lyricsData;
+                    updatePlayerMetadata(metadata);
+                    renderLyrics(lyricsData);
+                } catch (err) {
+                    contentDiv.innerHTML = `<div class="lyrics-error"><p>${err.message}</p></div>`;
+                }
+            };
+        }
+
+        async function fetchLyricsFromUrl(songUrl, metadata) {
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(songUrl)}`;
+            const pageRes = await fetch(proxyUrl);
+            const pageData = await pageRes.json();
+            const html = pageData.contents;
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const containers = doc.querySelectorAll('[class^="Lyrics__Container"], .lyrics');
+            let lyricsText = "";
+
+            if (containers.length > 0) {
+                containers.forEach(c => {
+                    const content = c.innerHTML
+                        .replace(/<br\s*\/?>/gi, '\n')
+                        .replace(/<\/div>/gi, '\n')
+                        .replace(/<\/?[^>]+(>|$)/g, "");
+                    lyricsText += content + "\n";
+                });
+            } else {
+                const oldContainer = doc.querySelector('.lyrics');
+                if (oldContainer) lyricsText = oldContainer.innerText;
+            }
+
+            if (!lyricsText) throw new Error("Could not parse lyrics from page");
+
+            return { 
+                type: 'full', 
+                content: lyricsText.trim(),
+                metadata: metadata
+            };
         }
 
         async function fetchMockLyrics(track) {
@@ -1472,16 +1577,24 @@
 
             if (activeIndex !== -1) {
                 const lines = document.querySelectorAll('.lyric-line');
+                const container = document.getElementById('lyrics-container');
+                
                 lines.forEach((line, i) => {
                     line.classList.toggle('active', i === activeIndex);
                     line.classList.toggle('passed', i < activeIndex);
                 });
 
                 const activeLine = document.getElementById(`lyric-${activeIndex}`);
-                if (activeLine) {
-                    const container = document.getElementById('lyrics-container');
-                    const offset = activeLine.offsetTop - container.offsetHeight / 2 + activeLine.offsetHeight / 2;
-                    container.scrollTo({ top: offset, behavior: 'smooth' });
+                if (activeLine && container) {
+                    const containerHeight = container.offsetHeight;
+                    const lineOffset = activeLine.offsetTop;
+                    const lineHeight = activeLine.offsetHeight;
+                    
+                    // Smoothly scroll to center the active line
+                    container.scrollTo({
+                        top: lineOffset - (containerHeight / 2) + (lineHeight / 2),
+                        behavior: 'smooth'
+                    });
                 }
             }
         }
