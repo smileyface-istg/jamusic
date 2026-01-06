@@ -242,10 +242,23 @@
 
         .dn-error { color:#ffb3b3; font-size:13px; margin-top:8px; }
 
+        /* ADMIN MODAL */
+        .admin-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 400px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px);
+            border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 2rem;
+            padding: 2rem; z-index: 10000; display: none;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .admin-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+            z-index: 9999; display: none;
+        }
+
         /* prevent page zoom weirdness small screens */
         @media (max-width: 640px) {
             #settings-sidebar { width: 92%; }
-            .displayname-modal { width: 92%; }
+            .displayname-modal, .admin-modal { width: 92%; }
         }
 
         /* Mobile Player Bar Fixes */
@@ -642,6 +655,7 @@
                 <circle cx="18" cy="16" r="3"></circle>
             </svg>
         </div>
+
         <div class="loading-tips-container">
             <h4 class="loading-tip-title">Did you know?</h4>
             <p id="loading-tip-text" class="loading-tip-text">Loading fresh beats just for you...</p>
@@ -965,7 +979,10 @@
     <div id="settings-sidebar" class="glass p-6 rounded-l-2xl">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-bold">Account Settings</h2>
-            <button id="settings-close" class="text-white text-2xl leading-none">&times;</button>
+            <div class="flex items-center gap-2">
+                <button id="admin-panel-btn" class="hidden px-2 py-1 bg-red-500/20 text-red-400 text-[10px] font-bold rounded border border-red-500/30 hover:bg-red-500/40 transition-colors uppercase" onclick="openAdminModal()">Admin</button>
+                <button id="settings-close" class="text-white text-2xl leading-none">&times;</button>
+            </div>
         </div>
 
         <div class="flex gap-3 mb-4">
@@ -993,7 +1010,35 @@
         </div>
     </div>
 
-    <!-- DISPLAY NAME MODAL -->
+    <!-- ADMIN PANEL MODAL -->
+    <div id="admin-modal-overlay" class="admin-modal-overlay" onclick="closeAdminModal()"></div>
+    <div id="admin-modal" class="admin-modal">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-red-500">Admin Panel</h3>
+            <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+        </div>
+        
+        <div class="space-y-6">
+            <div class="p-4 bg-red-500/10 rounded-2xl border border-red-500/20">
+                <h4 class="font-bold text-red-400 mb-2">Global Stats Control</h4>
+                <p class="text-xs text-slate-400 mb-4">Wipe all global play counts and unique listener data. This action cannot be undone.</p>
+                <button onclick="showResetConfirm()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-900/20">Reset Global Stats</button>
+            </div>
+            
+            <p class="text-[10px] text-slate-500 text-center uppercase tracking-widest font-bold">Authorized Personnel Only</p>
+        </div>
+    </div>
+
+    <!-- RESET CONFIRMATION MODAL -->
+    <div id="reset-confirm-modal-overlay" class="admin-modal-overlay" style="z-index: 10001;"></div>
+    <div id="reset-confirm-modal" class="admin-modal" style="border-color: rgba(255,255,255,0.1); z-index: 10002;">
+        <h3 class="text-lg font-bold mb-2">Are you absolutely sure?</h3>
+        <p class="text-sm text-slate-400 mb-6">All global trending data, play counts, and unique listener history will be permanently deleted from Firebase.</p>
+        <div class="flex gap-3">
+            <button onclick="closeResetConfirm()" class="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold transition-colors">Cancel</button>
+            <button onclick="confirmGlobalReset()" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors">Yes, Reset Everything</button>
+        </div>
+    </div>
     <div id="displayname-overlay" aria-hidden="true">
         <div id="displayname-modal" class="displayname-modal" role="dialog" aria-modal="true">
             <!-- WARNING VIEW -->
@@ -1864,8 +1909,15 @@ Ready?`
         // Track statistics (play counts, last played)
         let trackStats = {};
         
-        // GLOBAL SYNC VERSIONING: Clear old local junk to ensure true global data
-        const SYNC_VERSION = '2.1';
+        // VISITOR ID: Ensure every device is unique globally
+        let visitorId = localStorage.getItem('jamusic_visitor_id');
+        if (!visitorId) {
+            visitorId = 'v_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('jamusic_visitor_id', visitorId);
+        }
+
+        // GLOBAL SYNC VERSIONING
+        const SYNC_VERSION = '2.2';
         if (localStorage.getItem('jamusic_sync_v') !== SYNC_VERSION) {
             localStorage.removeItem('jamusic_stats');
             localStorage.setItem('jamusic_sync_v', SYNC_VERSION);
@@ -1880,7 +1932,6 @@ Ready?`
         }
 
         function incrementPlayCount(trackId) {
-            // Update local immediately for snappy UI
             if (!trackStats[trackId]) {
                 trackStats[trackId] = { playCount: 0, lastPlayed: 0, lastListener: '', uniqueListeners: 1 };
             }
@@ -1889,7 +1940,8 @@ Ready?`
             
             const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
             const userName = user ? (user.name || user.email.split('@')[0]) : 'Someone';
-            const userId = user ? user.email.replace(/[.$#[\]]/g, '_') : 'guest'; // Firebase safe key
+            // Use visitorId as the primary key for global uniqueness
+            const globalUserId = user ? user.email.replace(/[.$#[\]]/g, '_') : visitorId;
             
             trackStats[trackId].lastListener = userName;
             saveStats();
@@ -1900,19 +1952,18 @@ Ready?`
                     const trackRef = `global_stats/tracks/${trackId}`;
                     const updates = {};
                     
-                    // Increment total plays
                     updates[`${trackRef}/playCount`] = window.dbIncrement(1);
                     updates[`${trackRef}/lastPlayed`] = Date.now();
                     updates[`${trackRef}/lastListener`] = userName;
                     
-                    // Track this specific user as a unique listener
-                    // We use the userId as a key so it doesn't duplicate
-                    updates[`${trackRef}/listeners/${userId}`] = {
+                    // Track this specific visitor/user as a unique listener
+                    updates[`${trackRef}/listeners/${globalUserId}`] = {
                         name: userName,
-                        lastPlayed: Date.now()
+                        lastPlayed: Date.now(),
+                        isRegistered: !!user
                     };
                     
-                    window.dbUpdate(window.dbRefPath(window.db), updates).catch(e => console.error("Firebase update failed:", e));
+                    window.dbUpdate(window.dbRefPath(window.db), updates).catch(e => console.error("Global update failed:", e));
                 }
             } catch(e) { console.error("Global sync error:", e); }
         }
@@ -1995,6 +2046,66 @@ Ready?`
         }
 
         /***********************
+         * Admin & Global Reset
+         ***********************/
+        const ADMIN_EMAILS = ['admin@jamusic.com', 'smileyface@example.com']; // User can update this list
+
+        function maybeShowAdminBtn() {
+            const user = getCurrentUser();
+            const adminBtn = document.getElementById('admin-panel-btn');
+            if (adminBtn && user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+                adminBtn.classList.remove('hidden');
+            } else if (adminBtn) {
+                adminBtn.classList.add('hidden');
+            }
+        }
+
+        function openAdminModal() {
+            document.getElementById('admin-modal-overlay').style.display = 'block';
+            document.getElementById('admin-modal').style.display = 'block';
+        }
+
+        function closeAdminModal() {
+            document.getElementById('admin-modal-overlay').style.display = 'none';
+            document.getElementById('admin-modal').style.display = 'none';
+        }
+
+        function showResetConfirm() {
+            document.getElementById('reset-confirm-modal-overlay').style.display = 'block';
+            document.getElementById('reset-confirm-modal').style.display = 'block';
+        }
+
+        function closeResetConfirm() {
+            document.getElementById('reset-confirm-modal-overlay').style.display = 'none';
+            document.getElementById('reset-confirm-modal').style.display = 'none';
+        }
+
+        async function confirmGlobalReset() {
+            try {
+                if (window.db && window.dbRefPath && window.dbSet) {
+                    const statsRef = window.dbRefPath(window.db, 'global_stats');
+                    await window.dbSet(statsRef, null); // Completely wipe global_stats
+                    
+                    alertBox('Global stats have been reset to 0!');
+                    closeResetConfirm();
+                    closeAdminModal();
+                    
+                    // Force refresh local stats
+                    trackStats = {};
+                    saveStats();
+                    if (typeof currentView !== 'undefined' && currentView === 'trending') {
+                        renderTracks(getTrendingTracks());
+                    }
+                } else {
+                    alertBox('Database connection error');
+                }
+            } catch (e) {
+                console.error("Reset failed:", e);
+                alertBox('Failed to reset stats');
+            }
+        }
+
+        /***********************
          * Utils & UI helpers
          ***********************/
         function alertBox(msg){
@@ -2033,12 +2144,19 @@ Ready?`
                         const uniquePeople = stats.uniqueListeners || 1;
                         const lastUser = stats.lastListener || 'Someone';
                         
-                        if (lastUser === 'Someone') {
-                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">Popular with listeners!</p>`;
-                        } else if (uniquePeople <= 1) {
-                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} is vibing to this!</p>`;
+                        // Check if I am the one who just listened
+                        const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+                        const myName = user ? (user.name || user.email.split('@')[0]) : 'You';
+                        const isMe = lastUser === myName || (lastUser === 'Someone' && !user);
+
+                        if (uniquePeople > 1) {
+                            const othersCount = uniquePeople - 1;
+                            const personText = othersCount === 1 ? 'other person' : 'others';
+                            socialText = `<p class="text-[10px] text-blue-400 font-bold mt-1 truncate animate-pulse-slow">🔥 ${lastUser} and ${othersCount} ${personText} listened globally!</p>`;
+                        } else if (lastUser === 'Someone') {
+                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">Popular globally!</p>`;
                         } else {
-                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} and ${uniquePeople - 1} other ${uniquePeople - 1 === 1 ? 'person' : 'people'} listened!</p>`;
+                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} is vibing globally!</p>`;
                         }
                     }
                     
@@ -2081,12 +2199,12 @@ Ready?`
                         const uniquePeople = stats.uniqueListeners || 1;
                         const lastUser = stats.lastListener || 'Someone';
                         
-                        if (lastUser === 'Someone') {
-                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">Popular with listeners!</p>`;
-                        } else if (uniquePeople <= 1) {
-                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} is vibing!</p>`;
+                        if (uniquePeople > 1) {
+                            socialText = `<p class="text-[9px] text-blue-400 font-bold truncate">🌍 ${lastUser} & ${uniquePeople - 1} others!</p>`;
+                        } else if (lastUser === 'Someone') {
+                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">Popular globally!</p>`;
                         } else {
-                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} & ${uniquePeople - 1} ${uniquePeople - 1 === 1 ? 'other' : 'others'}!</p>`;
+                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} is vibing!</p>`;
                         }
                     }
                     
@@ -2566,6 +2684,7 @@ Ready?`
             }
 
             renderTracks(tracks);
+            maybeShowAdminBtn();
         });
 
         function updateVolumeIcon(val) {
@@ -2672,6 +2791,7 @@ Ready?`
             await fetchGlobalStats();
             
             renderTracks(tracks);
+            maybeShowAdminBtn();
             setTimeout(() => { if (authOverlay) authOverlay.style.display = 'none'; }, 600);
         }
 
@@ -2906,6 +3026,7 @@ Ready?`
                     } else {
                         localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
                     }
+                    maybeShowAdminBtn();
                 } catch(e){}
                 if (dnModal) dnModal.classList.remove('show');
                 setTimeout(() => { if (dnOverlay) dnOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); if (dnModal) dnModal.classList.add('show'); }, 220);
@@ -2924,7 +3045,7 @@ Ready?`
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, child, get, update, increment, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, child, get, update, increment, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         // Your web app's Firebase configuration
         // NOTE: Replace these placeholders with your actual Firebase config from the console
@@ -2952,6 +3073,7 @@ Ready?`
         window.dbGet = get;
         window.dbChild = child;
         window.dbOnValue = onValue;
+        window.dbSet = set;
 
         // Expose functions to global scope for button clicks
         window.handleAuth = async function() {
