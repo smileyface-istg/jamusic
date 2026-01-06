@@ -1127,7 +1127,7 @@
          ***********************/
         async function fetchLyricsFromGenius(track) {
             if (!GENIUS_ACCESS_TOKEN) {
-                const mockTracks = ['Never Gonna Give You Up', 'End of Beginning', 'Heat Waves'];
+                const mockTracks = ['Never Gonna Give You Up', 'End of Beginning', 'Heat Waves', 'Stereo Hearts'];
                 if (mockTracks.includes(track.title)) {
                     return fetchMockLyrics(track);
                 }
@@ -1212,23 +1212,36 @@
 
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const containers = doc.querySelectorAll('[class^="Lyrics__Container"], .lyrics');
+            // Try multiple selectors for better resilience
+            const containers = doc.querySelectorAll('[class^="Lyrics__Container"], [data-lyrics-container="true"], .lyrics, .Lyrics__Container-sc-170p6dt-0');
             let lyricsText = "";
 
             if (containers.length > 0) {
                 containers.forEach(c => {
-                    const content = c.innerHTML
-                        .replace(/<br\s*\/?>/gi, '\n')
-                        .replace(/<\/div>/gi, '\n')
-                        .replace(/<\/?[^>]+(>|$)/g, "");
-                    lyricsText += content + "\n";
+                    // Clean up the HTML to get clean text with line breaks
+                    let content = c.innerHTML
+                        .replace(/<br\s*\/?>/gi, '\n') // Replace <br> with \n
+                        .replace(/<\/div>/gi, '\n')   // Replace </div> with \n
+                        .replace(/<p[^>]*>/gi, '')     // Remove <p> tags
+                        .replace(/<\/p>/gi, '\n')     // Replace </p> with \n
+                        .replace(/<[^>]*>/g, '');      // Strip all other HTML tags
+                    
+                    // Decode HTML entities (like &amp; or &quot;)
+                    const textArea = document.createElement('textarea');
+                    textArea.innerHTML = content;
+                    content = textArea.value;
+
+                    lyricsText += content.trim() + "\n\n";
                 });
             } else {
-                const oldContainer = doc.querySelector('.lyrics');
-                if (oldContainer) lyricsText = oldContainer.innerText;
+                // Fallback to older Genius layouts or simpler containers
+                const fallback = doc.querySelector('.lyrics') || doc.querySelector('#lyrics-root');
+                if (fallback) lyricsText = fallback.innerText;
             }
 
-            if (!lyricsText) throw new Error("Could not parse lyrics from page");
+            if (!lyricsText || lyricsText.trim().length < 10) {
+                throw new Error("Could not parse lyrics. The song might be instrumental or Genius changed their layout.");
+            }
 
             return { 
                 type: 'full', 
@@ -1293,6 +1306,20 @@
                     { time: 31.0, content: "Late nights in the middle of June" },
                     { time: 35.0, content: "Heat waves been faking me out" },
                     { time: 39.0, content: "Can't make you happier now" }
+                ];
+            } else if (track.title === 'Stereo Hearts') {
+                return [
+                    { time: 0, content: "[Chorus]" },
+                    { time: 0.5, content: "My heart's a stereo" },
+                    { time: 3.5, content: "It beats for you, so listen close" },
+                    { time: 7.5, content: "Hear my thoughts in every no-o-o-te" },
+                    { time: 11.5, content: "Make me your radio" },
+                    { time: 14.5, content: "And turn me up when you feel low" },
+                    { time: 18.5, content: "This melody was meant for you" },
+                    { time: 22.5, content: "Just sing along to my stereo" },
+                    { time: 26.5, content: "[Verse 1]" },
+                    { time: 27.5, content: "If I was just another dusty record on the shelf" },
+                    { time: 31.5, content: "Would you blow me off and play me like everybody else?" }
                 ];
             }
             
@@ -1538,36 +1565,71 @@
         }
 
         function parseLyrics(text) {
+            if (!text) return [];
             const lines = text.split('\n');
             const result = [];
-            const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2})\]/;
+            // Regex to match timestamps like [00:00.00] or [00:00.000]
+            // Can handle multiple timestamps per line: [00:12.34][00:45.67] text
+            const timeRegex = /\[(\d{1,2}):(\d{2}(?:\.\d{1,3})?)\]/g;
 
             lines.forEach(line => {
-                const match = line.match(timeRegex);
-                if (match) {
+                const timestamps = [];
+                let match;
+                
+                // Reset regex lastIndex because of 'g' flag
+                timeRegex.lastIndex = 0;
+                
+                // Extract all timestamps from the line
+                while ((match = timeRegex.exec(line)) !== null) {
                     const minutes = parseInt(match[1]);
-                    const seconds = parseInt(match[2]);
-                    const ms = parseInt(match[3]);
-                    const time = minutes * 60 + seconds + ms / 100;
-                    const content = line.replace(timeRegex, '').trim();
-                    if (content) {
+                    const seconds = parseFloat(match[2]);
+                    const time = minutes * 60 + seconds;
+                    timestamps.push(time);
+                }
+
+                // The content is what's left after removing all timestamps
+                const content = line.replace(timeRegex, '').trim();
+                
+                if (content && timestamps.length > 0) {
+                    timestamps.forEach(time => {
                         result.push({ time, content });
-                    }
+                    });
                 }
             });
-            return result.sort((a, b) => a.time - b.time);
+
+            // Sort by time and filter out invalid entries
+            return result
+                .filter(item => !isNaN(item.time))
+                .sort((a, b) => a.time - b.time);
         }
 
         function renderLyrics(lyricsData) {
             const contentDiv = document.getElementById('lyrics-content');
             const container = document.getElementById('lyrics-container');
             
+            if (!contentDiv || !container) return;
+
             // Reset
             currentLyrics = [];
+            lastActiveIndex = -1;
             container.classList.remove('full-text-mode');
+
+            if (!lyricsData) {
+                contentDiv.innerHTML = `
+                    <div class="lyrics-error">
+                        <h4 class="text-2xl font-bold text-slate-300">No Lyrics Found</h4>
+                        <p class="text-slate-500">We couldn't find any lyrics for this track.</p>
+                    </div>
+                `;
+                return;
+            }
 
             // Determine if data is synchronized (array) or full text (object with type: 'full')
             if (Array.isArray(lyricsData)) {
+                if (lyricsData.length === 0) {
+                    contentDiv.innerHTML = `<div class="lyrics-error"><p>Lyrics format not recognized.</p></div>`;
+                    return;
+                }
                 currentLyrics = lyricsData;
                 contentDiv.innerHTML = currentLyrics.map((l, i) => `
                     <div class="lyric-line" 
@@ -1577,6 +1639,10 @@
                     </div>
                 `).join('');
             } else if (lyricsData && lyricsData.type === 'full') {
+                if (!lyricsData.content) {
+                    contentDiv.innerHTML = `<div class="lyrics-error"><p>Empty lyrics received.</p></div>`;
+                    return;
+                }
                 container.classList.add('full-text-mode');
                 const lines = lyricsData.content.split('\n');
                 contentDiv.innerHTML = lines.map(line => {
@@ -1590,10 +1656,15 @@
             } else if (lyricsData && lyricsData.type === 'selecting') {
                 // Keep the selection UI
                 return;
+            } else {
+                contentDiv.innerHTML = `<div class="lyrics-error"><p>Unsupported lyrics data type.</p></div>`;
             }
 
             // Scroll to top on load
             container.scrollTo({ top: 0, behavior: 'instant' });
+            
+            // Initial sync update
+            updateLyricsSync();
         }
 
         function toggleLyrics() {
@@ -1627,13 +1698,16 @@
             updateLyricsSync();
         }
 
+        const LYRIC_OFFSET = 0.1; // 100ms offset for latency
         let lastActiveIndex = -1;
         function updateLyricsSync() {
             if (!lyricsVisible || !currentLyrics || currentLyrics.length === 0) return;
 
-            const currentTime = audio.currentTime;
+            const currentTime = audio.currentTime + LYRIC_OFFSET;
             let activeIndex = -1;
 
+            // Efficiently find the active index
+            // Since currentLyrics is sorted, we can find the last index where time <= currentTime
             for (let i = 0; i < currentLyrics.length; i++) {
                 if (currentTime >= currentLyrics[i].time) {
                     activeIndex = i;
@@ -1642,28 +1716,36 @@
                 }
             }
 
-            if (activeIndex !== -1 && activeIndex !== lastActiveIndex) {
-                lastActiveIndex = activeIndex;
+            if (activeIndex !== lastActiveIndex) {
                 const lines = document.querySelectorAll('.lyric-line');
                 const container = document.getElementById('lyrics-container');
                 
-                lines.forEach((line, i) => {
-                    line.classList.toggle('active', i === activeIndex);
-                    line.classList.toggle('passed', i < activeIndex);
-                });
+                if (activeIndex !== -1) {
+                    lines.forEach((line, i) => {
+                        line.classList.toggle('active', i === activeIndex);
+                        line.classList.toggle('passed', i < activeIndex);
+                    });
 
-                const activeLine = document.getElementById(`lyric-${activeIndex}`);
-                if (activeLine && container) {
-                    const containerHeight = container.offsetHeight;
-                    const lineOffset = activeLine.offsetTop;
-                    const lineHeight = activeLine.offsetHeight;
-                    
-                    // Buttery smooth centering scroll
-                    container.scrollTo({
-                        top: lineOffset - (containerHeight / 2) + (lineHeight / 2),
-                        behavior: 'smooth'
+                    const activeLine = document.getElementById(`lyric-${activeIndex}`);
+                    if (activeLine && container) {
+                        const containerHeight = container.offsetHeight;
+                        const lineOffset = activeLine.offsetTop;
+                        const lineHeight = activeLine.offsetHeight;
+                        
+                        // Centering scroll
+                        container.scrollTo({
+                            top: lineOffset - (containerHeight / 2) + (lineHeight / 2),
+                            behavior: 'smooth'
+                        });
+                    }
+                } else {
+                    // Before first lyric
+                    lines.forEach(l => {
+                        l.classList.remove('active');
+                        l.classList.remove('passed');
                     });
                 }
+                lastActiveIndex = activeIndex;
             }
         }
 
@@ -1902,31 +1984,48 @@
             playTrack(currentTrackIndex);
         }
 
-        audio.ontimeupdate = () => {
+        let syncAnimationId = null;
+        function startSyncLoop() {
+            if (syncAnimationId) cancelAnimationFrame(syncAnimationId);
+            
+            function sync() {
+                if (!audio.paused) {
+                    updatePlayerUIProgress();
+                    if (lyricsVisible) updateLyricsSync();
+                }
+                syncAnimationId = requestAnimationFrame(sync);
+            }
+            syncAnimationId = requestAnimationFrame(sync);
+        }
+
+        function updatePlayerUIProgress() {
             const seekSlider = document.getElementById('seek-slider');
             const progressFill = document.getElementById('progress-bar-fill');
             const seekThumb = document.getElementById('seek-thumb');
             
             if (!seekSlider) return;
             if (audio.duration) {
-                const percentage = (audio.currentTime / audio.duration) * 100;
-                seekSlider.max = Math.floor(audio.duration);
-                seekSlider.value = Math.floor(audio.currentTime);
+                const currentTime = audio.currentTime;
+                const duration = audio.duration;
+                const percentage = (currentTime / duration) * 100;
+                
+                seekSlider.max = Math.floor(duration);
+                seekSlider.value = Math.floor(currentTime);
                 
                 if (progressFill) progressFill.style.width = `${percentage}%`;
                 if (seekThumb) seekThumb.style.left = `${percentage}%`;
 
                 const c = document.getElementById('curr-time');
                 const d = document.getElementById('dur-time');
-                if (c) c.innerText = formatTime(audio.currentTime);
-                if (d) d.innerText = formatTime(audio.duration);
-                
-                // Synchronize lyrics
-                updateLyricsSync();
+                if (c) c.innerText = formatTime(currentTime);
+                if (d) d.innerText = formatTime(duration);
             }
-        };
+        }
 
-        // when track ends, either repeat or next
+        // Initialize sync loop
+        startSyncLoop();
+
+        // When track ends, either repeat or next
         audio.onended = () => {
             if (repeatTracks) {
                 audio.currentTime = 0;
