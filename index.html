@@ -1288,11 +1288,20 @@
         }
 
         async function fetchGeniusBestMatch(track, token) {
-            const q = encodeURIComponent(`${track.title} ${track.artist}`);
+            // Clean up title: remove (Remastered), - Radio Edit, etc.
+            const cleanTitle = track.title
+                .replace(/\(Remastered.*?\)/gi, '')
+                .replace(/- .*?Remastered/gi, '')
+                .replace(/\(Radio Edit\)/gi, '')
+                .replace(/- Radio Edit/gi, '')
+                .replace(/\(feat\..*?\)/gi, '')
+                .trim();
+                
+            const q = encodeURIComponent(`${cleanTitle} ${track.artist}`);
             
             const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
+            const id = setTimeout(() => controller.abort(), 10000); 
+            
             try {
                 const res = await fetch(`https://api.genius.com/search?q=${q}`, {
                     headers: { Authorization: `Bearer ${token}` },
@@ -1303,21 +1312,20 @@
                 const data = await res.json();
                 const hits = (data.response && data.response.hits) ? data.response.hits : [];
                 if (hits.length === 0) return null;
+                
                 const norm = s => (s || '').toLowerCase().replace(/[\W_]+/g, ' ').trim();
-                const targetTitle = norm(track.title);
+                const targetTitle = norm(cleanTitle);
                 const targetArtist = norm(track.artist);
+                
                 let best = null, bestScore = -1;
                 for (const h of hits) {
                     const r = h.result || {};
                     const title = norm(r.title || '');
                     const artist = norm(r.artist_names || (r.primary_artist && r.primary_artist.name) || '');
                     
-                    // Relaxed matching: if the Genius title contains our title OR vice versa, it's a candidate
                     let score = 0;
                     if (title.includes(targetTitle) || targetTitle.includes(title)) score += 0.5;
                     if (artist.includes(targetArtist) || targetArtist.includes(artist)) score += 0.5;
-                    
-                    // If we have a very strong match, prioritize it
                     if (title === targetTitle && artist === targetArtist) score += 1;
 
                     if (r.url && score > bestScore) { 
@@ -1326,7 +1334,6 @@
                     }
                 }
                 
-                // If no good match found, just take the first result as a desperate fallback
                 if (!best && hits.length > 0) {
                     const r = hits[0].result;
                     best = { url: r.url, title: r.title, artist: r.artist_names };
@@ -1341,8 +1348,8 @@
         }
 
         async function fetchGeniusLyricsFromUrl(url) {
-            // Use a different proxy. allorigins is often more reliable for raw HTML.
-            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+            // Use a simple CORS proxy. No AI, just raw data.
+            const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
             
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), 15000); 
@@ -1350,11 +1357,10 @@
             try {
                 const res = await fetch(proxy, { signal: controller.signal });
                 clearTimeout(id);
-                if (!res.ok) throw new Error(`Proxy failed (${res.status})`);
+                if (!res.ok) throw new Error(`Could not reach Genius (${res.status})`);
                 
-                const data = await res.json();
-                const html = data.contents;
-                if (!html) throw new Error('Proxy returned no content');
+                const html = await res.text();
+                if (!html) throw new Error('Genius returned no content');
                 
                 return extractLyricsFromHTML(html);
             } catch (err) {
@@ -1368,23 +1374,48 @@
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            // Genius uses different container classes depending on the version of the page
-            // Try the most common one first (Lyrics__Container)
-            let containers = doc.querySelectorAll('[class^="Lyrics__Container"], .lyrics');
-            
+            // 1. Try the "Pro" way: Parse the preloaded state script (most reliable)
+            try {
+                const scripts = Array.from(doc.querySelectorAll('script'));
+                const stateScript = scripts.find(s => s.textContent.includes('window.__PRELOADED_STATE__'));
+                if (stateScript) {
+                    const content = stateScript.textContent;
+                    const jsonStart = content.indexOf('{');
+                    const jsonEnd = content.lastIndexOf('}') + 1;
+                    const jsonStr = content.substring(jsonStart, jsonEnd);
+                    const state = JSON.parse(jsonStr);
+                    
+                    // Path to lyrics in Genius state
+                    const songData = state.songPage || state.songs?.song || {};
+                    if (songData.lyricsData?.body?.html) {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = songData.lyricsData.body.html;
+                        return tempDiv.innerText.trim();
+                    }
+                }
+            } catch (e) {
+                console.warn('[Lyrics] Preloaded state parsing failed, falling back to DOM parsing', e);
+            }
+
+            // 2. Try the "Basic" way: CSS selectors
+            let containers = doc.querySelectorAll('[class^="Lyrics__Container"], .lyrics, [data-lyrics-container="true"]');
             if (containers.length > 0) {
                 let fullLyrics = '';
                 containers.forEach(c => {
-                    // Replace <br> with newlines
-                    c.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
-                    fullLyrics += c.innerText + '\n\n';
+                    // Replace <br> with newlines for better formatting
+                    const clone = c.cloneNode(true);
+                    clone.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+                    fullLyrics += clone.innerText + '\n\n';
                 });
                 return fullLyrics.trim();
             }
             
-            // Fallback: search for any text that looks like lyrics
-            const allText = doc.body.innerText;
-            return extractLyricsFromText(allText);
+            // 3. Last resort: Clean the body text
+            const bodyText = doc.body.innerText;
+            const cleaned = extractLyricsFromText(bodyText);
+            if (cleaned && cleaned.length > 100) return cleaned;
+
+            throw new Error('Could not find lyrics on the page');
         }
 
         function extractLyricsFromText(txt) {
