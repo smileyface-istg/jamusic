@@ -33,6 +33,14 @@
             button {
                 touch-action: manipulation;
             }
+            /* Force hide admin on mobile initially */
+            #admin-modal, #admin-overlay {
+                display: none !important;
+            }
+            /* But allow it to be shown when .show class is added */
+            #admin-modal.show, #admin-overlay.show {
+                display: block !important;
+            }
         }
 
         body {
@@ -704,8 +712,10 @@
     </div>
 
     <!-- ADMIN modal -->
-    <div id="admin-overlay" class="hidden md:block" style="display:none;"></div>
-    <div id="admin-modal" class="admin-modal hidden md:block" style="position:fixed; left:50%; top:12%; transform:translateX(-50%); z-index:2001; display:none;">
+    <!-- On desktop, we revert to default behavior (hidden via class/opacity but present in DOM). 
+         On mobile, we explicitly use inline style="display:none" or a specific class to kill it. -->
+    <div id="admin-overlay" class="hidden md:block"></div>
+    <div id="admin-modal" class="admin-modal hidden md:block" style="position:fixed; left:50%; top:12%; transform:translateX(-50%); z-index:2001;">
         <h3 class="text-lg font-bold mb-2">Admin - Send Broadcast</h3>
         <div class="space-y-2">
             <input id="admin-subject" placeholder="Subject" class="dn-input" />
@@ -1241,18 +1251,15 @@
             const overlay = document.getElementById('admin-overlay');
             const modal = document.getElementById('admin-modal');
             
+            // Logic for all devices: ensure display block is set if needed (handled by CSS for mobile, standard for desktop)
             if (overlay) {
-                overlay.style.display = 'block';
-                // force layout reflow
-                void overlay.offsetWidth;
+                // Remove hidden class if present (from our previous mobile-only attempt)
+                overlay.classList.remove('hidden'); 
                 overlay.classList.add('show');
-                overlay.classList.remove('hidden');
             }
             if (modal) {
-                modal.style.display = 'block';
-                void modal.offsetWidth;
-                modal.classList.add('show');
                 modal.classList.remove('hidden');
+                modal.classList.add('show');
             }
             document.body.classList.add('no-scroll');
         }
@@ -1262,17 +1269,10 @@
             
             if (overlay) {
                 overlay.classList.remove('show');
-                setTimeout(() => { 
-                    overlay.style.display = 'none'; 
-                    overlay.classList.add('hidden');
-                }, 200);
+                // On mobile, the CSS rule #admin-modal:not(.show) { display: none } will take over
             }
             if (modal) {
                 modal.classList.remove('show');
-                setTimeout(() => { 
-                    modal.style.display = 'none'; 
-                    modal.classList.add('hidden');
-                }, 200);
             }
             document.body.classList.remove('no-scroll');
         }
