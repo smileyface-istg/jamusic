@@ -375,67 +375,6 @@
             transition: opacity 0.5s cubic-bezier(0.3, 0, 0, 1), transform 0.5s cubic-bezier(0.3, 0, 0, 1);
         }
 
-        /* Transcription Badge & UI */
-        .transcription-badge {
-            position: absolute;
-            top: 40px;
-            left: 40px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 8px 16px;
-            border-radius: 100px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 2002;
-        }
-
-        .transcription-status-dot {
-            width: 8px;
-            height: 8px;
-            background: #10b981;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #10b981;
-            animation: pulse 2s infinite;
-        }
-
-        .confidence-score {
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .analysis-visualizer {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-            z-index: 2002;
-        }
-
-        .analysis-bar {
-            width: 3px;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            transition: height 0.1s ease;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 1; }
-            100% { opacity: 0.4; }
-        }
-
         #lyrics-overlay.show {
             display: flex;
             opacity: 1;
@@ -465,9 +404,9 @@
             overflow-y: auto;
             scrollbar-width: none;
             -ms-overflow-style: none;
-            mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
-            -webkit-mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
-            padding: 40vh 40px;
+            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            padding: 15vh 40px 150px 40px; /* Adjusted for static display & player bar */
             scroll-behavior: smooth;
         }
 
@@ -507,7 +446,7 @@
         @media (max-width: 768px) {
             .lyric-line { font-size: 1.8rem; padding: 12px 0; }
             #lyrics-close { top: 20px; right: 20px; width: 40px; height: 40px; }
-            .lyrics-container { padding: 40vh 24px; }
+            .lyrics-container { padding: 10vh 24px 120px 24px; }
         }
 
         /* Spotify-like Animations */
@@ -815,7 +754,7 @@
     </div>
 
     <!-- PLAYER BAR -->
-    <div id="player-bar" class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 px-4 py-3 lg:px-6 lg:py-4 z-[100] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.3,0,0,1)]">
+    <div id="player-bar" class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 px-4 py-3 lg:px-6 lg:py-4 z-[2100] transform translate-y-full transition-transform duration-500 ease-[cubic-bezier(0.3,0,0,1)]">
         <div class="max-w-[1800px] mx-auto grid grid-cols-3 items-center gap-4">
             
             <!-- Info (Left) -->
@@ -933,44 +872,16 @@
             </div>
 
             <div id="settings-lyrics" class="hidden">
-                <div class="mb-6 p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="p-2 bg-blue-500 rounded-lg">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-sm text-white">AI Transcription Engine</h4>
-                            <p class="text-[10px] text-slate-400">Real-time audio analysis active</p>
-                        </div>
-                    </div>
-
-                    <p class="font-semibold text-[11px] text-slate-400 mb-2 uppercase tracking-wider">Analysis Sensitivity</p>
-                    <input type="range" id="transcription-sensitivity-slider" min="0" max="100" value="50" class="w-full mb-4">
-                    
-                    <div class="flex items-center justify-between mb-2">
-                        <p class="font-semibold text-[11px] text-slate-400 uppercase tracking-wider">Vocal Isolation</p>
-                        <button id="vocal-isolation-toggle" class="w-10 h-6 bg-blue-600 rounded-full relative transition-colors focus:outline-none">
-                            <div class="toggle-dot absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all"></div>
-                        </button>
-                    </div>
-                    
-                    <div class="flex items-center justify-between">
-                        <p class="font-semibold text-[11px] text-slate-400 uppercase tracking-wider">Noise Reduction</p>
-                        <button id="noise-reduction-toggle" class="w-10 h-6 bg-blue-600 rounded-full relative transition-colors focus:outline-none">
-                            <div class="toggle-dot absolute right-1 top-1 w-4 h-4 bg-white rounded-full transition-all"></div>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="mt-6 p-4 bg-white/5 rounded-2xl border border-white/10">
+                <div class="p-4 bg-white/5 rounded-2xl border border-white/10">
                     <p class="font-semibold text-[11px] text-slate-400 mb-2 uppercase tracking-wider">Genius Access Token</p>
-                    <input type="text" id="genius-token-input" placeholder="sXAc6SFczSlD4nXM8ItbTr7Nmtt1XUXUwemUpwWXm7VFDdm5eUzYTKvygm7Nb9ya" class="dn-input" />
-                    <p class="text-[10px] text-slate-500 mt-1">Used to fetch full lyrics directly from Genius. We never store or share this.</p>
+                    <input type="text" id="genius-token-input" placeholder="Enter your Genius Client Access Token" class="dn-input" />
+                    <p class="text-[10px] text-slate-500 mt-2">To get a token: 
+                        <a href="https://genius.com/api-clients" target="_blank" class="text-blue-400 hover:underline">1. Create a Genius API Client</a>, 
+                        2. Copy the "Client Access Token".
+                    </p>
                 </div>
 
-                <button id="save-lyrics-settings-btn" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20">Apply Settings</button>
+                <button id="save-lyrics-settings-btn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20">Apply Settings</button>
             </div>
         </div>
     </div>
@@ -1052,29 +963,17 @@
 
     <!-- LYRICS OVERLAY -->
     <div id="lyrics-overlay" role="dialog" aria-labelledby="lyrics-title">
-        <div class="transcription-badge">
-            <div class="transcription-status-dot"></div>
-            <div class="flex flex-col">
-                <span class="text-[10px] text-white/40 uppercase font-black tracking-widest leading-none mb-1">AI Live Analysis</span>
-                <span class="confidence-score">Accuracy: <span id="transcription-accuracy">98</span>%</span>
-            </div>
-        </div>
-
         <div id="lyrics-close" onclick="toggleLyrics()" aria-label="Close lyrics" role="button" tabindex="0" onkeydown="if(event.key==='Enter') toggleLyrics()">&times;</div>
         
         <div class="lyrics-container" id="lyrics-container">
-            <h2 id="lyrics-title" class="sr-only">Synchronized Lyrics</h2>
+            <h2 id="lyrics-title" class="sr-only">Full Lyrics</h2>
             <div id="lyrics-content">
-                <!-- Lyrics or Transcription will be injected here -->
+                <!-- Lyrics will be injected here -->
                 <div class="text-center py-20">
                     <div class="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-6"></div>
-                    <p class="text-slate-400 font-bold text-xl">Initializing audio analysis...</p>
+                    <p class="text-slate-400 font-bold text-xl">Loading lyrics...</p>
                 </div>
             </div>
-        </div>
-
-        <div class="analysis-visualizer" id="analysis-visualizer">
-            <!-- Bars will be injected here -->
         </div>
     </div>
 
@@ -1099,327 +998,6 @@
         let searchTimeout = null;
         let currentLyrics = [];
         let lyricsVisible = false;
-
-        /***********************
-         * Audio Analysis & Transcription Engine
-         ***********************/
-        class AudioAnalysisEngine {
-            constructor(audioElement) {
-                this.audio = audioElement;
-                this.context = null;
-                this.source = null;
-                this.analyser = null;
-                this.vocalFilter = null;
-                this.noiseGate = null;
-                this.isInitialized = false;
-                this.sensitivity = parseFloat(localStorage.getItem('transcription_sensitivity') || '0.5');
-                this.vocalIsolationEnabled = localStorage.getItem('vocal_isolation_enabled') !== 'false';
-                this.noiseReductionEnabled = localStorage.getItem('noise_reduction_enabled') !== 'false';
-                this.confidence = 0.98;
-                this.visualizerBars = 40;
-                this.onLowConfidence = null;
-            }
-
-            async init() {
-                if (this.isInitialized) return;
-                try {
-                    this.context = new (window.AudioContext || window.webkitAudioContext)();
-                    this.source = this.context.createMediaElementSource(this.audio);
-                    this.analyser = this.context.createAnalyser();
-                    this.analyser.fftSize = 256;
-
-                    // Vocal Isolation: Bandpass filter (300Hz - 3400Hz)
-                    this.vocalFilter = this.context.createBiquadFilter();
-                    this.vocalFilter.type = 'bandpass';
-                    this.vocalFilter.frequency.value = 1850; // Center frequency
-                    this.vocalFilter.Q.value = 1.0;
-
-                    // Noise Reduction: Dynamics Compressor
-                    this.noiseGate = this.context.createDynamicsCompressor();
-                    this.noiseGate.threshold.value = -50;
-                    this.noiseGate.knee.value = 40;
-                    this.noiseGate.ratio.value = 12;
-                    this.noiseGate.attack.value = 0;
-                    this.noiseGate.release.value = 0.25;
-
-                    this.reconnectNodes();
-
-                    this.isInitialized = true;
-                    this.startVisualizer();
-                    console.log("Audio Analysis Engine Initialized");
-                } catch (e) {
-                    console.warn("AudioContext failed (likely browser restriction):", e);
-                }
-            }
-
-            reconnectNodes() {
-                if (!this.isInitialized) return;
-                
-                // Disconnect everything first
-                this.source.disconnect();
-                this.vocalFilter.disconnect();
-                this.noiseGate.disconnect();
-                this.analyser.disconnect();
-
-                let lastNode = this.source;
-
-                if (this.vocalIsolationEnabled) {
-                    lastNode.connect(this.vocalFilter);
-                    lastNode = this.vocalFilter;
-                }
-
-                if (this.noiseReductionEnabled) {
-                    lastNode.connect(this.noiseGate);
-                    lastNode = this.noiseGate;
-                }
-
-                lastNode.connect(this.analyser);
-                this.analyser.connect(this.context.destination);
-            }
-
-            setVocalIsolation(enabled) {
-                this.vocalIsolationEnabled = enabled;
-                localStorage.setItem('vocal_isolation_enabled', enabled);
-                this.reconnectNodes();
-            }
-
-            setNoiseReduction(enabled) {
-                this.noiseReductionEnabled = enabled;
-                localStorage.setItem('noise_reduction_enabled', enabled);
-                this.reconnectNodes();
-            }
-
-            setSensitivity(value) {
-                this.sensitivity = value / 100;
-                localStorage.setItem('transcription_sensitivity', this.sensitivity);
-            }
-
-            startVisualizer() {
-                const container = document.getElementById('analysis-visualizer');
-                if (!container) return;
-                container.innerHTML = '';
-                for (let i = 0; i < this.visualizerBars; i++) {
-                    const bar = document.createElement('div');
-                    bar.className = 'analysis-bar';
-                    container.appendChild(bar);
-                }
-
-                const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-                const update = () => {
-                    if (!lyricsVisible) return;
-                    this.analyser.getByteFrequencyData(dataArray);
-                    const bars = container.querySelectorAll('.analysis-bar');
-                    
-                    // Update bars and calculate real-time confidence based on signal-to-noise
-                    let totalEnergy = 0;
-                    bars.forEach((bar, i) => {
-                        const val = dataArray[i % dataArray.length];
-                        const height = (val / 255) * 100;
-                        bar.style.height = `${Math.max(10, height)}%`;
-                        bar.style.background = `rgba(255, 255, 255, ${0.2 + (val / 255) * 0.5})`;
-                        totalEnergy += val;
-                    });
-
-                    // Adaptive confidence scoring
-                    const avgEnergy = totalEnergy / dataArray.length;
-                    const sensitivityMultiplier = 0.5 + (this.sensitivity * 0.5);
-                    const newConfidence = 0.85 + (avgEnergy / 255) * 0.14 * sensitivityMultiplier;
-                    this.confidence = newConfidence;
-                    
-                    const accuracyEl = document.getElementById('transcription-accuracy');
-                    if (accuracyEl) accuracyEl.innerText = (newConfidence * 100).toFixed(1);
-
-                    if (newConfidence < 0.88 && this.onLowConfidence) {
-                        this.onLowConfidence(newConfidence);
-                    }
-
-                    requestAnimationFrame(update);
-                };
-                update();
-            }
-
-            getStream() {
-                // Returns the filtered stream for transcription
-                return this.noiseGate;
-            }
-        }
-
-        const analysisEngine = new AudioAnalysisEngine(audio);
-
-        class TranscriptionEngine {
-            constructor() {
-                this.recognition = null;
-                this.isTranscribing = false;
-                this.transcript = [];
-                this.retryCount = 0;
-                this.maxRetries = 5;
-                this.initRecognition();
-            }
-
-            initRecognition() {
-                if ('webkitSpeechRecognition' in window) {
-                    this.recognition = new webkitSpeechRecognition();
-                    this.recognition.continuous = true;
-                    this.recognition.interimResults = true;
-                    this.recognition.lang = 'en-US';
-
-                    this.recognition.onresult = (event) => {
-                        let interimTranscript = '';
-                        for (let i = event.resultIndex; i < event.results.length; ++i) {
-                            if (event.results[i].isFinal) {
-                                const text = event.results[i][0].transcript;
-                                this.addLyricLine(text);
-                            } else {
-                                interimTranscript += event.results[i][0].transcript;
-                                this.showInterim(interimTranscript);
-                            }
-                        }
-                    };
-
-                    this.recognition.onstart = () => {
-                        this.retryCount = 0;
-                        this.updateStatusDot('#10b981'); // Success green
-                    };
-
-                    this.recognition.onend = () => {
-                        if (this.isTranscribing) {
-                            console.log("Transcription connection closed, restarting...");
-                            this.updateStatusDot('#f59e0b'); // Warning orange
-                            this.handleRestart();
-                        }
-                    };
-
-                    this.recognition.onerror = (event) => {
-                        console.error("Transcription Error:", event.error);
-                        this.updateStatusDot('#ef4444'); // Error red
-                        
-                        if (['network', 'no-speech'].includes(event.error) && this.isTranscribing) {
-                            this.handleRestart();
-                        }
-                    };
-                }
-            }
-
-            updateStatusDot(color) {
-                const dot = document.querySelector('.transcription-status-dot');
-                if (dot) {
-                    dot.style.background = color;
-                    dot.style.boxShadow = `0 0 10px ${color}`;
-                }
-            }
-
-            handleRestart() {
-                if (this.retryCount < this.maxRetries) {
-                    this.retryCount++;
-                    const delay = Math.min(1000 * Math.pow(2, this.retryCount), 10000);
-                    setTimeout(() => {
-                        if (this.isTranscribing) {
-                            try {
-                                this.recognition.start();
-                            } catch (e) {
-                                console.warn("Restart failed, retrying...");
-                            }
-                        }
-                    }, delay);
-                }
-            }
-
-            showInterim(text) {
-                if (!text.trim()) return;
-                const loading = document.getElementById('transcription-loading');
-                if (loading) loading.remove();
-
-                let interimEl = document.getElementById('interim-transcription');
-                if (!interimEl) {
-                    const contentDiv = document.getElementById('lyrics-content');
-                    interimEl = document.createElement('div');
-                    interimEl.id = 'interim-transcription';
-                    interimEl.className = 'lyric-line interim opacity-40 italic transition-all duration-300 scale-95 origin-left mb-8 text-2xl md:text-3xl font-bold';
-                    contentDiv.appendChild(interimEl);
-                }
-                interimEl.innerText = text;
-                
-                const container = document.getElementById('lyrics-container');
-                if (container) {
-                    container.scrollTop = container.scrollHeight;
-                }
-            }
-
-            addLyricLine(text) {
-                if (!text.trim()) return;
-                
-                const loading = document.getElementById('transcription-loading');
-                if (loading) loading.remove();
-
-                const interimEl = document.getElementById('interim-transcription');
-                if (interimEl) interimEl.remove();
-
-                const time = audio.currentTime;
-                currentLyrics.push({ time, content: text.trim() });
-                this.renderLine(text.trim(), currentLyrics.length - 1);
-            }
-
-            renderLine(text, index) {
-                const contentDiv = document.getElementById('lyrics-content');
-                if (!contentDiv) return;
-
-                const line = document.createElement('div');
-                line.className = 'lyric-line active animate-spotify mb-10 text-3xl md:text-5xl font-black transition-all duration-700 opacity-20 hover:opacity-100 cursor-default tracking-tight';
-                line.id = `lyric-${index}`;
-                line.innerText = text;
-                contentDiv.appendChild(line);
-
-                const container = document.getElementById('lyrics-container');
-                if (container) {
-                    const scrollTarget = line.offsetTop - (container.offsetHeight / 3);
-                    container.scrollTo({
-                        top: scrollTarget > 0 ? scrollTarget : 0,
-                        behavior: 'smooth'
-                    });
-                }
-
-                setTimeout(() => {
-                    line.style.opacity = '1';
-                    line.style.transform = 'scale(1.02)';
-                    setTimeout(() => {
-                        line.style.transform = 'scale(1)';
-                    }, 400);
-                }, 50);
-            }
-
-            async start() {
-                if (this.isTranscribing) return;
-                
-                if (!analysisEngine.isInitialized) {
-                    await analysisEngine.init();
-                }
-
-                if (this.recognition) {
-                    try {
-                        this.isTranscribing = true;
-                        this.retryCount = 0;
-                        currentLyrics = [];
-                        const contentDiv = document.getElementById('lyrics-content');
-                        if (contentDiv) contentDiv.innerHTML = '';
-                        this.recognition.start();
-                    } catch (e) {
-                        console.error("Transcription Start Failed:", e);
-                        if (e.name === 'InvalidStateError') {
-                            this.isTranscribing = true;
-                        }
-                    }
-                }
-            }
-
-            stop() {
-                this.isTranscribing = false;
-                if (this.recognition) {
-                    try { this.recognition.stop(); } catch(e) {}
-                }
-            }
-        }
-
-        const transcriptionEngine = new TranscriptionEngine();
 
         /***********************
          * Track Data
@@ -1599,7 +1177,7 @@
         }
 
         /***********************
-         * Lyrics Logic (Pure Audio Transcription)
+         * Lyrics Logic (Genius API Integration)
          ***********************/
         async function fetchLyrics(track) {
             if (!lyricsVisible) return;
@@ -1607,7 +1185,21 @@
             if (token) {
                 await startGeniusLyricsFlow(track, token);
             } else {
-                await startTranscriptionFlow(track);
+                const contentDiv = document.getElementById('lyrics-content');
+                if (contentDiv) {
+                    contentDiv.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-32 text-center">
+                            <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-6">
+                                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-white font-bold text-2xl mb-2">Genius token required</h3>
+                            <p class="text-slate-400 max-w-sm mb-8">To display full lyrics, you need to add your Genius Client Access Token in the settings.</p>
+                            <button class="px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:scale-105 transition-transform shadow-lg shadow-blue-500/20" onclick="document.getElementById('account-settings-btn').click(); document.getElementById('tab-lyrics-settings').click();">Open Lyrics Settings</button>
+                        </div>
+                    `;
+                }
             }
         }
 
@@ -1616,18 +1208,10 @@
             const btn = document.getElementById('lyrics-btn');
             if (!overlay) return;
 
-            const hasGenius = !!getGeniusToken();
-            const hasSpeech = 'webkitSpeechRecognition' in window;
-            if (!hasGenius && !hasSpeech) {
-                alertBox("Neither Genius token nor browser speech recognition available. Add Genius token in Settings.");
-                return;
-            }
-
             lyricsVisible = !lyricsVisible;
             
             if (lyricsVisible) {
                 overlay.style.display = 'flex';
-                document.body.classList.add('no-scroll');
                 overlay.offsetHeight;
                 overlay.classList.add('show');
                 btn?.classList.add('text-[#1db954]');
@@ -1636,9 +1220,7 @@
                 await fetchLyrics(track);
             } else {
                 overlay.classList.remove('show');
-                document.body.classList.remove('no-scroll');
                 btn?.classList.remove('text-[#1db954]');
-                transcriptionEngine.stop();
                 setTimeout(() => {
                     if (!lyricsVisible) {
                         overlay.style.display = 'none';
@@ -1649,41 +1231,6 @@
             }
         }
 
-        async function startTranscriptionFlow(track) {
-            const contentDiv = document.getElementById('lyrics-content');
-            if (!contentDiv) return;
-            
-            contentDiv.innerHTML = `
-                <div id="transcription-loading" class="text-center py-20 animate-pulse">
-                    <div class="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-8 relative">
-                        <div class="absolute inset-0 border-4 border-blue-500/30 rounded-full animate-ping"></div>
-                        <svg class="w-10 h-10 text-blue-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-white font-black text-3xl mb-4 tracking-tight">Listening to Audio...</h3>
-                    <p class="text-slate-400 text-lg max-w-xs mx-auto">Our AI is transcribing the lyrics from ${track.title} in real-time.</p>
-                </div>
-            `;
-
-            await analysisEngine.init();
-            
-            analysisEngine.onLowConfidence = (score) => {
-                const statusDot = document.querySelector('.transcription-status-dot');
-                const accuracyEl = document.getElementById('transcription-accuracy');
-                
-                if (accuracyEl) accuracyEl.innerText = (score * 100).toFixed(1);
-                
-                if (statusDot) {
-                    const color = score < 0.86 ? '#ef4444' : (score < 0.88 ? '#f59e0b' : '#10b981');
-                    statusDot.style.background = color;
-                    statusDot.style.boxShadow = `0 0 10px ${color}`;
-                }
-            };
-
-            await transcriptionEngine.start();
-        }
-
         function getGeniusToken() {
             try { return localStorage.getItem('genius_access_token') || ''; } catch(e) { return ''; }
         }
@@ -1692,15 +1239,13 @@
             const contentDiv = document.getElementById('lyrics-content');
             if (!contentDiv) return;
             contentDiv.innerHTML = `
-                <div class="text-center py-20 animate-pulse">
-                    <div class="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-8 relative">
-                        <div class="absolute inset-0 border-4 border-blue-500/30 rounded-full animate-ping"></div>
-                        <svg class="w-10 h-10 text-blue-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-                        </svg>
+                <div class="flex flex-col items-center justify-center py-32 text-center">
+                    <div class="relative w-16 h-16 mb-8">
+                        <div class="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                    <h3 class="text-white font-black text-3xl mb-4 tracking-tight">Fetching Full Lyrics...</h3>
-                    <p class="text-slate-400 text-lg max-w-xs mx-auto">Searching Genius for ${escapeHtml(track.title)} by ${escapeHtml(track.artist)}.</p>
+                    <h3 class="text-white font-bold text-2xl mb-2">Searching for lyrics...</h3>
+                    <p class="text-slate-400">Fetching the full story from Genius</p>
                 </div>
             `;
 
@@ -1714,13 +1259,15 @@
                 renderFullLyrics(fullText);
             } catch (err) {
                 contentDiv.innerHTML = `
-                    <div class="lyrics-error">
-                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M7.938 4.938a10 10 0 0114.124 14.124M4.938 7.938a10 10 0 0114.124 14.124"></path>
-                        </svg>
-                        <p class="text-slate-400">Failed to fetch full lyrics from Genius.</p>
-                        <p class="text-slate-500 text-sm">Reason: ${escapeHtml(err.message || 'Unknown error')}</p>
-                        <button class="px-4 py-2 rounded-xl bg-white/5 mt-4" onclick="startTranscriptionFlow(tracks[currentTrackIndex])">Use AI Transcription Instead</button>
+                    <div class="flex flex-col items-center justify-center py-32 text-center">
+                        <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M7.938 4.938a10 10 0 0114.124 14.124M4.938 7.938a10 10 0 0114.124 14.124"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-white font-bold text-2xl mb-2">Couldn't load lyrics</h3>
+                        <p class="text-slate-400 max-w-sm mb-8">${escapeHtml(err.message || 'Unknown error')}</p>
+                        <button onclick="fetchLyrics(tracks[currentTrackIndex])" class="px-8 py-3 bg-white text-black rounded-full font-bold hover:scale-105 transition-transform">Try Again</button>
                     </div>
                 `;
             }
@@ -1774,10 +1321,21 @@
             const contentDiv = document.getElementById('lyrics-content');
             if (!contentDiv) return;
             contentDiv.innerHTML = '';
-            const lines = text.split('\n');
+            
+            // Clean up text: remove multiple newlines, trim lines
+            const lines = text.split('\n')
+                .map(l => l.trim())
+                .filter(l => l.length > 0 || (l === '' && false)); // filter empty lines if needed, but keeping them for spacing is better
+            
             for (const ln of lines) {
+                if (ln === '') {
+                    const spacer = document.createElement('div');
+                    spacer.className = 'h-8';
+                    contentDiv.appendChild(spacer);
+                    continue;
+                }
                 const line = document.createElement('div');
-                line.className = 'lyric-line active animate-spotify mb-4 text-2xl md:text-3xl font-bold';
+                line.className = 'lyric-line active animate-spotify mb-6 text-2xl md:text-4xl font-bold tracking-tight text-white/90 hover:text-white transition-colors cursor-default';
                 line.innerText = ln;
                 contentDiv.appendChild(line);
             }
@@ -1791,9 +1349,8 @@
         const LYRIC_OFFSET = 0.1;
         let lastActiveIndex = -1;
         function updateLyricsSync() {
-            // Simplified sync for transcription
-            if (!lyricsVisible || !currentLyrics || currentLyrics.length === 0) return;
-            // The engine now handles rendering directly for better responsiveness
+            // Static lyrics display for Genius integration
+            if (!lyricsVisible) return;
         }
 
         /***********************
@@ -2625,17 +2182,7 @@
 
             // Lyrics settings logic
             const saveLyricsBtn = document.getElementById('save-lyrics-settings-btn');
-            const transcriptionSensitivity = document.getElementById('transcription-sensitivity-slider');
-            const vocalIsolationToggle = document.getElementById('vocal-isolation-toggle');
-            const noiseReductionToggle = document.getElementById('noise-reduction-toggle');
             const geniusTokenInput = document.getElementById('genius-token-input');
-
-            if (transcriptionSensitivity) {
-                transcriptionSensitivity.value = analysisEngine.sensitivity * 100;
-                transcriptionSensitivity.addEventListener('input', (e) => {
-                    analysisEngine.setSensitivity(e.target.value);
-                });
-            }
 
             if (geniusTokenInput) {
                 try {
@@ -2644,37 +2191,6 @@
                         geniusTokenInput.value = '••••••••••••••••';
                     }
                 } catch(e){}
-            }
-
-            const updateToggleUI = (el, enabled) => {
-                const dot = el.querySelector('.toggle-dot');
-                if (enabled) {
-                    el.classList.remove('bg-slate-700');
-                    el.classList.add('bg-blue-600');
-                    dot.style.transform = 'translateX(16px)';
-                } else {
-                    el.classList.add('bg-slate-700');
-                    el.classList.remove('bg-blue-600');
-                    dot.style.transform = 'translateX(0)';
-                }
-            };
-
-            if (vocalIsolationToggle) {
-                updateToggleUI(vocalIsolationToggle, analysisEngine.vocalIsolationEnabled);
-                vocalIsolationToggle.addEventListener('click', () => {
-                    const newState = !analysisEngine.vocalIsolationEnabled;
-                    analysisEngine.setVocalIsolation(newState);
-                    updateToggleUI(vocalIsolationToggle, newState);
-                });
-            }
-
-            if (noiseReductionToggle) {
-                updateToggleUI(noiseReductionToggle, analysisEngine.noiseReductionEnabled);
-                noiseReductionToggle.addEventListener('click', () => {
-                    const newState = !analysisEngine.noiseReductionEnabled;
-                    analysisEngine.setNoiseReduction(newState);
-                    updateToggleUI(noiseReductionToggle, newState);
-                });
             }
 
             if (saveLyricsBtn) {
