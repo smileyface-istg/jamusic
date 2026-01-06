@@ -1878,6 +1878,42 @@ Ready?`
             trackStats[trackId].playCount++;
             trackStats[trackId].lastPlayed = Date.now();
             saveStats();
+
+            // Global Sync (Fire and forget)
+            try {
+                if (window.db && window.dbIncrement && window.dbRefPath && window.dbUpdate) {
+                    const trackRef = `global_stats/tracks/${trackId}`;
+                    const updates = {};
+                    updates[`${trackRef}/playCount`] = window.dbIncrement(1);
+                    updates[`${trackRef}/lastPlayed`] = Date.now();
+                    window.dbUpdate(window.dbRefPath(window.db), updates);
+                }
+            } catch(e) { console.error("Global sync error:", e); }
+        }
+
+        async function fetchGlobalStats() {
+            try {
+                if (window.db && window.dbGet && window.dbChild && window.dbRef) {
+                    const snapshot = await window.dbGet(window.dbChild(window.dbRef, 'global_stats/tracks'));
+                    if (snapshot.exists()) {
+                        const globalData = snapshot.val();
+                        // Merge global data into local trackStats
+                        for (const trackId in globalData) {
+                            if (!trackStats[trackId]) {
+                                trackStats[trackId] = { playCount: 0, lastPlayed: 0 };
+                            }
+                            // We use the global playCount if it's higher than local, 
+                            // or just replace it if we want "truly global"
+                            trackStats[trackId].playCount = globalData[trackId].playCount || 0;
+                            // Keep the most recent lastPlayed
+                            if (globalData[trackId].lastPlayed > (trackStats[trackId].lastPlayed || 0)) {
+                                trackStats[trackId].lastPlayed = globalData[trackId].lastPlayed;
+                            }
+                        }
+                        saveStats();
+                    }
+                }
+            } catch(e) { console.error("Fetch global stats error:", e); }
         }
 
         function getTrendingTracks() {
@@ -2230,7 +2266,7 @@ Ready?`
             if (mobileList) mobileList.innerHTML = errorHtml;
         }
 
-        function switchView(view) {
+        async function switchView(view) {
             currentView = view;
             const gridTitle = document.getElementById('gridTitle');
             const mobileGridTitle = document.querySelector('#mobile-app h3');
@@ -2251,6 +2287,9 @@ Ready?`
                 if (mobileGridTitle) mobileGridTitle.innerHTML = '<span class="w-1 h-6 bg-blue-500 rounded-full"></span>Trending Now';
                 if (mobileWelcomeBanner) mobileWelcomeBanner.style.display = 'none';
                 if (mobileSearchContainer) mobileSearchContainer.style.display = 'none';
+                
+                // Fetch latest global stats before rendering trending
+                await fetchGlobalStats();
                 renderTracks(getTrendingTracks());
             } else if (view === 'search') {
                 if (gridTitle) gridTitle.innerText = 'Search Results';
@@ -2504,7 +2543,7 @@ Ready?`
 
         // handleAuth is now implemented in the module script below
 
-        function showApp(user){
+        async function showApp(user){
             if (!user) return;
             const authOverlay = document.getElementById('auth-overlay');
             if (authOverlay) {
@@ -2530,6 +2569,9 @@ Ready?`
 
             updateViewMode();
 
+            // Fetch global stats for badges/trending display
+            await fetchGlobalStats();
+            
             renderTracks(tracks);
             setTimeout(() => { if (authOverlay) authOverlay.style.display = 'none'; }, 600);
         }
@@ -2783,6 +2825,7 @@ Ready?`
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, child, get, update, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         // Your web app's Firebase configuration
         // NOTE: Replace these placeholders with your actual Firebase config from the console
@@ -2790,6 +2833,7 @@ Ready?`
             apiKey: "AIzaSyApKLZIjUZSQnKJCngvp0KZPYJf3zBNaCc",
             authDomain: "jamusic-v2.firebaseapp.com",
             projectId: "jamusic-v2",
+            databaseURL: "https://jamusic-v2-default-rtdb.firebaseio.com",
             storageBucket: "jamusic-v2.firebasestorage.app",
             messagingSenderId: "765002295434",
             appId: "1:765002295434:web:a4c9ba98c68dbcd84f2573"
@@ -2798,6 +2842,16 @@ Ready?`
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // Expose to global for use in main script
+        window.db = db;
+        window.dbRef = ref(db);
+        window.dbIncrement = increment;
+        window.dbUpdate = update;
+        window.dbRefPath = ref;
+        window.dbGet = get;
+        window.dbChild = child;
 
         // Expose functions to global scope for button clicks
         window.handleAuth = async function() {
