@@ -419,11 +419,11 @@
                 </div>
 
                 <nav class="space-y-1 flex-1">
-                    <button class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl nav-active font-semibold transition-all">
+                    <button onclick="switchView('home')" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl nav-active font-semibold transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                         Discover
                     </button>
-                    <button class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-semibold transition-all">
+                    <button onclick="switchView('trending')" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-semibold transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
                         Trending
                     </button>
@@ -440,7 +440,12 @@
         <main class="lg:ml-[280px] min-h-screen p-6 lg:p-12 pb-48">
             <header class="flex items-center justify-between gap-6 mb-16 relative">
                 <div class="relative w-full max-w-xl group">
-                    <input type="text" id="searchInput" onkeyup="handleSearch(event)" placeholder="Search native library..." class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:border-blue-500/50 transition-all text-white">
+                    <input type="text" id="searchInput" onkeyup="handleSearch(event)" onfocus="updateSearchSuggestions()" placeholder="Search native library..." class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 focus:outline-none focus:border-blue-500/50 transition-all text-white">
+                    
+                    <!-- Search History Suggestions -->
+                    <div id="searchSuggestions" class="absolute top-full left-0 right-0 mt-2 glass rounded-2xl overflow-hidden z-[100] border border-white/10 hidden">
+                        <!-- Suggestions will be injected here -->
+                    </div>
                 </div>
 
                 <!-- Account Icon & Dropdown + inbox + notif -->
@@ -550,8 +555,16 @@
 
              <!-- Mobile Content -->
              <div class="p-6 space-y-8">
+                 <!-- Search Bar Mobile (Integrated) -->
+                 <div id="mobileSearchContainer" class="relative group">
+                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                         <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                     </div>
+                     <input type="text" id="mobileSearchInput" onkeyup="handleSearch(event)" placeholder="Search for songs or artists..." class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 focus:outline-none focus:border-blue-500/50 transition-all text-white text-sm">
+                 </div>
+
                  <!-- Welcome Banner Mobile -->
-                 <div class="relative rounded-[2rem] overflow-hidden group h-[180px] shadow-2xl">
+                 <div id="mobileWelcomeBanner" class="relative rounded-[2rem] overflow-hidden group h-[180px] shadow-2xl">
                      <img src="https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80&w=800" class="absolute inset-0 w-full h-full object-cover">
                      <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-6 flex flex-col justify-end">
                          <h2 class="text-2xl font-black mb-1 text-white">Welcome Back</h2>
@@ -574,17 +587,17 @@
         
         <!-- Mobile Bottom Nav -->
         <div class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-2 flex justify-around items-center z-[90] pb-safe">
-             <button class="flex flex-col items-center gap-1 p-2 rounded-xl text-blue-400">
+             <button onclick="switchView('home')" class="flex flex-col items-center gap-1 p-2 rounded-xl text-blue-400">
                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
                  <span class="text-[10px] font-bold">Home</span>
              </button>
-             <button class="flex flex-col items-center gap-1 p-2 rounded-xl text-slate-500 hover:text-slate-300">
+             <button onclick="switchView('search')" class="flex flex-col items-center gap-1 p-2 rounded-xl text-slate-500 hover:text-slate-300">
                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                  <span class="text-[10px] font-bold">Search</span>
              </button>
-             <button class="flex flex-col items-center gap-1 p-2 rounded-xl text-slate-500 hover:text-slate-300">
-                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
-                 <span class="text-[10px] font-bold">Library</span>
+             <button onclick="switchView('trending')" class="flex flex-col items-center gap-1 p-2 rounded-xl text-slate-500 hover:text-slate-300">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                 <span class="text-[10px] font-bold">Trending</span>
              </button>
         </div>
     </div>
@@ -767,20 +780,49 @@
         let currentTrackIndex = 0;
         let isPlaying = false;
         let authMode = 'login';
-        let repeatTracks = false; // new: repeat toggle
+        let repeatTracks = false; 
+        let currentView = 'home'; // 'home', 'search', 'trending'
+        let searchTimeout = null;
 
         const tracks = [
-            { title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
-            { title: 'End of Beginning', artist: 'Djo', img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
-            { title: 'Heat Waves', artist: 'Glass Animals', img: 'https://i.scdn.co/image/ab67616d0000b2739e495fb707973f3390850eea', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3' },
-            { title: 'Stereo Hearts', artist: 'Gym Class Heroes', img: 'https://i.scdn.co/image/ab67616d0000b273706dcf46953a040b8ed4b333', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3' },
-            { title: 'Get Lucky', artist: 'Daft Punk', img: 'https://images-ext-1.discordapp.net/external/xR3pl2SlUtADo9357RJ1lvKlsgnie7faJtruZyDKNu8/%3Fcb%3D20140421225330%26path-prefix%3Des/https/static.wikia.nocookie.net/daftpunk/images/7/71/Get_Lucky.jpg/revision/latest?format=png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3' },
-            { title: 'Rap God', artist: 'Eminem', img: 'https://images-ext-1.discordapp.net/external/5NjINKSPrPYMPecFhmRVSyb_aMQAQTUEB_7EmfB9EME/https/i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2?format=webp', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3' },
-            { title: 'A LITTLE THEORIZING', artist: 'Stupendium', img: 'https://i.scdn.co/image/ab67616d0000b273bfebcc991d99e277f3260221', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/A%20Little%20Theorizing%20Lyrics.mp3' },
-            { title: 'Corrupted', artist: 'Danimal Cannon', img: 'https://i.scdn.co/image/ab67616d0000b27339be440fe5b4ef67f9de6cc7', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Danimal%20Cannon%20&%20Zef%20-%20Corrupted.mp3' },
-            { title: 'River Flows In You', artist: 'DJ Herjuana', img: 'https://i.scdn.co/image/ab67616d0000b27371cde6e77fc2d217cbc5f567', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/SpotiDownloader.com%20-%20River%20Flows%20in%20You%20-%20DJ%20HERJUANA.mp3' },
-            { title: 'FTW', artist: 'Lets be Friends', img: 'https://upload.wikimedia.org/wikipedia/en/5/53/FTW_Lets_Be_Friends_Orignal_Cover.jpeg', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/%5BElectro%5D%20-%20Lets%20Be%20Friends%20-%20FTW%20%5BMonstercat%20Release%5D.mp3' }
+            { id: '1', title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
+            { id: '2', title: 'End of Beginning', artist: 'Djo', img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
+            { id: '3', title: 'Heat Waves', artist: 'Glass Animals', img: 'https://i.scdn.co/image/ab67616d0000b2739e495fb707973f3390850eea', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Glass%20Animals%20-%20Heat%20Waves%20(Lyrics).mp3' },
+            { id: '4', title: 'Stereo Hearts', artist: 'Gym Class Heroes', img: 'https://i.scdn.co/image/ab67616d0000b273706dcf46953a040b8ed4b333', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Gym%20Class%20Heroes%20-%20Stereo%20Hearts%20(Lyrics)%20%20Heart%20Stereo.mp3' },
+            { id: '5', title: 'Get Lucky', artist: 'Daft Punk', img: 'https://images-ext-1.discordapp.net/external/xR3pl2SlUtADo9357RJ1lvKlsgnie7faJtruZyDKNu8/%3Fcb%3D20140421225330%26path-prefix%3Des/https/static.wikia.nocookie.net/daftpunk/images/7/71/Get_Lucky.jpg/revision/latest?format=png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Daft%20Punk%20-%20Get%20Lucky%20(Lyrics)%20ft.%20Pharrell%20Williams,%20Nile%20Rodgers.mp3' },
+            { id: '6', title: 'Rap God', artist: 'Eminem', img: 'https://images-ext-1.discordapp.net/external/5NjINKSPrPYMPecFhmRVSyb_aMQAQTUEB_7EmfB9EME/https/i.scdn.co/image/ab67616d0000b273643e6ecebab400d52574e4b2?format=webp', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Eminem%20-%20Rap%20God%20(Explicit).mp3' },
+            { id: '7', title: 'A LITTLE THEORIZING', artist: 'Stupendium', img: 'https://i.scdn.co/image/ab67616d0000b273bfebcc991d99e277f3260221', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/A%20Little%20Theorizing%20Lyrics.mp3' },
+            { id: '8', title: 'Corrupted', artist: 'Danimal Cannon', img: 'https://i.scdn.co/image/ab67616d0000b27339be440fe5b4ef67f9de6cc7', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Danimal%20Cannon%20&%20Zef%20-%20Corrupted.mp3' },
+            { id: '9', title: 'River Flows In You', artist: 'DJ Herjuana', img: 'https://i.scdn.co/image/ab67616d0000b27371cde6e77fc2d217cbc5f567', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/SpotiDownloader.com%20-%20River%20Flows%20in%20You%20-%20DJ%20HERJUANA.mp3' },
+            { id: '10', title: 'FTW', artist: 'Lets be Friends', img: 'https://upload.wikimedia.org/wikipedia/en/5/53/FTW_Lets_Be_Friends_Orignal_Cover.jpeg', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/%5BElectro%5D%20-%20Lets%20Be%20Friends%20-%20FTW%20%5BMonstercat%20Release%5D.mp3' }
         ];
+
+        // Track statistics (play counts, last played)
+        let trackStats = {};
+        try {
+            trackStats = JSON.parse(localStorage.getItem('jamusic_stats') || '{}');
+        } catch(e) { trackStats = {}; }
+
+        function saveStats() {
+            localStorage.setItem('jamusic_stats', JSON.stringify(trackStats));
+        }
+
+        function incrementPlayCount(trackId) {
+            if (!trackStats[trackId]) {
+                trackStats[trackId] = { playCount: 0, lastPlayed: 0 };
+            }
+            trackStats[trackId].playCount++;
+            trackStats[trackId].lastPlayed = Date.now();
+            saveStats();
+        }
+
+        function getTrendingTracks() {
+            return [...tracks].sort((a, b) => {
+                const statA = trackStats[a.id] || { playCount: 0 };
+                const statB = trackStats[b.id] || { playCount: 0 };
+                return statB.playCount - statA.playCount;
+            });
+        }
 
         /***********************
          * Storage helpers
@@ -816,44 +858,86 @@
             const mobileList = document.getElementById('mobileMusicList');
 
             if(grid) {
-                grid.innerHTML = data.map((track, index) => `
-                <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in" onclick="playTrack(${index})">
-                    <div class="relative overflow-hidden rounded-2xl mb-5">
-                        <img src="${track.img}" alt="${track.title}" class="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div class="play-btn-float w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center text-white">
-                                <svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                grid.innerHTML = data.map((track) => {
+                    const originalIndex = tracks.findIndex(t => t.id === track.id);
+                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0 };
+                    const trendingBadge = stats.playCount > 5 ? `<div class="absolute top-4 right-4 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg z-20 shadow-lg">HOT</div>` : '';
+                    const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
+                    
+                    return `
+                    <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in relative" onclick="playTrack(${originalIndex})">
+                        ${trendingBadge}
+                        <div class="relative overflow-hidden rounded-2xl mb-5">
+                            <img src="${track.img}" alt="${track.title}" class="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <div class="play-btn-float w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                                    <svg class="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                                </div>
                             </div>
                         </div>
+                        <div class="flex flex-col gap-2">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="font-bold text-lg truncate group-hover:text-blue-400 transition-colors">${escapeHtml(track.title)}</h4>
+                                    <p class="text-xs text-slate-500 font-semibold uppercase">${escapeHtml(track.artist)}</p>
+                                </div>
+                                ${stats.playCount > 0 ? `<span class="text-[10px] text-slate-600 font-bold whitespace-nowrap">${stats.playCount} plays</span>` : ''}
+                            </div>
+                            ${lastPlayedText ? `<p class="text-[10px] text-slate-600 font-medium">Played ${lastPlayedText}</p>` : ''}
+                        </div>
                     </div>
-                    <h4 class="font-bold text-lg truncate group-hover:text-blue-400 transition-colors">${escapeHtml(track.title)}</h4>
-                    <p class="text-xs text-slate-500 font-semibold uppercase">${escapeHtml(track.artist)}</p>
-                </div>
-            `).join('');
+                `;}).join('');
             }
 
             if(mobileList) {
-                mobileList.innerHTML = data.map((track, index) => `
-                    <div class="flex items-center gap-4 p-3 bg-white/5 rounded-2xl active:scale-95 transition-transform border border-white/5" onclick="playTrack(${index})">
-                        <img src="${track.img}" class="w-16 h-16 rounded-xl object-cover shadow-md">
+                mobileList.innerHTML = data.map((track) => {
+                    const originalIndex = tracks.findIndex(t => t.id === track.id);
+                    const stats = trackStats[track.id] || { playCount: 0 };
+                    const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
+                    
+                    return `
+                    <div class="flex items-center gap-4 p-3 bg-white/5 rounded-2xl active:scale-95 transition-transform border border-white/5" onclick="playTrack(${originalIndex})">
+                        <div class="relative">
+                            <img src="${track.img}" class="w-16 h-16 rounded-xl object-cover shadow-md">
+                            ${stats.playCount > 5 ? `<div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-black flex items-center justify-center"><div class="w-1.5 h-1.5 bg-white rounded-full"></div></div>` : ''}
+                        </div>
                         <div class="flex-1 min-w-0">
                             <h4 class="font-bold text-white truncate text-base">${escapeHtml(track.title)}</h4>
-                            <p class="text-xs text-slate-400 truncate">${escapeHtml(track.artist)}</p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-xs text-slate-400 truncate">${escapeHtml(track.artist)}</p>
+                                ${lastPlayedText ? `<span class="text-[10px] text-slate-600">• ${lastPlayedText}</span>` : ''}
+                            </div>
                         </div>
-                        <button class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white shadow-lg">
-                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                        </button>
+                        <div class="flex flex-col items-end gap-1">
+                            <button class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white shadow-lg">
+                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                            </button>
+                            ${stats.playCount > 0 ? `<span class="text-[10px] text-slate-500 font-bold">${stats.playCount} plays</span>` : ''}
+                        </div>
                     </div>
-                `).join('');
+                `;}).join('');
             }
+        }
+
+        function getTimeAgo(ts) {
+            const diff = Date.now() - ts;
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return mins + 'm ago';
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return hours + 'h ago';
+            return Math.floor(hours / 24) + 'd ago';
         }
 
         /***********************
          * Player functions
          ***********************/
         function playTrack(index){
-            currentTrackIndex = index;
             const track = tracks[index];
+            if (!track) return;
+            currentTrackIndex = index;
+            incrementPlayCount(track.id);
+            
             document.getElementById('player-bar').style.transform = 'translateY(0)';
             document.getElementById('player-img').src = track.img;
             document.getElementById('player-title').innerText = track.title;
@@ -862,6 +946,212 @@
             audio.play().catch(()=>{/* ignore autoplay errors */});
             updatePlayUI(true);
             animateVisualizer();
+        }
+
+        /***********************
+         * Search & View logic
+         ***********************/
+        async function fetchSearchData(query) {
+            // Simulate API delay
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    // Simulate offline scenario if query is 'offline'
+                    if (query === 'offline') {
+                        reject(new Error('Network connection lost'));
+                        return;
+                    }
+
+                    const filtered = tracks.filter(t => 
+                        t.title.toLowerCase().includes(query) || 
+                        t.artist.toLowerCase().includes(query)
+                    );
+                    resolve(filtered);
+                }, 800); // 800ms "network" delay
+            });
+        }
+
+        async function handleSearch(event) {
+            const query = event.target.value.toLowerCase().trim();
+            const isDesktop = event.target.id === 'searchInput';
+            
+            if (searchTimeout) clearTimeout(searchTimeout);
+            
+            if (query.length === 0) {
+                setLoading(false);
+                if (currentView === 'search') {
+                    renderTracks(tracks);
+                }
+                return;
+            }
+
+            // Show loading state
+            setLoading(true);
+
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const results = await fetchSearchData(query);
+                    
+                    if (currentView !== 'search' && !isDesktop) {
+                        // If we're searching from a different view on mobile, switch to search view
+                        switchView('search');
+                    }
+
+                    renderTracks(results);
+                    setLoading(false);
+                    
+                    if (results.length === 0) {
+                        showSearchError("No songs found for your search.");
+                    } else if (isDesktop) {
+                        saveSearchHistory(query);
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    showSearchError(error.message || "Something went wrong with the search.");
+                }
+            }, 500); // 500ms debounce
+        }
+
+        function saveSearchHistory(query) {
+            if (!query) return;
+            let history = JSON.parse(localStorage.getItem('jamusic_search_history') || '[]');
+            history = [query, ...history.filter(h => h !== query)].slice(0, 5); // Keep last 5 unique searches
+            localStorage.setItem('jamusic_search_history', JSON.stringify(history));
+            updateSearchSuggestions();
+        }
+
+        function updateSearchSuggestions() {
+            const history = JSON.parse(localStorage.getItem('jamusic_search_history') || '[]');
+            const container = document.getElementById('searchSuggestions');
+            if (!container) return;
+
+            if (history.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="p-4 border-b border-white/10 flex justify-between items-center">
+                    <span class="text-[10px] uppercase tracking-widest text-slate-500 font-black">Recent Searches</span>
+                    <button onclick="clearSearchHistory()" class="text-[10px] text-blue-500 hover:underline">Clear All</button>
+                </div>
+                ${history.map(h => `
+                    <button onclick="applyHistorySearch('${escapeHtml(h)}')" class="w-full text-left px-4 py-3 hover:bg-white/5 text-sm text-slate-300 transition-colors flex items-center gap-3">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        ${escapeHtml(h)}
+                    </button>
+                `).join('')}
+            `;
+            container.style.display = 'block';
+        }
+
+        function applyHistorySearch(query) {
+            const input = document.getElementById('searchInput');
+            if (input) {
+                input.value = query;
+                handleSearch({ target: input });
+            }
+            const container = document.getElementById('searchSuggestions');
+            if (container) container.style.display = 'none';
+        }
+
+        function clearSearchHistory() {
+            localStorage.removeItem('jamusic_search_history');
+            updateSearchSuggestions();
+        }
+
+        function setLoading(isLoading) {
+            const grid = document.getElementById('musicGrid');
+            const mobileList = document.getElementById('mobileMusicList');
+            const loaderHtml = `<div class="col-span-full py-20 flex flex-col items-center justify-center animate-pulse">
+                <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p class="text-slate-400 font-medium">Searching for vibes...</p>
+            </div>`;
+
+            if (isLoading) {
+                if (grid) grid.innerHTML = loaderHtml;
+                if (mobileList) mobileList.innerHTML = loaderHtml;
+            }
+        }
+
+        function showSearchError(msg) {
+            const grid = document.getElementById('musicGrid');
+            const mobileList = document.getElementById('mobileMusicList');
+            const errorHtml = `<div class="col-span-full py-20 flex flex-col items-center justify-center text-center">
+                <svg class="w-16 h-16 text-slate-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 4h.01"></path></svg>
+                <h4 class="text-xl font-bold text-slate-300 mb-2">Oops!</h4>
+                <p class="text-slate-500">${escapeHtml(msg)}</p>
+            </div>`;
+
+            if (grid) grid.innerHTML = errorHtml;
+            if (mobileList) mobileList.innerHTML = errorHtml;
+        }
+
+        function switchView(view) {
+            currentView = view;
+            const gridTitle = document.getElementById('gridTitle');
+            const mobileGridTitle = document.querySelector('#mobile-app h3');
+            const mobileWelcomeBanner = document.getElementById('mobileWelcomeBanner');
+            const mobileSearchContainer = document.getElementById('mobileSearchContainer');
+            
+            // Update UI active states
+            updateNavUI(view);
+
+            if (view === 'home') {
+                if (gridTitle) gridTitle.innerText = 'Recommended';
+                if (mobileGridTitle) mobileGridTitle.innerHTML = '<span class="w-1 h-6 bg-blue-500 rounded-full"></span>Recommended';
+                if (mobileWelcomeBanner) mobileWelcomeBanner.style.display = 'block';
+                if (mobileSearchContainer) mobileSearchContainer.style.display = 'none';
+                renderTracks(tracks);
+            } else if (view === 'trending') {
+                if (gridTitle) gridTitle.innerText = 'Trending Now';
+                if (mobileGridTitle) mobileGridTitle.innerHTML = '<span class="w-1 h-6 bg-blue-500 rounded-full"></span>Trending Now';
+                if (mobileWelcomeBanner) mobileWelcomeBanner.style.display = 'none';
+                if (mobileSearchContainer) mobileSearchContainer.style.display = 'none';
+                renderTracks(getTrendingTracks());
+            } else if (view === 'search') {
+                if (gridTitle) gridTitle.innerText = 'Search Results';
+                if (mobileGridTitle) mobileGridTitle.innerHTML = '<span class="w-1 h-6 bg-blue-500 rounded-full"></span>Search Results';
+                if (mobileWelcomeBanner) mobileWelcomeBanner.style.display = 'none';
+                if (mobileSearchContainer) mobileSearchContainer.style.display = 'block';
+                
+                // On mobile, focus search if we have a search input
+                const mobileSearchInput = document.getElementById('mobileSearchInput');
+                if (mobileSearchInput) {
+                    mobileSearchInput.focus();
+                }
+                renderTracks(tracks);
+            }
+        }
+
+        function updateNavUI(view) {
+            // Desktop Sidebar
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('nav-active', 'text-white', 'bg-white/5');
+                item.classList.add('text-slate-400');
+                
+                const text = item.innerText.toLowerCase();
+                if ((view === 'home' && text.includes('discover')) || 
+                    (view === 'trending' && text.includes('trending'))) {
+                    item.classList.add('nav-active', 'text-white');
+                    item.classList.remove('text-slate-400');
+                }
+            });
+
+            // Mobile Bottom Nav
+            const mobileBtns = document.querySelectorAll('#mobile-app .fixed.bottom-0 button');
+            mobileBtns.forEach(btn => {
+                const span = btn.querySelector('span');
+                if (!span) return;
+                
+                btn.classList.remove('text-blue-400');
+                btn.classList.add('text-slate-500');
+                
+                const text = span.innerText.toLowerCase();
+                if (text === view) {
+                    btn.classList.add('text-blue-400');
+                    btn.classList.remove('text-slate-500');
+                }
+            });
         }
 
         function togglePlay(){
@@ -961,12 +1251,17 @@
             const trigger = document.getElementById('profile-trigger');
             const mDropdown = document.getElementById('mobile-profile-dropdown');
             const mTrigger = document.getElementById('mobile-profile-trigger');
+            const searchSuggestions = document.getElementById('searchSuggestions');
+            const searchInput = document.getElementById('searchInput');
 
             if (dropdown && trigger && !trigger.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.classList.remove('active');
             }
             if (mDropdown && mTrigger && !mTrigger.contains(e.target) && !mDropdown.contains(e.target)) {
                 mDropdown.classList.remove('active');
+            }
+            if (searchSuggestions && searchInput && !searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+                searchSuggestions.style.display = 'none';
             }
         };
 
