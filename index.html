@@ -654,18 +654,8 @@
     </style>
 </head>
 <body class="selection:bg-blue-500/30">
-    <!-- Top Error Notification -->
-    <div id="auth-error-notif" class="fixed top-0 left-0 right-0 z-[10001] p-4 pointer-events-none flex justify-center opacity-0 translate-y-[-100%]">
-        <div class="glass border border-red-500/30 bg-red-500/10 backdrop-blur-xl px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-md w-full pointer-events-auto">
-            <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-            </div>
-            <div>
-                <h4 class="text-red-500 font-bold text-sm uppercase tracking-wider mb-0.5">Authentication Error</h4>
-                <p id="auth-error-msg" class="text-slate-300 text-sm leading-relaxed"></p>
-            </div>
-        </div>
-    </div>
+    <!-- Notifications Container -->
+    <div id="notif-container" class="fixed top-0 left-0 right-0 z-[10001] p-4 pointer-events-none flex flex-col items-center gap-3"></div>
 
     <!-- AUTHENTICATION LAYER -->
     <div id="auth-overlay">
@@ -3221,59 +3211,44 @@ Ready?`
         };
 
         function showAuthError(message) {
-            const notif = document.getElementById('auth-error-notif');
-            const msgEl = document.getElementById('auth-error-msg');
-            if (!notif || !msgEl) return;
+            const container = document.getElementById('notif-container');
+            if (!container) return;
 
-            msgEl.innerText = message;
+            // Create notification element
+            const notif = document.createElement('div');
+            notif.className = 'glass border border-red-500/30 bg-red-500/10 backdrop-blur-xl px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-md w-full pointer-events-auto opacity-0 translate-y-[-20px]';
+            notif.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
             
-            // If already showing, just shake it and reset timer
-            if (notif.classList.contains('notif-slide-down') && !notif.classList.contains('notif-slide-up')) {
-                notif.classList.remove('notif-shake');
-                void notif.offsetWidth; // Trigger reflow
-                notif.classList.add('notif-shake');
-                
-                if (window.authNotifTimeout) clearTimeout(window.authNotifTimeout);
-                window.authNotifTimeout = setTimeout(() => hideAuthError(), 6000);
-                return;
-            }
+            notif.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="text-red-500 font-bold text-sm uppercase tracking-wider mb-0.5">Authentication Error</h4>
+                    <p class="text-slate-300 text-sm leading-relaxed">${message}</p>
+                </div>
+            `;
 
-            // Reset classes
-            if (window.hideTimeout) {
-                clearTimeout(window.hideTimeout);
-                window.hideTimeout = null;
-            }
-            notif.classList.remove('notif-slide-up', 'notif-shake');
-            notif.style.display = 'flex';
-            
+            container.appendChild(notif);
+
             // Trigger slide down
             requestAnimationFrame(() => {
-                notif.classList.add('notif-slide-down');
+                notif.classList.remove('opacity-0', 'translate-y-[-20px]');
             });
 
-            // Auto hide after 6 seconds
-            if (window.authNotifTimeout) clearTimeout(window.authNotifTimeout);
-            window.authNotifTimeout = setTimeout(() => {
-                hideAuthError();
-            }, 6000);
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                notif.style.opacity = '0';
+                notif.style.transform = 'translateY(-20px) scale(0.95)';
+                setTimeout(() => {
+                    if (notif.parentNode) notif.remove();
+                }, 500);
+            }, 5000);
         }
 
-        function hideAuthError() {
-            const notif = document.getElementById('auth-error-notif');
-            // Don't hide if it's not even shown or already hiding
-            if (!notif || !notif.classList.contains('notif-slide-down') || notif.classList.contains('notif-slide-up')) return;
-
-            notif.classList.remove('notif-slide-down', 'notif-shake');
-            notif.classList.add('notif-slide-up');
-            
-            // Store this timeout so we can cancel it if a new error comes in
-            if (window.hideTimeout) clearTimeout(window.hideTimeout);
-            window.hideTimeout = setTimeout(() => {
-                notif.style.display = 'none';
-                notif.classList.remove('notif-slide-up');
-                window.hideTimeout = null;
-            }, 500);
-        }
+        // hideAuthError is no longer needed as each notif handles its own lifecycle
 
         // Check for persisted user on load and handle session changes
         onAuthStateChanged(auth, (user) => {
@@ -3281,7 +3256,9 @@ Ready?`
                 const userData = { email: user.email, name: user.email.split('@')[0], uid: user.uid };
                 localStorage.setItem('jamusic_user', JSON.stringify(userData));
                 window.showApp(userData);
-                hideAuthError(); // Hide error if user is successfully authenticated
+                // Clear all notifications on success
+                const container = document.getElementById('notif-container');
+                if (container) container.innerHTML = '';
             } else {
                 // If no Firebase user, but we have local data, it might be an expired session
                 const localUser = localStorage.getItem('jamusic_user');
