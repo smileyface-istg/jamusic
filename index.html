@@ -80,6 +80,18 @@
             animation: fadeIn 0.5s ease-out forwards;
         }
 
+        /* Top Notification Animation */
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(-100%); opacity: 0; }
+        }
+        .notif-slide-down { animation: slideDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .notif-slide-up { animation: slideUp 0.4s cubic-bezier(0.36, 0, 0.66, -0.56) forwards; }
+
         .music-card {
             transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
             position: relative;
@@ -636,6 +648,18 @@
     </style>
 </head>
 <body class="selection:bg-blue-500/30">
+    <!-- Top Error Notification -->
+    <div id="auth-error-notif" class="fixed top-0 left-0 right-0 z-[9999] p-4 pointer-events-none flex justify-center opacity-0 translate-y-[-100%]">
+        <div class="glass border border-red-500/30 bg-red-500/10 backdrop-blur-xl px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-md w-full pointer-events-auto">
+            <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <div>
+                <h4 class="text-red-500 font-bold text-sm uppercase tracking-wider mb-0.5">Authentication Error</h4>
+                <p id="auth-error-msg" class="text-slate-300 text-sm leading-relaxed"></p>
+            </div>
+        </div>
+    </div>
 
     <!-- AUTHENTICATION LAYER -->
     <div id="auth-overlay">
@@ -2519,19 +2543,7 @@ Ready?`
             if (submitBtn) submitBtn.innerText = mode === 'login' ? 'Sign In' : 'Create Account';
         }
 
-        function handleAuth(){
-            const emailEl = document.getElementById('auth-email');
-            const passEl = document.getElementById('auth-pass');
-            const rememberEl = document.getElementById('remember-me');
-            if (!emailEl || !passEl) return;
-            const email = emailEl.value.trim();
-            const pass = passEl.value.trim();
-            const remember = rememberEl ? rememberEl.checked : false;
-            if (!email || !pass) { alertBox("Please fill in all fields."); return; }
-            const user = { email, name: email.split('@')[0] };
-            if (remember) localStorage.setItem('jamusic_user', JSON.stringify(user));
-            showApp(user);
-        }
+        // handleAuth is now implemented in the module script below
 
         function showApp(user){
             if (!user) return;
@@ -2630,10 +2642,7 @@ Ready?`
              }
         });
 
-        function logout(){
-            localStorage.removeItem('jamusic_user');
-            location.reload();
-        }
+        // logout is now implemented in the module script below
 
         /***********************
          * Repeat toggle
@@ -3097,6 +3106,134 @@ Ready?`
         })();
 
     </script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // Your web app's Firebase configuration
+        // NOTE: Replace these placeholders with your actual Firebase config from the console
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-EXAMPLE-KEY",
+            authDomain: "jamusic-v2.firebaseapp.com",
+            projectId: "jamusic-v2",
+            storageBucket: "jamusic-v2.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef123456"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Expose functions to global scope for button clicks
+        window.handleAuth = async function() {
+            const emailEl = document.getElementById('auth-email');
+            const passEl = document.getElementById('auth-pass');
+            const rememberEl = document.getElementById('remember-me');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (!emailEl || !passEl) return;
+            const email = emailEl.value.trim();
+            const pass = passEl.value.trim();
+            const remember = rememberEl ? rememberEl.checked : false;
+
+            if (!email || !pass) {
+                showAuthError("Please fill in all fields.");
+                return;
+            }
+
+            // Show loading state
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = authMode === 'login' ? 'Signing In...' : 'Creating Account...';
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.7';
+
+            try {
+                let userCredential;
+                if (authMode === 'login') {
+                    userCredential = await signInWithEmailAndPassword(auth, email, pass);
+                } else {
+                    userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                }
+                
+                const user = userCredential.user;
+                const userData = { email: user.email, name: user.email.split('@')[0], uid: user.uid };
+                
+                if (remember) localStorage.setItem('jamusic_user', JSON.stringify(userData));
+                window.showApp(userData);
+            } catch (error) {
+                console.error("Auth error:", error.code, error.message);
+                let friendlyMsg = "Warning: The credentials you put doesn't match in our database! ";
+                
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
+                    friendlyMsg += "Maybe the email is wrong?";
+                } else if (error.code === 'auth/wrong-password') {
+                    friendlyMsg += "Maybe the password is wrong?";
+                } else if (error.code === 'auth/invalid-credential') {
+                    friendlyMsg += "Maybe the email or password is wrong?";
+                } else if (error.code === 'auth/email-already-in-use') {
+                    friendlyMsg = "This email is already registered. Try logging in instead!";
+                } else if (error.code === 'auth/weak-password') {
+                    friendlyMsg = "Password should be at least 6 characters.";
+                } else {
+                    friendlyMsg += "Please check your connection or try again.";
+                }
+                
+                showAuthError(friendlyMsg);
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            }
+        };
+
+        window.logout = async function() {
+            try {
+                await auth.signOut();
+                localStorage.removeItem('jamusic_user');
+                location.reload();
+            } catch (error) {
+                console.error("Logout error:", error);
+                location.reload(); // Fallback
+            }
+        };
+
+        function showAuthError(message) {
+            const notif = document.getElementById('auth-error-notif');
+            const msgEl = document.getElementById('auth-error-msg');
+            if (!notif || !msgEl) return;
+
+            msgEl.innerText = message;
+            
+            // Reset classes
+            notif.classList.remove('notif-slide-up');
+            notif.style.display = 'flex';
+            
+            // Trigger slide down
+            requestAnimationFrame(() => {
+                notif.classList.add('notif-slide-down');
+            });
+
+            // Auto hide after 5 seconds
+            if (window.authNotifTimeout) clearTimeout(window.authNotifTimeout);
+            window.authNotifTimeout = setTimeout(() => {
+                notif.classList.remove('notif-slide-down');
+                notif.classList.add('notif-slide-up');
+                setTimeout(() => {
+                    notif.style.display = 'none';
+                    notif.classList.remove('notif-slide-up');
+                }, 500);
+            }, 5000);
+        }
+
+        // Check for persisted user on load
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const userData = { email: user.email, name: user.email.split('@')[0], uid: user.uid };
+                window.showApp(userData);
+            }
+        });
+    </script>
 </body>
 </html>
-
