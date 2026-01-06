@@ -33,12 +33,11 @@
             button {
                 touch-action: manipulation;
             }
-            /* Force hide admin on mobile initially */
-            #admin-modal, #admin-overlay, #displayname-modal, #displayname-overlay {
+            /* Force hide display name on mobile initially */
+            #displayname-modal, #displayname-overlay {
                 display: none !important;
             }
-            /* But allow admin to be shown when .show class is added (keep display name hidden) */
-            #admin-modal.show, #admin-overlay.show {
+            #displayname-modal.show, #displayname-overlay.show {
                 display: block !important;
             }
         }
@@ -79,24 +78,6 @@
         .animate-fade-in {
             animation: fadeIn 0.5s ease-out forwards;
         }
-
-        /* Top Notification Animation */
-        @keyframes slideDown {
-            from { transform: translateY(-100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes slideUp {
-            from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(-100%); opacity: 0; }
-        }
-        @keyframes notifShake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-8px); }
-            75% { transform: translateX(8px); }
-        }
-        .notif-slide-down { animation: slideDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        .notif-slide-up { animation: slideUp 0.4s cubic-bezier(0.36, 0, 0.66, -0.56) forwards; }
-        .notif-shake { animation: notifShake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 
         .music-card {
             transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
@@ -261,119 +242,10 @@
 
         .dn-error { color:#ffb3b3; font-size:13px; margin-top:8px; }
 
-        /* Inbox & Admin UI */
-        #inbox-overlay, #admin-overlay {
-            position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index: 1500; opacity:0; pointer-events:none; transition:opacity .2s;
-        }
-        #inbox-overlay.show, #admin-overlay.show { opacity:1; pointer-events:auto; }
-
-        #inbox-panel {
-            position: fixed; right: -480px; top: 0; height: 100%; width: 420px; max-width: calc(100% - 32px); padding:20px; background:var(--card-bg); z-index:1600; transition:right .33s;
-        }
-        #inbox-panel.open { right: 0; }
-
-        .email-item { padding:12px; border-radius:12px; background: rgba(255,255,255,0.02); cursor:pointer; transition: all .18s; display:flex; justify-content:space-between; align-items:center; gap:10px; }
-        .email-item:hover { transform: translateY(-4px); background: rgba(255,255,255,0.04); }
-
-        /* read modal */
-        #read-overlay { position: fixed; inset:0; background: rgba(0,0,0,0.45); z-index:1700; opacity:0; pointer-events:none; transition:opacity .18s; display:flex; align-items:center; justify-content:center; }
-        #read-overlay.show { opacity:1; pointer-events:auto; }
-        .read-modal { width:640px; max-width:92%; background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-
-        /* admin modal */
-        .admin-modal { width:640px; max-width:92%; background:var(--card-bg); padding:18px; border-radius:12px; border:1px solid rgba(255,255,255,0.06); box-shadow: 0 10px 40px rgba(0,0,0,0.6); transform: translateY(-6px); opacity:0; transition:all .2s; }
-        #admin-modal.show { transform: translateY(0); opacity:1; }
-
-        /* notification banner (shiny animated) */
-        /* ---------- Shiny notification bar (replace old #notif-banner / @keyframes shine) ---------- */
-.notif-bar {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 22px;
-  border-radius: 14px;
-  background: linear-gradient(90deg, #06a6ff 0%, #0369a1 60%);
-  box-shadow: 0 14px 40px rgba(3,105,161,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  overflow: hidden;
-  transform-origin: center;
-  animation: notif-pop 2s ease-in-out infinite;
-}
-
-/* text styling: bold + italic */
-.notif-text {
-  color: #fff;
-  font-weight: 800;
-  font-style: italic;
-  font-size: 18px;
-  letter-spacing: 0.6px;
-  text-shadow: 0 6px 20px rgba(3,105,161,0.25);
-}
-
-/* subtle breathing motion */
-@keyframes notif-pop {
-  0%   { transform: translateY(0) scale(1); filter: brightness(1); }
-  45%  { transform: translateY(-4px) scale(1.02); filter: brightness(1.08); }
-  100% { transform: translateY(0) scale(1); filter: brightness(1); }
-}
-
-/* sliding sparkle overlay to mimic "cartoon clean" shine */
-.notif-bar::before {
-  content: "";
-  position: absolute;
-  top: -40%;
-  left: -60%;
-  width: 220%;
-  height: 220%;
-  background:
-    radial-gradient(circle at 10% 20%, rgba(255,255,255,0.85) 0 2%, transparent 8%),
-    radial-gradient(circle at 50% 10%, rgba(255,255,255,0.45) 0 1%, transparent 3%);
-  transform: rotate(28deg) translateX(-100%);
-  mix-blend-mode: screen;
-  opacity: 0;
-  filter: blur(6px);
-  animation: notif-sparkle 2.2s linear infinite;
-  pointer-events: none;
-}
-
-/* sparkle motion: sweep across bar */
-@keyframes notif-sparkle {
-  0%   { transform: rotate(28deg) translateX(-110%); opacity: 0; }
-  30%  { opacity: 0.85; }
-  60%  { transform: rotate(28deg) translateX(10%); opacity: 0.85; }
-  100% { transform: rotate(28deg) translateX(110%); opacity: 0; }
-}
-
-/* tiny accent glints — optional small stars using pseudo-element */
-.notif-bar::after {
-  content: "";
-  position: absolute;
-  right: 8%;
-  top: 10%;
-  width: 18px;
-  height: 18px;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95) 0 10%, transparent 40%);
-  transform: rotate(20deg) scale(0.9);
-  opacity: .9;
-  filter: blur(.6px);
-  animation: notif-glint 1.6s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes notif-glint {
-  0% { transform: rotate(10deg) scale(.9); opacity: .6; }
-  50% { transform: rotate(10deg) scale(1.15); opacity: 1; }
-  100% { transform: rotate(10deg) scale(.9); opacity: .6; }
-}
-
-
         /* prevent page zoom weirdness small screens */
         @media (max-width: 640px) {
             #settings-sidebar { width: 92%; }
             .displayname-modal { width: 92%; }
-            #inbox-panel { width: 92%; }
-            .read-modal, .admin-modal { width: 92%; }
         }
 
         /* Mobile Player Bar Fixes */
@@ -775,9 +647,6 @@
             <p id="loading-tip-text" class="loading-tip-text">Loading fresh beats just for you...</p>
         </div>
     </div>
-    <!-- Notifications Container -->
-    <div id="notif-container" class="fixed top-0 left-0 right-0 z-[10001] p-4 pointer-events-none flex flex-col items-center gap-3"></div>
-
     <!-- AUTHENTICATION LAYER -->
     <div id="auth-overlay">
         <div class="w-full max-w-md p-8 animate-fade-in">
@@ -862,14 +731,8 @@
                     </div>
                 </div>
 
-                <!-- Account Icon & Dropdown + inbox + notif -->
+                <!-- Account Icon & Dropdown -->
                 <div class="relative flex items-center gap-4">
-                    <div id="notif-container" style="min-width:220px; text-align:right; font-size:14px;"></div>
-
-                    <button id="inbox-btn" title="Inbox" class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20 13V7a2 2 0 00-2-2H6a2 2 0 00-2 2v6"/><path d="M16 13l-4 4-4-4"/></svg>
-                    </button>
-
                     <div class="relative">
                         <button onclick="toggleProfileMenu()" id="profile-trigger" class="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all text-slate-300 hover:text-white">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
@@ -891,11 +754,6 @@
                                 <button id="account-settings-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all group">
                                     <svg class="w-4 h-4 text-slate-500 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                     Account Settings
-                                </button>
-
-                                <button id="admin-panel-btn" style="display:none" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-slate-300 hover:text-white text-sm transition-all group">
-                                    <svg class="w-4 h-4 text-slate-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.9 6.5L22 9.3l-5 4.1L18.1 22 12 18.3 5.9 22 7 13.4 2 9.3l7.1-0.8z"/></svg>
-                                    Admin Panel
                                 </button>
 
                                 <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-400 text-sm transition-all">
@@ -1135,53 +993,6 @@
         </div>
     </div>
 
-    <!-- INBOX overlay + panel -->
-    <div id="inbox-overlay"></div>
-    <div id="inbox-panel">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xl font-bold">Inbox</h3>
-            <button id="inbox-close" class="text-white text-2xl leading-none">&times;</button>
-        </div>
-
-        <div id="inbox-list" style="flex:1; overflow:auto; padding-right:6px; display:flex; flex-direction:column; gap:10px;">
-            <!-- populated dynamically -->
-        </div>
-
-        <div style="padding-top:8px;">
-            <button id="inbox-refresh" class="px-3 py-2 bg-white/5 rounded-xl">Refresh</button>
-        </div>
-    </div>
-
-    <!-- READ EMAIL modal -->
-    <div id="read-overlay">
-        <div id="read-modal" class="read-modal">
-            <h3 id="read-title" class="text-xl font-bold mb-2"></h3>
-            <p id="read-sub" class="text-sm text-slate-400 mb-4"></p>
-            <div id="read-body" class="text-sm text-slate-200 mb-4"></div>
-            <div style="display:flex; gap:8px; justify-content:flex-end;">
-                <button id="read-dismiss" class="px-3 py-2 rounded-xl bg-white/5">Dismiss</button>
-                <button id="read-close" class="px-3 py-2 rounded-xl bg-blue-600 text-white">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ADMIN modal -->
-    <!-- On desktop, we revert to default behavior (hidden via class/opacity but present in DOM). 
-         On mobile, we explicitly use inline style="display:none" or a specific class to kill it. -->
-    <div id="admin-overlay" class="hidden md:block"></div>
-    <div id="admin-modal" class="admin-modal hidden md:block" style="position:fixed; left:50%; top:12%; transform:translateX(-50%); z-index:2001;">
-        <h3 class="text-lg font-bold mb-2">Admin - Send Broadcast</h3>
-        <div class="space-y-2">
-            <input type="text" id="admin-subject" placeholder="Subject" class="dn-input" />
-            <input type="text" id="admin-title" placeholder="Title" class="dn-input" />
-            <textarea id="admin-body" placeholder="Description / Body" class="dn-input" style="height:140px; resize:none;"></textarea>
-            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:6px;">
-                <button type="button" id="admin-cancel" class="px-3 py-2 rounded-xl bg-white/5">Cancel</button>
-                <button type="button" id="admin-send" class="px-3 py-2 rounded-xl bg-blue-600 text-white">Send</button>
-            </div>
-        </div>
-    </div>
-
     <!-- DISPLAY NAME MODAL -->
     <div id="displayname-overlay" aria-hidden="true">
         <div id="displayname-modal" class="displayname-modal" role="dialog" aria-modal="true">
@@ -1238,7 +1049,6 @@
                 "Double-tap a song to start playing it instantly.",
                 "Your search history is saved locally for quick access.",
                 "The visualizer reacts to the rhythm of the music.",
-                "Check your inbox for the latest updates from the JaMusic team.",
                 "Did you know? You can change your display name in account settings.",
                 "Hover over a song card to see the quick-play button!",
                 "Keep the beats going by enabling the repeat mode in the player."
@@ -1269,8 +1079,6 @@
         /********************************************************************
          * Full single-file app:
          * - keeps your original UI & scripts
-         * - adds Inbox & Admin broadcast (localStorage)
-         * - adds inbox loop polling
          * - adds repeat (loop) track toggle
          ********************************************************************/
 
@@ -2083,11 +1891,6 @@ Ready?`
         /***********************
          * Storage helpers
          ***********************/
-        const ADMIN_EMAIL = 'aidilzafri2013@gmail.com';
-        function readMessages(){
-            try { return JSON.parse(localStorage.getItem('jamusic_messages') || '[]'); } catch(e) { return []; }
-        }
-        function saveMessages(arr){ try { localStorage.setItem('jamusic_messages', JSON.stringify(arr)); } catch(e) {} }
         function getCurrentUser(){
             try { const s = localStorage.getItem('jamusic_user'); return s ? JSON.parse(s) : null; } catch(e){ return null; }
         }
@@ -2729,11 +2532,6 @@ Ready?`
 
             renderTracks(tracks);
             setTimeout(() => { if (authOverlay) authOverlay.style.display = 'none'; }, 600);
-
-            // update notification & admin
-            updateNotifBanner();
-            maybeShowAdminBtn();
-            startInboxLoop();
         }
 
         function updateViewMode() {
@@ -2811,231 +2609,6 @@ Ready?`
                 else el.style.color = '';
             }
             alertBox(repeatTracks ? 'Repeat ON' : 'Repeat OFF');
-        }
-
-        /***********************
-         * Inbox & Admin logic
-         *
-         * Data model (jamusic_messages: array of messages):
-         * {
-         *   id: 'm_12345',
-         *   from: 'sender@example.com',
-         *   to: 'all' or specific email,
-         *   subject: 'subject',
-         *   title: 'title',
-         *   body: 'text',
-         *   ts: timestamp,
-         *   readBy: [emails],
-         *   dismissedBy: [emails]
-         * }
-         ***********************/
-
-        function openInbox(){
-            const overlay = document.getElementById('inbox-overlay');
-            const panel = document.getElementById('inbox-panel');
-            if(overlay) overlay.classList.add('show');
-            if(panel) panel.classList.add('open');
-            document.body.classList.add('no-scroll');
-            renderInboxList();
-        }
-
-        function closeInbox(){
-            const overlay = document.getElementById('inbox-overlay');
-            const panel = document.getElementById('inbox-panel');
-            if(overlay) overlay.classList.remove('show');
-            if(panel) panel.classList.remove('open');
-            document.body.classList.remove('no-scroll');
-        }
-
-        function renderInboxList(){
-            const listEl = document.getElementById('inbox-list');
-            if(!listEl) return;
-            listEl.innerHTML = '';
-            const user = getCurrentUser();
-            if(!user){
-                listEl.innerHTML = `<div class="text-slate-400">You must sign in to view inbox.</div>`;
-                return;
-            }
-            const msgs = readMessages();
-            const visible = msgs.filter(m => {
-                const dismissed = m.dismissedBy || [];
-                if (dismissed.includes(user.email)) return false;
-                return m.to === 'all' || m.to === user.email;
-            }).sort((a,b)=> b.ts - a.ts);
-
-            if (visible.length === 0){
-                listEl.innerHTML = `<div class="text-slate-400">You have no emails.</div>`;
-                return;
-            }
-
-            visible.forEach(m => {
-                const unread = !(m.readBy || []).includes(user.email);
-                const item = document.createElement('div');
-                item.className = 'email-item';
-                item.innerHTML = `
-                    <div style="display:flex; gap:10px; align-items:center; flex:1;">
-                        <div style="width:10px;height:10px;border-radius:999px;background:${unread? 'var(--accent)':'#64748b'}"></div>
-                        <div style="flex:1;">
-                            <div style="font-weight:700;">${escapeHtml(m.title)}</div>
-                            <div class="email-sub">${escapeHtml(m.subject)}</div>
-                        </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div class="email-time">${new Date(m.ts).toLocaleString()}</div>
-                    </div>
-                `;
-                item.addEventListener('click', ()=> openReadModal(m.id));
-                listEl.appendChild(item);
-            });
-        }
-
-        function openReadModal(id){
-            const msgs = readMessages();
-            const m = msgs.find(x => x.id === id);
-            if (!m) return;
-            const user = getCurrentUser();
-            if (!user) return;
-            m.readBy = m.readBy || [];
-            if (!m.readBy.includes(user.email)) m.readBy.push(user.email);
-            saveMessages(msgs);
-
-            const overlay = document.getElementById('read-overlay');
-            const modalTitle = document.getElementById('read-title');
-            const modalSub = document.getElementById('read-sub');
-            const modalBody = document.getElementById('read-body');
-            if (modalTitle) modalTitle.innerText = m.title;
-            if (modalSub) modalSub.innerText = m.subject;
-            if (modalBody) modalBody.innerText = m.body;
-
-            if (overlay) { overlay.classList.add('show'); overlay.style.display = 'flex'; }
-            updateNotifBanner();
-
-            // wire dismiss & close
-            const dismissBtn = document.getElementById('read-dismiss');
-            const closeBtn = document.getElementById('read-close');
-            dismissBtn.onclick = () => {
-                m.dismissedBy = m.dismissedBy || [];
-                if (!m.dismissedBy.includes(user.email)) m.dismissedBy.push(user.email);
-                saveMessages(msgs);
-                closeReadModal();
-                renderInboxList();
-                updateNotifBanner();
-            };
-            closeBtn.onclick = () => {
-                closeReadModal();
-                renderInboxList();
-                updateNotifBanner();
-            };
-        }
-
-        function closeReadModal(){
-            const overlay = document.getElementById('read-overlay');
-            if (overlay) { overlay.classList.remove('show'); overlay.style.display = 'none'; }
-        }
-
-        // Admin UI
-        function maybeShowAdminBtn(){
-            const user = getCurrentUser();
-            const btn = document.getElementById('admin-panel-btn');
-            if (user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-                if (btn) btn.style.display = 'block';
-            } else {
-                if (btn) btn.style.display = 'none';
-            }
-        }
-
-        function openAdminModal(){
-            const overlay = document.getElementById('admin-overlay');
-            const modal = document.getElementById('admin-modal');
-            
-            // Logic for all devices: ensure display block is set if needed (handled by CSS for mobile, standard for desktop)
-            if (overlay) {
-                // Remove hidden class if present (from our previous mobile-only attempt)
-                overlay.classList.remove('hidden'); 
-                overlay.classList.add('show');
-            }
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('show');
-            }
-            document.body.classList.add('no-scroll');
-        }
-        function closeAdminModal(){
-            const overlay = document.getElementById('admin-overlay');
-            const modal = document.getElementById('admin-modal');
-            
-            if (overlay) {
-                overlay.classList.remove('show');
-                // On mobile, the CSS rule #admin-modal:not(.show) { display: none } will take over
-            }
-            if (modal) {
-                modal.classList.remove('show');
-            }
-            document.body.classList.remove('no-scroll');
-        }
-        function sendBroadcast(){
-            const subject = (document.getElementById('admin-subject').value || '').trim();
-            const title = (document.getElementById('admin-title').value || '').trim();
-            const body = (document.getElementById('admin-body').value || '').trim();
-            if (!subject || !title || !body) { alertBox('Please fill subject, title and description.'); return; }
-            const messages = readMessages();
-            const msg = { id: 'm_' + Date.now() + '_' + Math.floor(Math.random()*9999), from: getCurrentUser().email, to: 'all', subject, title, body, ts: Date.now(), readBy: [], dismissedBy: [] };
-            messages.push(msg);
-            saveMessages(messages);
-            alertBox('Broadcast sent to all users.');
-            closeAdminModal();
-            updateNotifBanner();
-        }
-
-        /***********************
-         * Notifications & Loop
-         ***********************/
-        function countUnreadForUser(email){
-            if (!email) return 0;
-            const msgs = readMessages();
-            return msgs.filter(m => {
-                if (m.to !== 'all' && m.to !== email) return false;
-                const dismissed = m.dismissedBy || [];
-                if (dismissed.includes(email)) return false;
-                const read = m.readBy || [];
-                return !read.includes(email);
-            }).length;
-        }
-
-        function updateNotifBanner(){
-    const container = document.getElementById('notif-container');
-    if (!container) return;
-    const user = getCurrentUser();
-    if (!user) { container.innerHTML = ''; return; }
-    const n = countUnreadForUser(user.email);
-
-    if (n > 0) {
-        // big shiny bar with bold+italic text (no ***)
-        container.innerHTML = `
-            <div class="notif-bar" role="status" aria-live="polite">
-                <span class="notif-text"><strong><em>${n} NEW NOTIFICATIONS!</em></strong></span>
-            </div>
-        `;
-    } else {
-        container.innerHTML = '';
-    }
-}
-
-        // inbox loop (poll)
-        let inboxLoopHandle = null;
-        function startInboxLoop(){
-            if (inboxLoopHandle) clearInterval(inboxLoopHandle);
-            updateNotifBanner();
-            inboxLoopHandle = setInterval(()=>{
-                updateNotifBanner();
-                // if inbox is open refresh
-                const panel = document.getElementById('inbox-panel');
-                if (panel && panel.classList.contains('open')) renderInboxList();
-            }, 5000);
-        }
-        function stopInboxLoop(){
-            if (inboxLoopHandle) clearInterval(inboxLoopHandle);
-            inboxLoopHandle = null;
         }
 
         /***********************
@@ -3136,48 +2709,6 @@ Ready?`
             if (themeLightBtn) themeLightBtn.addEventListener('click', () => { document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; try{ localStorage.setItem('jamusic_theme', 'light'); }catch(e){} });
             if (themeDarkBtn) themeDarkBtn.addEventListener('click', () => { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; try{ localStorage.setItem('jamusic_theme', 'dark'); }catch(e){} });
 
-            // Inbox wiring
-            const inboxBtn = document.getElementById('inbox-btn');
-            const inboxOverlay = document.getElementById('inbox-overlay');
-            const inboxPanel = document.getElementById('inbox-panel');
-            const inboxClose = document.getElementById('inbox-close');
-            const inboxRefresh = document.getElementById('inbox-refresh');
-
-            if (inboxBtn) inboxBtn.addEventListener('click', () => openInbox());
-            if (inboxClose) inboxClose.addEventListener('click', () => closeInbox());
-            if (inboxOverlay) inboxOverlay.addEventListener('click', () => closeInbox());
-            if (inboxRefresh) inboxRefresh.addEventListener('click', () => renderInboxList());
-
-            // read-modal overlay click
-            const readOverlay = document.getElementById('read-overlay');
-            if (readOverlay) {
-                readOverlay.addEventListener('click', (e) => {
-                    if (e.target === readOverlay) closeReadModal();
-                });
-            }
-
-            // admin wires
-            const adminBtn = document.getElementById('admin-panel-btn');
-            const adminOverlay = document.getElementById('admin-overlay');
-            const adminModal = document.getElementById('admin-modal');
-            const adminCancel = document.getElementById('admin-cancel');
-            const adminSend = document.getElementById('admin-send');
-
-            if (adminBtn) adminBtn.addEventListener('click', () => {
-                // open admin modal (only for admin)
-                const user = getCurrentUser();
-                if (user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-                    if (adminOverlay) adminOverlay.classList.add('show');
-                    if (adminModal) adminModal.classList.add('show');
-                    document.body.classList.add('no-scroll');
-                } else {
-                    alertBox('Not authorized');
-                }
-            });
-            if (adminCancel) adminCancel.addEventListener('click', () => closeAdminModal());
-            if (adminSend) adminSend.addEventListener('click', () => sendBroadcast());
-            if (adminOverlay) adminOverlay.addEventListener('click', () => closeAdminModal());
-
             // display name wiring
             const displayNameBtn = document.getElementById('display-name-btn');
             const dnOverlay = document.getElementById('displayname-overlay');
@@ -3245,29 +2776,7 @@ Ready?`
             if (accountBtn && profileDropdown) {
                 accountBtn.addEventListener('click', () => profileDropdown.classList.remove('active'));
             }
-
-            // admin button show logic
-            maybeShowAdminBtn();
-
-            // start polling loop
-            startInboxLoop();
         });
-
-        /***********************
-         * Small helper: attach click to inbox icon (safe)
-         ***********************/
-        (function attachInboxBtn(){
-            const btn = document.getElementById('inbox-btn');
-            if (btn) btn.addEventListener('click', () => openInbox());
-        })();
-
-        /***********************
-         * Small helper: wire read-overlay initial hide
-         ***********************/
-        (function initReadOverlay(){
-            const ro = document.getElementById('read-overlay');
-            if (ro) { ro.style.opacity = '0'; ro.style.pointerEvents = 'none'; ro.classList.remove('show'); }
-        })();
 
     </script>
     <script type="module">
@@ -3303,7 +2812,7 @@ Ready?`
             const remember = rememberEl ? rememberEl.checked : false;
 
             if (!email || !pass) {
-                showAuthError("Please fill in all fields.");
+                alertBox("Please fill in all fields.");
                 return;
             }
 
@@ -3350,7 +2859,7 @@ Ready?`
                     friendlyMsg += "Please check your connection or try again.";
                 }
                 
-                showAuthError(friendlyMsg);
+                alertBox(friendlyMsg);
             } finally {
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
@@ -3370,55 +2879,11 @@ Ready?`
             }
         };
 
-        function showAuthError(message) {
-            const container = document.getElementById('notif-container');
-            if (!container) return;
-
-            // Create notification element
-            const notif = document.createElement('div');
-            notif.className = 'glass border border-red-500/30 bg-red-500/10 backdrop-blur-xl px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-md w-full pointer-events-auto opacity-0 translate-y-[-20px]';
-            notif.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-            
-            notif.innerHTML = `
-                <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h4 class="text-red-500 font-bold text-sm uppercase tracking-wider mb-0.5">Authentication Error</h4>
-                    <p class="text-slate-300 text-sm leading-relaxed">${message}</p>
-                </div>
-            `;
-
-            container.appendChild(notif);
-
-            // Trigger slide down
-            requestAnimationFrame(() => {
-                notif.classList.remove('opacity-0', 'translate-y-[-20px]');
-            });
-
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                notif.style.opacity = '0';
-                notif.style.transform = 'translateY(-20px) scale(0.95)';
-                setTimeout(() => {
-                    if (notif.parentNode) notif.remove();
-                }, 500);
-            }, 5000);
-        }
-
-        // hideAuthError is no longer needed as each notif handles its own lifecycle
-
-        // Check for persisted user on load and handle session changes
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 const userData = { email: user.email, name: user.email.split('@')[0], uid: user.uid };
                 localStorage.setItem('jamusic_user', JSON.stringify(userData));
                 window.showApp(userData);
-                // Clear all notifications on success
-                const container = document.getElementById('notif-container');
-                if (container) container.innerHTML = '';
             } else {
                 // If no Firebase user, but we have local data, it might be an expired session
                 const localUser = localStorage.getItem('jamusic_user');
