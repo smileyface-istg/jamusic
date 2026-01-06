@@ -1873,39 +1873,79 @@ Ready?`
 
         function incrementPlayCount(trackId) {
             if (!trackStats[trackId]) {
-                trackStats[trackId] = { playCount: 0, lastPlayed: 0 };
+                trackStats[trackId] = { playCount: 0, lastPlayed: 0, listeners: [] };
             }
             trackStats[trackId].playCount++;
             trackStats[trackId].lastPlayed = Date.now();
             saveStats();
 
-            // Global Sync (Fire and forget)
+            // Global Sync
             try {
                 if (window.db && window.dbIncrement && window.dbRefPath && window.dbUpdate) {
+                    const user = getCurrentUser();
+                    const userName = user ? (user.name || user.email.split('@')[0]) : 'Someone';
+                    
                     const trackRef = `global_stats/tracks/${trackId}`;
                     const updates = {};
                     updates[`${trackRef}/playCount`] = window.dbIncrement(1);
                     updates[`${trackRef}/lastPlayed`] = Date.now();
+                    
+                    // Keep track of the last 3 unique listeners for the social text
+                    if (user) {
+                        updates[`${trackRef}/lastListener`] = userName;
+                    }
+                    
                     window.dbUpdate(window.dbRefPath(window.db), updates);
                 }
             } catch(e) { console.error("Global sync error:", e); }
         }
 
+        let isStatsListenerActive = false;
+        function initGlobalStatsListener() {
+            if (isStatsListenerActive) return;
+            try {
+                if (window.db && window.dbOnValue && window.dbRefPath) {
+                    const statsRef = window.dbRefPath(window.db, 'global_stats/tracks');
+                    window.dbOnValue(statsRef, (snapshot) => {
+                        if (snapshot.exists()) {
+                            const globalData = snapshot.val();
+                            for (const trackId in globalData) {
+                                if (!trackStats[trackId]) {
+                                    trackStats[trackId] = { playCount: 0, lastPlayed: 0 };
+                                }
+                                trackStats[trackId].playCount = globalData[trackId].playCount || 0;
+                                trackStats[trackId].lastListener = globalData[trackId].lastListener || '';
+                                if (globalData[trackId].lastPlayed > (trackStats[trackId].lastPlayed || 0)) {
+                                    trackStats[trackId].lastPlayed = globalData[trackId].lastPlayed;
+                                }
+                            }
+                            saveStats();
+                            // If we are on trending view, re-render to show live updates
+                            if (typeof currentView !== 'undefined' && currentView === 'trending') {
+                                renderTracks(getTrendingTracks());
+                            }
+                        }
+                    });
+                    isStatsListenerActive = true;
+                }
+            } catch(e) { console.error("Stats listener error:", e); }
+        }
+
         async function fetchGlobalStats() {
+            // This is now partially handled by initGlobalStatsListener for real-time, 
+            // but we keep a one-time fetch for initial load robustness.
+            initGlobalStatsListener();
             try {
                 if (window.db && window.dbGet && window.dbChild && window.dbRef) {
                     const snapshot = await window.dbGet(window.dbChild(window.dbRef, 'global_stats/tracks'));
                     if (snapshot.exists()) {
                         const globalData = snapshot.val();
-                        // Merge global data into local trackStats
                         for (const trackId in globalData) {
                             if (!trackStats[trackId]) {
                                 trackStats[trackId] = { playCount: 0, lastPlayed: 0 };
                             }
-                            // We use the global playCount if it's higher than local, 
-                            // or just replace it if we want "truly global"
                             trackStats[trackId].playCount = globalData[trackId].playCount || 0;
-                            // Keep the most recent lastPlayed
+                            trackStats[trackId].lastListener = globalData[trackId].lastListener || '';
                             if (globalData[trackId].lastPlayed > (trackStats[trackId].lastPlayed || 0)) {
                                 trackStats[trackId].lastPlayed = globalData[trackId].lastPlayed;
                             }
@@ -1959,9 +1999,21 @@ Ready?`
                 
                 grid.innerHTML = data.map((track) => {
                     const originalIndex = tracks.findIndex(t => t.id === track.id);
-                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0 };
+                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0, lastListener: '' };
                     const trendingBadge = stats.playCount > 5 ? `<div class="absolute top-4 right-4 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg z-20 shadow-lg">HOT</div>` : '';
                     const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
+                    
+                    // Social text: "User and X others listened to this!"
+                    let socialText = '';
+                    if (stats.playCount > 0) {
+                        const count = stats.playCount;
+                        const lastUser = stats.lastListener || 'Someone';
+                        if (count === 1) {
+                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} listened to this!</p>`;
+                        } else {
+                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} and ${count - 1} others listened to this!</p>`;
+                        }
+                    }
                     
                     return `
                     <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in relative" onclick="playTrack(${originalIndex})">
@@ -1979,6 +2031,7 @@ Ready?`
                                 <div class="flex-1 min-w-0">
                                     <h4 class="font-bold text-lg truncate group-hover:text-blue-400 transition-colors">${escapeHtml(track.title)}</h4>
                                     <p class="text-xs text-slate-500 font-semibold uppercase">${escapeHtml(track.artist)}</p>
+                                    ${socialText}
                                 </div>
                                 ${stats.playCount > 0 ? `<span class="text-[10px] text-slate-600 font-bold whitespace-nowrap">${stats.playCount} plays</span>` : ''}
                             </div>
@@ -1991,8 +2044,20 @@ Ready?`
             if(mobileList) {
                 mobileList.innerHTML = data.map((track) => {
                     const originalIndex = tracks.findIndex(t => t.id === track.id);
-                    const stats = trackStats[track.id] || { playCount: 0 };
+                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0, lastListener: '' };
                     const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
+                    
+                    // Social text: optimized for mobile
+                    let socialText = '';
+                    if (stats.playCount > 0) {
+                        const count = stats.playCount;
+                        const lastUser = stats.lastListener || 'Someone';
+                        if (count === 1) {
+                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} listened!</p>`;
+                        } else {
+                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} & ${count - 1} others listened!</p>`;
+                        }
+                    }
                     
                     return `
                     <div class="flex items-center gap-4 p-3 bg-white/5 rounded-2xl active:scale-95 transition-transform border border-white/5" onclick="playTrack(${originalIndex})">
@@ -2002,9 +2067,12 @@ Ready?`
                         </div>
                         <div class="flex-1 min-w-0">
                             <h4 class="font-bold text-white truncate text-base">${escapeHtml(track.title)}</h4>
-                            <div class="flex items-center gap-2">
-                                <p class="text-xs text-slate-400 truncate">${escapeHtml(track.artist)}</p>
-                                ${lastPlayedText ? `<span class="text-[10px] text-slate-600">• ${lastPlayedText}</span>` : ''}
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-2">
+                                    <p class="text-xs text-slate-400 truncate">${escapeHtml(track.artist)}</p>
+                                    ${lastPlayedText ? `<span class="text-[10px] text-slate-600">• ${lastPlayedText}</span>` : ''}
+                                </div>
+                                ${socialText}
                             </div>
                         </div>
                         <div class="flex flex-col items-end gap-1">
@@ -2283,8 +2351,8 @@ Ready?`
                 if (mobileSearchContainer) mobileSearchContainer.style.display = 'none';
                 renderTracks(tracks);
             } else if (view === 'trending') {
-                if (gridTitle) gridTitle.innerText = 'Trending Now';
-                if (mobileGridTitle) mobileGridTitle.innerHTML = '<span class="w-1 h-6 bg-blue-500 rounded-full"></span>Trending Now';
+                if (gridTitle) gridTitle.innerText = 'Trending Now (Global)';
+                if (mobileGridTitle) mobileGridTitle.innerHTML = '<span class="w-1 h-6 bg-blue-500 rounded-full"></span>Trending Now (Global)';
                 if (mobileWelcomeBanner) mobileWelcomeBanner.style.display = 'none';
                 if (mobileSearchContainer) mobileSearchContainer.style.display = 'none';
                 
@@ -2825,7 +2893,7 @@ Ready?`
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, child, get, update, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, child, get, update, increment, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         // Your web app's Firebase configuration
         // NOTE: Replace these placeholders with your actual Firebase config from the console
@@ -2852,6 +2920,7 @@ Ready?`
         window.dbRefPath = ref;
         window.dbGet = get;
         window.dbChild = child;
+        window.dbOnValue = onValue;
 
         // Expose functions to global scope for button clicks
         window.handleAuth = async function() {
