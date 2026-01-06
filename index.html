@@ -964,6 +964,12 @@
                     </div>
                 </div>
 
+                <div class="mt-6 p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <p class="font-semibold text-[11px] text-slate-400 mb-2 uppercase tracking-wider">Genius Access Token</p>
+                    <input type="text" id="genius-token-input" placeholder="sXAc6SFczSlD4nXM8ItbTr7Nmtt1XUXUwemUpwWXm7VFDdm5eUzYTKvygm7Nb9ya" class="dn-input" />
+                    <p class="text-[10px] text-slate-500 mt-1">Used to fetch full lyrics directly from Genius. We never store or share this.</p>
+                </div>
+
                 <button id="save-lyrics-settings-btn" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-500/20">Apply Settings</button>
             </div>
         </div>
@@ -1596,7 +1602,11 @@
          * Lyrics Logic (Pure Audio Transcription)
          ***********************/
         async function fetchLyrics(track) {
-            if (lyricsVisible) {
+            if (!lyricsVisible) return;
+            const token = getGeniusToken();
+            if (token) {
+                await startGeniusLyricsFlow(track, token);
+            } else {
                 await startTranscriptionFlow(track);
             }
         }
@@ -1606,8 +1616,10 @@
             const btn = document.getElementById('lyrics-btn');
             if (!overlay) return;
 
-            if (!('webkitSpeechRecognition' in window)) {
-                alertBox("Your browser doesn't support real-time audio transcription. Please use Chrome or Edge.");
+            const hasGenius = !!getGeniusToken();
+            const hasSpeech = 'webkitSpeechRecognition' in window;
+            if (!hasGenius && !hasSpeech) {
+                alertBox("Neither Genius token nor browser speech recognition available. Add Genius token in Settings.");
                 return;
             }
 
@@ -1621,7 +1633,7 @@
                 btn?.classList.add('text-[#1db954]');
                 
                 const track = tracks[currentTrackIndex];
-                await startTranscriptionFlow(track);
+                await fetchLyrics(track);
             } else {
                 overlay.classList.remove('show');
                 document.body.classList.remove('no-scroll');
@@ -1670,6 +1682,105 @@
             };
 
             await transcriptionEngine.start();
+        }
+
+        function getGeniusToken() {
+            try { return localStorage.getItem('genius_access_token') || ''; } catch(e) { return ''; }
+        }
+
+        async function startGeniusLyricsFlow(track, token) {
+            const contentDiv = document.getElementById('lyrics-content');
+            if (!contentDiv) return;
+            contentDiv.innerHTML = `
+                <div class="text-center py-20 animate-pulse">
+                    <div class="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-8 relative">
+                        <div class="absolute inset-0 border-4 border-blue-500/30 rounded-full animate-ping"></div>
+                        <svg class="w-10 h-10 text-blue-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-white font-black text-3xl mb-4 tracking-tight">Fetching Full Lyrics...</h3>
+                    <p class="text-slate-400 text-lg max-w-xs mx-auto">Searching Genius for ${escapeHtml(track.title)} by ${escapeHtml(track.artist)}.</p>
+                </div>
+            `;
+
+            try {
+                const best = await fetchGeniusBestMatch(track, token);
+                if (!best) throw new Error('No matching Genius result found');
+
+                const fullText = await fetchGeniusLyricsFromUrl(best.url);
+                if (!fullText || !fullText.trim()) throw new Error('Lyrics not found on Genius page');
+
+                renderFullLyrics(fullText);
+            } catch (err) {
+                contentDiv.innerHTML = `
+                    <div class="lyrics-error">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M7.938 4.938a10 10 0 0114.124 14.124M4.938 7.938a10 10 0 0114.124 14.124"></path>
+                        </svg>
+                        <p class="text-slate-400">Failed to fetch full lyrics from Genius.</p>
+                        <p class="text-slate-500 text-sm">Reason: ${escapeHtml(err.message || 'Unknown error')}</p>
+                        <button class="px-4 py-2 rounded-xl bg-white/5 mt-4" onclick="startTranscriptionFlow(tracks[currentTrackIndex])">Use AI Transcription Instead</button>
+                    </div>
+                `;
+            }
+        }
+
+        async function fetchGeniusBestMatch(track, token) {
+            const q = encodeURIComponent(`${track.title} ${track.artist}`);
+            const res = await fetch(`https://api.genius.com/search?q=${q}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error(`Genius search failed (${res.status})`);
+            const data = await res.json();
+            const hits = (data.response && data.response.hits) ? data.response.hits : [];
+            if (hits.length === 0) return null;
+            const norm = s => (s || '').toLowerCase().replace(/[\W_]+/g, ' ').trim();
+            const targetTitle = norm(track.title);
+            const targetArtist = norm(track.artist);
+            let best = null, bestScore = -1;
+            for (const h of hits) {
+                const r = h.result || {};
+                const title = norm(r.title || '');
+                const artist = norm(r.artist_names || (r.primary_artist && r.primary_artist.name) || '');
+                let score = 0;
+                if (title.includes(targetTitle) || targetTitle.includes(title)) score += 0.6;
+                if (artist.includes(targetArtist) || targetArtist.includes(artist)) score += 0.4;
+                if (r.url && score > bestScore) { best = { url: r.url, title: r.title, artist: r.artist_names || (r.primary_artist && r.primary_artist.name) }; bestScore = score; }
+            }
+            return best;
+        }
+
+        async function fetchGeniusLyricsFromUrl(url) {
+            const path = url.replace(/^https?:\/\/(www\.)?genius\.com\//, '');
+            const proxy = `https://r.jina.ai/http://genius.com/${path}`;
+            const res = await fetch(proxy);
+            if (!res.ok) throw new Error(`Fetch lyrics page failed (${res.status})`);
+            const txt = await res.text();
+            return extractLyricsFromText(txt);
+        }
+
+        function extractLyricsFromText(txt) {
+            const lines = txt.split('\n');
+            let start = lines.findIndex(l => /\bLyrics\b/i.test(l.trim()));
+            if (start === -1) start = 0;
+            let end = lines.findIndex((l, i) => i > start && /\bEmbed\b|\bYou might also like\b|\bAbout\b/i.test(l));
+            if (end === -1) end = lines.length;
+            const slice = lines.slice(start + 1, end);
+            return slice.join('\n').trim();
+        }
+
+        function renderFullLyrics(text) {
+            const contentDiv = document.getElementById('lyrics-content');
+            if (!contentDiv) return;
+            contentDiv.innerHTML = '';
+            const lines = text.split('\n');
+            for (const ln of lines) {
+                const line = document.createElement('div');
+                line.className = 'lyric-line active animate-spotify mb-4 text-2xl md:text-3xl font-bold';
+                line.innerText = ln;
+                contentDiv.appendChild(line);
+            }
         }
 
         function seekToLyric(time) {
@@ -2517,12 +2628,22 @@
             const transcriptionSensitivity = document.getElementById('transcription-sensitivity-slider');
             const vocalIsolationToggle = document.getElementById('vocal-isolation-toggle');
             const noiseReductionToggle = document.getElementById('noise-reduction-toggle');
+            const geniusTokenInput = document.getElementById('genius-token-input');
 
             if (transcriptionSensitivity) {
                 transcriptionSensitivity.value = analysisEngine.sensitivity * 100;
                 transcriptionSensitivity.addEventListener('input', (e) => {
                     analysisEngine.setSensitivity(e.target.value);
                 });
+            }
+
+            if (geniusTokenInput) {
+                try {
+                    const saved = localStorage.getItem('genius_access_token') || '';
+                    if (saved) {
+                        geniusTokenInput.value = '••••••••••••••••';
+                    }
+                } catch(e){}
             }
 
             const updateToggleUI = (el, enabled) => {
@@ -2558,6 +2679,13 @@
 
             if (saveLyricsBtn) {
                 saveLyricsBtn.addEventListener('click', () => {
+                    const geniusInput = document.getElementById('genius-token-input');
+                    if (geniusInput) {
+                        const val = (geniusInput.value || '').trim();
+                        if (val && !/^•+$/.test(val)) {
+                            try { localStorage.setItem('genius_access_token', val); } catch(e){}
+                        }
+                    }
                     // Visual feedback
                     saveLyricsBtn.innerText = 'Applied!';
                     saveLyricsBtn.classList.replace('bg-blue-600', 'bg-green-600');
