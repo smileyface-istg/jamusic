@@ -1882,15 +1882,16 @@ Ready?`
         function incrementPlayCount(trackId) {
             // Update local immediately for snappy UI
             if (!trackStats[trackId]) {
-                trackStats[trackId] = { playCount: 0, lastPlayed: 0, lastListener: '' };
+                trackStats[trackId] = { playCount: 0, lastPlayed: 0, lastListener: '', uniqueListeners: 1 };
             }
             trackStats[trackId].playCount++;
             trackStats[trackId].lastPlayed = Date.now();
             
             const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
             const userName = user ? (user.name || user.email.split('@')[0]) : 'Someone';
-            trackStats[trackId].lastListener = userName;
+            const userId = user ? user.email.replace(/[.$#[\]]/g, '_') : 'guest'; // Firebase safe key
             
+            trackStats[trackId].lastListener = userName;
             saveStats();
 
             // Global Sync to Firebase
@@ -1898,9 +1899,18 @@ Ready?`
                 if (window.db && window.dbIncrement && window.dbRefPath && window.dbUpdate) {
                     const trackRef = `global_stats/tracks/${trackId}`;
                     const updates = {};
+                    
+                    // Increment total plays
                     updates[`${trackRef}/playCount`] = window.dbIncrement(1);
                     updates[`${trackRef}/lastPlayed`] = Date.now();
                     updates[`${trackRef}/lastListener`] = userName;
+                    
+                    // Track this specific user as a unique listener
+                    // We use the userId as a key so it doesn't duplicate
+                    updates[`${trackRef}/listeners/${userId}`] = {
+                        name: userName,
+                        lastPlayed: Date.now()
+                    };
                     
                     window.dbUpdate(window.dbRefPath(window.db), updates).catch(e => console.error("Firebase update failed:", e));
                 }
@@ -1916,19 +1926,22 @@ Ready?`
                     window.dbOnValue(statsRef, (snapshot) => {
                         if (snapshot.exists()) {
                             const globalData = snapshot.val();
-                            // Reset local trackStats to ONLY match global data for true consistency
                             const newStats = {};
                             for (const trackId in globalData) {
+                                const data = globalData[trackId];
+                                const listeners = data.listeners || {};
+                                const uniqueCount = Object.keys(listeners).length;
+                                
                                 newStats[trackId] = {
-                                    playCount: globalData[trackId].playCount || 0,
-                                    lastListener: globalData[trackId].lastListener || 'Someone',
-                                    lastPlayed: globalData[trackId].lastPlayed || 0
+                                    playCount: data.playCount || 0,
+                                    lastListener: data.lastListener || 'Someone',
+                                    lastPlayed: data.lastPlayed || 0,
+                                    uniqueListeners: uniqueCount || 1
                                 };
                             }
                             trackStats = newStats;
                             saveStats();
                             
-                            // Live update trending view
                             if (typeof currentView !== 'undefined' && currentView === 'trending') {
                                 renderTracks(getTrendingTracks());
                             }
@@ -1948,10 +1961,15 @@ Ready?`
                         const globalData = snapshot.val();
                         const newStats = {};
                         for (const trackId in globalData) {
+                            const data = globalData[trackId];
+                            const listeners = data.listeners || {};
+                            const uniqueCount = Object.keys(listeners).length;
+
                             newStats[trackId] = {
-                                playCount: globalData[trackId].playCount || 0,
-                                lastListener: globalData[trackId].lastListener || 'Someone',
-                                lastPlayed: globalData[trackId].lastPlayed || 0
+                                playCount: data.playCount || 0,
+                                lastListener: data.lastListener || 'Someone',
+                                lastPlayed: data.lastPlayed || 0,
+                                uniqueListeners: uniqueCount || 1
                             };
                         }
                         trackStats = newStats;
@@ -2004,22 +2022,23 @@ Ready?`
                 
                 grid.innerHTML = data.map((track) => {
                     const originalIndex = tracks.findIndex(t => t.id === track.id);
-                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0, lastListener: '' };
+                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0, lastListener: '', uniqueListeners: 0 };
                     const trendingBadge = stats.playCount > 5 ? `<div class="absolute top-4 right-4 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg z-20 shadow-lg">HOT</div>` : '';
                     const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
                     
                     // Social text: "User and X others listened to this!"
                     let socialText = '';
                     if (stats.playCount > 0) {
-                        const count = stats.playCount;
+                        const totalPlays = stats.playCount;
+                        const uniquePeople = stats.uniqueListeners || 1;
                         const lastUser = stats.lastListener || 'Someone';
                         
                         if (lastUser === 'Someone') {
                             socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">Popular with listeners!</p>`;
-                        } else if (count === 1) {
-                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} listened to this!</p>`;
+                        } else if (uniquePeople <= 1) {
+                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} is vibing to this!</p>`;
                         } else {
-                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} and ${count - 1} others listened!</p>`;
+                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} and ${uniquePeople - 1} other ${uniquePeople - 1 === 1 ? 'person' : 'people'} listened!</p>`;
                         }
                     }
                     
@@ -2052,21 +2071,22 @@ Ready?`
             if(mobileList) {
                 mobileList.innerHTML = data.map((track) => {
                     const originalIndex = tracks.findIndex(t => t.id === track.id);
-                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0, lastListener: '' };
+                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0, lastListener: '', uniqueListeners: 0 };
                     const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
                     
                     // Social text: optimized for mobile
                     let socialText = '';
                     if (stats.playCount > 0) {
-                        const count = stats.playCount;
+                        const totalPlays = stats.playCount;
+                        const uniquePeople = stats.uniqueListeners || 1;
                         const lastUser = stats.lastListener || 'Someone';
                         
                         if (lastUser === 'Someone') {
                             socialText = `<p class="text-[9px] text-blue-400/70 truncate">Popular with listeners!</p>`;
-                        } else if (count === 1) {
-                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} listened!</p>`;
+                        } else if (uniquePeople <= 1) {
+                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} is vibing!</p>`;
                         } else {
-                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} & ${count - 1} others!</p>`;
+                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} & ${uniquePeople - 1} ${uniquePeople - 1 === 1 ? 'other' : 'others'}!</p>`;
                         }
                     }
                     
