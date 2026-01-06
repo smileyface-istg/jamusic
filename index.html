@@ -242,6 +242,39 @@
 
         .dn-error { color:#ffb3b3; font-size:13px; margin-top:8px; }
 
+        /* Marquee Styles */
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+            width: 100%;
+            position: relative;
+        }
+
+        .marquee-text {
+            display: inline-block;
+            padding-left: 0;
+            will-change: transform;
+        }
+
+        /* Desktop: only marquee on card hover */
+        @media (min-width: 769px) {
+            .music-card:hover .marquee-text {
+                animation: marquee 8s linear infinite;
+            }
+        }
+
+        /* Mobile: marquee if text overflows (handled by JS check or always on if simple) */
+        @media (max-width: 768px) {
+            .marquee-text-active {
+                animation: marquee 8s linear infinite;
+            }
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
         /* ADMIN MODAL */
         .admin-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -980,9 +1013,8 @@
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-xl font-bold">Account Settings</h2>
             <div class="flex items-center gap-2">
-                <button id="admin-panel-btn" class="hidden px-2 py-1 bg-red-500/20 text-red-400 text-[10px] font-bold rounded border border-red-500/30 hover:bg-red-500/40 transition-colors uppercase" onclick="openAdminModal()">Admin</button>
-                <button id="settings-close" class="text-white text-2xl leading-none">&times;</button>
-            </div>
+                    <button id="settings-close" class="text-white text-2xl leading-none">&times;</button>
+                </div>
         </div>
 
         <div class="flex gap-3 mb-4">
@@ -1010,35 +1042,6 @@
         </div>
     </div>
 
-    <!-- ADMIN PANEL MODAL -->
-    <div id="admin-modal-overlay" class="admin-modal-overlay" onclick="closeAdminModal()"></div>
-    <div id="admin-modal" class="admin-modal">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-bold text-red-500">Admin Panel</h3>
-            <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
-        </div>
-        
-        <div class="space-y-6">
-            <div class="p-4 bg-red-500/10 rounded-2xl border border-red-500/20">
-                <h4 class="font-bold text-red-400 mb-2">Global Stats Control</h4>
-                <p class="text-xs text-slate-400 mb-4">Wipe all global play counts and unique listener data. This action cannot be undone.</p>
-                <button onclick="showResetConfirm()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-900/20">Reset Global Stats</button>
-            </div>
-            
-            <p class="text-[10px] text-slate-500 text-center uppercase tracking-widest font-bold">Authorized Personnel Only</p>
-        </div>
-    </div>
-
-    <!-- RESET CONFIRMATION MODAL -->
-    <div id="reset-confirm-modal-overlay" class="admin-modal-overlay" style="z-index: 10001;"></div>
-    <div id="reset-confirm-modal" class="admin-modal" style="border-color: rgba(255,255,255,0.1); z-index: 10002;">
-        <h3 class="text-lg font-bold mb-2">Are you absolutely sure?</h3>
-        <p class="text-sm text-slate-400 mb-6">All global trending data, play counts, and unique listener history will be permanently deleted from Firebase.</p>
-        <div class="flex gap-3">
-            <button onclick="closeResetConfirm()" class="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold transition-colors">Cancel</button>
-            <button onclick="confirmGlobalReset()" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors">Yes, Reset Everything</button>
-        </div>
-    </div>
     <div id="displayname-overlay" aria-hidden="true">
         <div id="displayname-modal" class="displayname-modal" role="dialog" aria-modal="true">
             <!-- WARNING VIEW -->
@@ -1062,6 +1065,80 @@
                     <button id="dn-cancel" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10">Cancel</button>
                     <button id="dn-submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white">Save</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE FULLSCREEN PLAYER OVERLAY -->
+    <div id="mobile-fullscreen-player" class="fixed inset-0 z-[5000] bg-[#00081C] hidden flex-col transition-all duration-500 transform translate-y-full">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6">
+            <button onclick="closeMobilePlayer()" class="text-white p-2">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div class="text-center">
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Playing from</p>
+                <p id="mobile-player-view-name" class="text-xs font-bold text-white uppercase tracking-wider">All Tracks</p>
+            </div>
+            <button class="text-white p-2">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg>
+            </button>
+        </div>
+
+        <!-- Artwork -->
+        <div class="flex-1 flex items-center justify-center p-8">
+            <div class="w-full aspect-square max-w-[340px] rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/20 transition-transform duration-500" id="mobile-full-art-container">
+                <img id="mobile-full-img" src="" class="w-full h-full object-cover">
+            </div>
+        </div>
+
+        <!-- Info & Controls -->
+        <div class="p-8 pb-12 space-y-8">
+            <div class="flex items-center justify-between">
+                <div class="min-w-0 flex-1 pr-4">
+                    <div class="marquee-container">
+                        <h2 id="mobile-full-title" class="marquee-text marquee-text-active text-2xl font-black text-white leading-tight">Song Title</h2>
+                    </div>
+                    <p id="mobile-full-artist" class="text-slate-400 font-bold text-lg">Artist Name</p>
+                </div>
+                <button class="text-blue-500">
+                    <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
+                </button>
+            </div>
+
+            <!-- Seek Bar -->
+            <div class="space-y-2">
+                <div class="relative group h-1.5 flex items-center">
+                    <div class="absolute inset-0 bg-white/10 rounded-full"></div>
+                    <div id="mobile-full-progress" class="absolute h-full bg-blue-500 rounded-full" style="width: 0%"></div>
+                    <input type="range" id="mobile-full-slider" value="0" step="1" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                </div>
+                <div class="flex justify-between text-[11px] font-bold text-slate-500">
+                    <span id="mobile-full-curr">0:00</span>
+                    <span id="mobile-full-dur">0:00</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center justify-between">
+                <button id="mobile-repeat-btn" onclick="toggleRepeat()" class="text-slate-500 transition-colors p-2">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"></path></svg>
+                </button>
+                <div class="flex items-center gap-8">
+                    <button onclick="prevTrack()" class="text-white active:scale-90 transition-transform">
+                        <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
+                    </button>
+                    <button onclick="togglePlay()" class="w-20 h-20 bg-white rounded-full flex items-center justify-center text-black active:scale-90 transition-transform shadow-xl">
+                        <svg id="mobile-full-play-icon" class="w-10 h-10 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                        <svg id="mobile-full-pause-icon" class="w-10 h-10 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                    </button>
+                    <button onclick="nextTrack()" class="text-white active:scale-90 transition-transform">
+                        <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6z"></path></svg>
+                    </button>
+                </div>
+                <button id="mobile-lyrics-btn" onclick="toggleLyrics()" class="text-slate-500 transition-colors p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -1908,20 +1985,6 @@ Ready?`
 
         // Track statistics (play counts, last played)
         let trackStats = {};
-        
-        // VISITOR ID: Ensure every device is unique globally
-        let visitorId = localStorage.getItem('jamusic_visitor_id');
-        if (!visitorId) {
-            visitorId = 'v_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-            localStorage.setItem('jamusic_visitor_id', visitorId);
-        }
-
-        // GLOBAL SYNC VERSIONING
-        const SYNC_VERSION = '2.2';
-        if (localStorage.getItem('jamusic_sync_v') !== SYNC_VERSION) {
-            localStorage.removeItem('jamusic_stats');
-            localStorage.setItem('jamusic_sync_v', SYNC_VERSION);
-        }
 
         try {
             trackStats = JSON.parse(localStorage.getItem('jamusic_stats') || '{}');
@@ -1933,101 +1996,11 @@ Ready?`
 
         function incrementPlayCount(trackId) {
             if (!trackStats[trackId]) {
-                trackStats[trackId] = { playCount: 0, lastPlayed: 0, lastListener: '', uniqueListeners: 1 };
+                trackStats[trackId] = { playCount: 0, lastPlayed: 0 };
             }
             trackStats[trackId].playCount++;
             trackStats[trackId].lastPlayed = Date.now();
-            
-            const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
-            const userName = user ? (user.name || user.email.split('@')[0]) : 'Someone';
-            // Use visitorId as the primary key for global uniqueness
-            const globalUserId = user ? user.email.replace(/[.$#[\]]/g, '_') : visitorId;
-            
-            trackStats[trackId].lastListener = userName;
             saveStats();
-
-            // Global Sync to Firebase
-            try {
-                if (window.db && window.dbIncrement && window.dbRefPath && window.dbUpdate) {
-                    const trackRef = `global_stats/tracks/${trackId}`;
-                    const updates = {};
-                    
-                    updates[`${trackRef}/playCount`] = window.dbIncrement(1);
-                    updates[`${trackRef}/lastPlayed`] = Date.now();
-                    updates[`${trackRef}/lastListener`] = userName;
-                    
-                    // Track this specific visitor/user as a unique listener
-                    updates[`${trackRef}/listeners/${globalUserId}`] = {
-                        name: userName,
-                        lastPlayed: Date.now(),
-                        isRegistered: !!user
-                    };
-                    
-                    window.dbUpdate(window.dbRefPath(window.db), updates).catch(e => console.error("Global update failed:", e));
-                }
-            } catch(e) { console.error("Global sync error:", e); }
-        }
-
-        let isStatsListenerActive = false;
-        function initGlobalStatsListener() {
-            if (isStatsListenerActive) return;
-            try {
-                if (window.db && window.dbOnValue && window.dbRefPath) {
-                    const statsRef = window.dbRefPath(window.db, 'global_stats/tracks');
-                    window.dbOnValue(statsRef, (snapshot) => {
-                        if (snapshot.exists()) {
-                            const globalData = snapshot.val();
-                            const newStats = {};
-                            for (const trackId in globalData) {
-                                const data = globalData[trackId];
-                                const listeners = data.listeners || {};
-                                const uniqueCount = Object.keys(listeners).length;
-                                
-                                newStats[trackId] = {
-                                    playCount: data.playCount || 0,
-                                    lastListener: data.lastListener || 'Someone',
-                                    lastPlayed: data.lastPlayed || 0,
-                                    uniqueListeners: uniqueCount || 1
-                                };
-                            }
-                            trackStats = newStats;
-                            saveStats();
-                            
-                            if (typeof currentView !== 'undefined' && currentView === 'trending') {
-                                renderTracks(getTrendingTracks());
-                            }
-                        }
-                    });
-                    isStatsListenerActive = true;
-                }
-            } catch(e) { console.error("Stats listener error:", e); }
-        }
-
-        async function fetchGlobalStats() {
-            initGlobalStatsListener();
-            try {
-                if (window.db && window.dbGet && window.dbChild && window.dbRefPath) {
-                    const snapshot = await window.dbGet(window.dbRefPath(window.db, 'global_stats/tracks'));
-                    if (snapshot.exists()) {
-                        const globalData = snapshot.val();
-                        const newStats = {};
-                        for (const trackId in globalData) {
-                            const data = globalData[trackId];
-                            const listeners = data.listeners || {};
-                            const uniqueCount = Object.keys(listeners).length;
-
-                            newStats[trackId] = {
-                                playCount: data.playCount || 0,
-                                lastListener: data.lastListener || 'Someone',
-                                lastPlayed: data.lastPlayed || 0,
-                                uniqueListeners: uniqueCount || 1
-                            };
-                        }
-                        trackStats = newStats;
-                        saveStats();
-                    }
-                }
-            } catch(e) { console.error("Fetch global stats error:", e); }
         }
 
         function getTrendingTracks() {
@@ -2043,66 +2016,6 @@ Ready?`
          ***********************/
         function getCurrentUser(){
             try { const s = localStorage.getItem('jamusic_user'); return s ? JSON.parse(s) : null; } catch(e){ return null; }
-        }
-
-        /***********************
-         * Admin & Global Reset
-         ***********************/
-        const ADMIN_EMAILS = ['admin@jamusic.com', 'smileyface@example.com']; // User can update this list
-
-        function maybeShowAdminBtn() {
-            const user = getCurrentUser();
-            const adminBtn = document.getElementById('admin-panel-btn');
-            if (adminBtn && user && user.email && ADMIN_EMAILS.includes(user.email.toLowerCase())) {
-                adminBtn.classList.remove('hidden');
-            } else if (adminBtn) {
-                adminBtn.classList.add('hidden');
-            }
-        }
-
-        function openAdminModal() {
-            document.getElementById('admin-modal-overlay').style.display = 'block';
-            document.getElementById('admin-modal').style.display = 'block';
-        }
-
-        function closeAdminModal() {
-            document.getElementById('admin-modal-overlay').style.display = 'none';
-            document.getElementById('admin-modal').style.display = 'none';
-        }
-
-        function showResetConfirm() {
-            document.getElementById('reset-confirm-modal-overlay').style.display = 'block';
-            document.getElementById('reset-confirm-modal').style.display = 'block';
-        }
-
-        function closeResetConfirm() {
-            document.getElementById('reset-confirm-modal-overlay').style.display = 'none';
-            document.getElementById('reset-confirm-modal').style.display = 'none';
-        }
-
-        async function confirmGlobalReset() {
-            try {
-                if (window.db && window.dbRefPath && window.dbSet) {
-                    const statsRef = window.dbRefPath(window.db, 'global_stats');
-                    await window.dbSet(statsRef, null); // Completely wipe global_stats
-                    
-                    alertBox('Global stats have been reset to 0!');
-                    closeResetConfirm();
-                    closeAdminModal();
-                    
-                    // Force refresh local stats
-                    trackStats = {};
-                    saveStats();
-                    if (typeof currentView !== 'undefined' && currentView === 'trending') {
-                        renderTracks(getTrendingTracks());
-                    }
-                } else {
-                    alertBox('Database connection error');
-                }
-            } catch (e) {
-                console.error("Reset failed:", e);
-                alertBox('Failed to reset stats');
-            }
         }
 
         /***********************
@@ -2133,32 +2046,9 @@ Ready?`
                 
                 grid.innerHTML = data.map((track) => {
                     const originalIndex = tracks.findIndex(t => t.id === track.id);
-                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0, lastListener: '', uniqueListeners: 0 };
+                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0 };
                     const trendingBadge = stats.playCount > 5 ? `<div class="absolute top-4 right-4 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg z-20 shadow-lg">HOT</div>` : '';
                     const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
-                    
-                    // Social text: "User and X others listened to this!"
-                    let socialText = '';
-                    if (stats.playCount > 0) {
-                        const totalPlays = stats.playCount;
-                        const uniquePeople = stats.uniqueListeners || 1;
-                        const lastUser = stats.lastListener || 'Someone';
-                        
-                        // Check if I am the one who just listened
-                        const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
-                        const myName = user ? (user.name || user.email.split('@')[0]) : 'You';
-                        const isMe = lastUser === myName || (lastUser === 'Someone' && !user);
-
-                        if (uniquePeople > 1) {
-                            const othersCount = uniquePeople - 1;
-                            const personText = othersCount === 1 ? 'other person' : 'others';
-                            socialText = `<p class="text-[10px] text-blue-400 font-bold mt-1 truncate animate-pulse-slow">🔥 ${lastUser} and ${othersCount} ${personText} listened globally!</p>`;
-                        } else if (lastUser === 'Someone') {
-                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">Popular globally!</p>`;
-                        } else {
-                            socialText = `<p class="text-[10px] text-blue-400/80 font-medium mt-1 truncate">${lastUser} is vibing globally!</p>`;
-                        }
-                    }
                     
                     return `
                     <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in relative" onclick="playTrack(${originalIndex})">
@@ -2174,9 +2064,10 @@ Ready?`
                         <div class="flex flex-col gap-2">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="flex-1 min-w-0">
-                                    <h4 class="font-bold text-lg truncate group-hover:text-blue-400 transition-colors">${escapeHtml(track.title)}</h4>
+                                    <div class="marquee-container">
+                                        <h4 class="marquee-text font-bold text-lg group-hover:text-blue-400 transition-colors">${escapeHtml(track.title)}</h4>
+                                    </div>
                                     <p class="text-xs text-slate-500 font-semibold uppercase">${escapeHtml(track.artist)}</p>
-                                    ${socialText}
                                 </div>
                                 ${stats.playCount > 0 ? `<span class="text-[10px] text-slate-600 font-bold whitespace-nowrap">${stats.playCount} plays</span>` : ''}
                             </div>
@@ -2189,24 +2080,8 @@ Ready?`
             if(mobileList) {
                 mobileList.innerHTML = data.map((track) => {
                     const originalIndex = tracks.findIndex(t => t.id === track.id);
-                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0, lastListener: '', uniqueListeners: 0 };
+                    const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0 };
                     const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
-                    
-                    // Social text: optimized for mobile
-                    let socialText = '';
-                    if (stats.playCount > 0) {
-                        const totalPlays = stats.playCount;
-                        const uniquePeople = stats.uniqueListeners || 1;
-                        const lastUser = stats.lastListener || 'Someone';
-                        
-                        if (uniquePeople > 1) {
-                            socialText = `<p class="text-[9px] text-blue-400 font-bold truncate">🌍 ${lastUser} & ${uniquePeople - 1} others!</p>`;
-                        } else if (lastUser === 'Someone') {
-                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">Popular globally!</p>`;
-                        } else {
-                            socialText = `<p class="text-[9px] text-blue-400/70 truncate">${lastUser} is vibing!</p>`;
-                        }
-                    }
                     
                     return `
                     <div class="flex items-center gap-4 p-3 bg-white/5 rounded-2xl active:scale-95 transition-transform border border-white/5" onclick="playTrack(${originalIndex})">
@@ -2215,13 +2090,14 @@ Ready?`
                             ${stats.playCount > 5 ? `<div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-black flex items-center justify-center"><div class="w-1.5 h-1.5 bg-white rounded-full"></div></div>` : ''}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-white truncate text-base">${escapeHtml(track.title)}</h4>
+                            <div class="marquee-container">
+                                <h4 class="marquee-text marquee-text-active font-bold text-white text-base">${escapeHtml(track.title)}</h4>
+                            </div>
                             <div class="flex flex-col">
                                 <div class="flex items-center gap-2">
                                     <p class="text-xs text-slate-400 truncate">${escapeHtml(track.artist)}</p>
                                     ${lastPlayedText ? `<span class="text-[10px] text-slate-600">• ${lastPlayedText}</span>` : ''}
                                 </div>
-                                ${socialText}
                             </div>
                         </div>
                         <div class="flex flex-col items-end gap-1">
@@ -2565,12 +2441,150 @@ Ready?`
 
         function updatePlayUI(playing){
             isPlaying = playing;
+            updateUI();
+        }
+
+        function updateUI() {
+            const track = tracks[currentTrackIndex];
+            if (!track) return;
+
+            // Desktop UI updates
+            const artImg = document.getElementById('art-img');
+            const songTitle = document.getElementById('song-title');
+            const songArtist = document.getElementById('song-artist');
+            const playPauseBtn = document.getElementById('play-pause-btn');
             const playIcon = document.getElementById('play-icon');
             const pauseIcon = document.getElementById('pause-icon');
-            if (playIcon && pauseIcon) {
-                playIcon.classList.toggle('hidden', playing);
-                pauseIcon.classList.toggle('hidden', !playing);
+
+            if (artImg) artImg.src = track.img;
+            if (songTitle) {
+                songTitle.innerText = track.title;
+                checkMarquee(songTitle);
             }
+            if (songArtist) songArtist.innerText = track.artist;
+
+            if (playIcon && pauseIcon) {
+                playIcon.classList.toggle('hidden', isPlaying);
+                pauseIcon.classList.toggle('hidden', !isPlaying);
+            }
+
+            // Mobile Player updates
+            const mobileFullImg = document.getElementById('mobile-full-img');
+            const mobileFullTitle = document.getElementById('mobile-full-title');
+            const mobileFullArtist = document.getElementById('mobile-full-artist');
+            const mobileFullPlayIcon = document.getElementById('mobile-full-play-icon');
+            const mobileFullPauseIcon = document.getElementById('mobile-full-pause-icon');
+            const mobileViewName = document.getElementById('mobile-player-view-name');
+
+            if (mobileFullImg) mobileFullImg.src = track.img;
+            if (mobileFullTitle) {
+                mobileFullTitle.innerText = track.title;
+                checkMarquee(mobileFullTitle);
+            }
+            if (mobileFullArtist) mobileFullArtist.innerText = track.artist;
+            if (mobileViewName) {
+                mobileViewName.innerText = currentView === 'trending' ? 'Trending' : 
+                                         currentView === 'search' ? 'Search Results' : 'All Tracks';
+            }
+
+            if (mobileFullPlayIcon && mobileFullPauseIcon) {
+                mobileFullPlayIcon.classList.toggle('hidden', isPlaying);
+                mobileFullPauseIcon.classList.toggle('hidden', !isPlaying);
+            }
+
+            // Mobile mini player updates
+            const mobileArt = document.getElementById('mobile-art');
+            const mobileTitle = document.getElementById('mobile-title');
+            const mobileArtist = document.getElementById('mobile-artist');
+            const mobilePlayIcon = document.getElementById('mobile-play-icon');
+            const mobilePauseIcon = document.getElementById('mobile-pause-icon');
+
+            if (mobileArt) mobileArt.src = track.img;
+            if (mobileTitle) {
+                mobileTitle.innerText = track.title;
+                checkMarquee(mobileTitle);
+            }
+            if (mobileArtist) mobileArtist.innerText = track.artist;
+
+            if (mobilePlayIcon && mobilePauseIcon) {
+                mobilePlayIcon.classList.toggle('hidden', isPlaying);
+                mobilePauseIcon.classList.toggle('hidden', !isPlaying);
+            }
+
+            // Repeat status
+            const repeatBtn = document.getElementById('repeat-btn');
+            const mobileRepeatBtn = document.getElementById('mobile-repeat-btn');
+            if (repeatBtn) repeatBtn.classList.toggle('text-[#1db954]', repeatTracks);
+            if (mobileRepeatBtn) mobileRepeatBtn.classList.toggle('text-blue-500', repeatTracks);
+
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: track.title,
+                    artist: track.artist,
+                    album: 'JaMusic v2',
+                    artwork: [{ src: track.img, sizes: '512x512', type: 'image/png' }]
+                });
+            }
+        }
+
+        // Marquee Logic Helper
+        function checkMarquee(element) {
+            if (!element) return;
+            const container = element.parentElement;
+            if (!container || !container.classList.contains('marquee-container')) return;
+
+            // Reset
+            element.classList.remove('marquee-text-active');
+            element.style.animationDuration = '0s';
+            
+            // Check overflow
+            if (element.scrollWidth > container.clientWidth) {
+                // Duplicate text for seamless loop
+                if (!element.dataset.originalText) {
+                    element.dataset.originalText = element.innerText;
+                }
+                element.innerText = element.dataset.originalText + " \u00A0\u00A0\u00A0\u00A0 " + element.dataset.originalText;
+                
+                element.classList.add('marquee-text');
+                const duration = Math.max(8, element.scrollWidth / 40);
+                element.style.animationDuration = `${duration}s`;
+                
+                if (window.innerWidth <= 768) {
+                    element.classList.add('marquee-text-active');
+                }
+            } else {
+                if (element.dataset.originalText) {
+                    element.innerText = element.dataset.originalText;
+                }
+            }
+        }
+
+        function openMobilePlayer() {
+            if (window.innerWidth > 768) return;
+            const player = document.getElementById('mobile-fullscreen-player');
+            player.classList.remove('hidden');
+            // Force reflow
+            player.offsetHeight;
+            player.classList.remove('translate-y-full');
+            player.classList.add('translate-y-0');
+            document.body.style.overflow = 'hidden';
+            
+            // Scale art up effect
+            const art = document.getElementById('mobile-full-art-container');
+            if (art) {
+                art.style.transform = 'scale(0.8)';
+                setTimeout(() => art.style.transform = 'scale(1)', 50);
+            }
+        }
+
+        function closeMobilePlayer() {
+            const player = document.getElementById('mobile-fullscreen-player');
+            player.classList.remove('translate-y-0');
+            player.classList.add('translate-y-full');
+            setTimeout(() => {
+                player.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, 500);
         }
 
         function nextTrack(){
@@ -2601,22 +2615,37 @@ Ready?`
             const progressFill = document.getElementById('progress-bar-fill');
             const seekThumb = document.getElementById('seek-thumb');
             
-            if (!seekSlider) return;
+            const mobileSlider = document.getElementById('mobile-full-slider');
+            const mobileProgress = document.getElementById('mobile-full-progress');
+            
             if (audio.duration) {
                 const currentTime = audio.currentTime;
                 const duration = audio.duration;
                 const percentage = (currentTime / duration) * 100;
                 
-                seekSlider.max = Math.floor(duration);
-                seekSlider.value = Math.floor(currentTime);
-                
+                if (seekSlider) {
+                    seekSlider.max = Math.floor(duration);
+                    seekSlider.value = Math.floor(currentTime);
+                }
                 if (progressFill) progressFill.style.width = `${percentage}%`;
                 if (seekThumb) seekThumb.style.left = `${percentage}%`;
+
+                // Mobile
+                if (mobileSlider) {
+                    mobileSlider.max = Math.floor(duration);
+                    mobileSlider.value = Math.floor(currentTime);
+                }
+                if (mobileProgress) mobileProgress.style.width = `${percentage}%`;
 
                 const c = document.getElementById('curr-time');
                 const d = document.getElementById('dur-time');
                 if (c) c.innerText = formatTime(currentTime);
                 if (d) d.innerText = formatTime(duration);
+
+                const mc = document.getElementById('mobile-full-curr');
+                const md = document.getElementById('mobile-full-dur');
+                if (mc) mc.innerText = formatTime(currentTime);
+                if (md) md.innerText = formatTime(duration);
             }
         }
 
@@ -2643,11 +2672,24 @@ Ready?`
                 seek.oninput = (e) => { 
                     const val = e.target.value;
                     audio.currentTime = val; 
-                    if (audio.duration) {
-                        const percentage = (val / audio.duration) * 100;
-                        if (progressFill) progressFill.style.width = `${percentage}%`;
-                        if (seekThumb) seekThumb.style.left = `${percentage}%`;
-                    }
+                };
+            }
+
+            const mobileFullSlider = document.getElementById('mobile-full-slider');
+            if (mobileFullSlider) {
+                mobileFullSlider.oninput = (e) => {
+                    const val = e.target.value;
+                    audio.currentTime = val;
+                };
+            }
+
+            // Mobile Mini Player Click -> Open Full Player
+            const mobilePlayerBar = document.getElementById('mobile-player-bar');
+            if (mobilePlayerBar) {
+                mobilePlayerBar.onclick = (e) => {
+                    // Don't open if clicking the play button itself
+                    if (e.target.closest('button')) return;
+                    openMobilePlayer();
                 };
             }
 
@@ -2684,7 +2726,6 @@ Ready?`
             }
 
             renderTracks(tracks);
-            maybeShowAdminBtn();
         });
 
         function updateVolumeIcon(val) {
@@ -2786,12 +2827,8 @@ Ready?`
             if (mDropdownEmail) mDropdownEmail.innerText = user.email;
 
             updateViewMode();
-
-            // Fetch global stats for badges/trending display
-            await fetchGlobalStats();
             
             renderTracks(tracks);
-            maybeShowAdminBtn();
             setTimeout(() => { if (authOverlay) authOverlay.style.display = 'none'; }, 600);
         }
 
@@ -3026,7 +3063,6 @@ Ready?`
                     } else {
                         localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
                     }
-                    maybeShowAdminBtn();
                 } catch(e){}
                 if (dnModal) dnModal.classList.remove('show');
                 setTimeout(() => { if (dnOverlay) dnOverlay.classList.remove('show'); document.body.classList.remove('no-scroll'); if (dnModal) dnModal.classList.add('show'); }, 220);
