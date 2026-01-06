@@ -427,7 +427,7 @@
             position: fixed;
             inset: 0;
             background: #00081C; /* Exact green */
-            z-index: 2000;
+            z-index: 6000; /* Higher than mobile-fullscreen-player (5000) */
             display: none;
             flex-direction: column;
             padding: 0;
@@ -1073,9 +1073,9 @@
     </div>
 
     <!-- MOBILE FULLSCREEN PLAYER OVERLAY -->
-    <div id="mobile-fullscreen-player" class="fixed inset-0 z-[5000] bg-[#00081C] hidden flex-col transition-all duration-500 transform translate-y-full">
+    <div id="mobile-fullscreen-player" class="fixed inset-0 z-[5000] bg-[#00081C] hidden flex-col transition-all duration-500 transform translate-y-full overflow-hidden">
         <!-- Header -->
-        <div class="flex items-center justify-between p-6">
+        <div class="flex items-center justify-between p-6 shrink-0">
             <button onclick="closeMobilePlayer()" class="text-white p-2">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
@@ -1089,14 +1089,14 @@
         </div>
 
         <!-- Artwork -->
-        <div class="flex-1 flex items-center justify-center p-8">
-            <div class="w-full aspect-square max-w-[340px] rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/20 transition-transform duration-500" id="mobile-full-art-container">
+        <div class="flex-1 flex items-center justify-center p-8 min-h-0">
+            <div class="w-full aspect-square max-w-[85vw] max-h-[40vh] rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/20 transition-transform duration-500 flex items-center justify-center bg-white/5" id="mobile-full-art-container">
                 <img id="mobile-full-img" src="" class="w-full h-full object-cover">
             </div>
         </div>
 
         <!-- Info & Controls -->
-        <div class="p-8 pb-12 space-y-8">
+        <div class="p-8 pb-12 space-y-8 shrink-0">
             <div class="flex items-center justify-between">
                 <div class="min-w-0 flex-1 pr-4">
                     <div class="marquee-container">
@@ -2080,8 +2080,9 @@ Ready?`
                 `;}).join('');
             }
 
-            if(mobileList) {
+            if (mobileList) {
                 mobileList.innerHTML = data.map((track) => {
+                    // ... same logic as before ...
                     const originalIndex = tracks.findIndex(t => t.id === track.id);
                     const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0 };
                     const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
@@ -2094,7 +2095,7 @@ Ready?`
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="marquee-container">
-                                <h4 class="marquee-text marquee-text-active font-bold text-white text-base">${escapeHtml(track.title)}</h4>
+                                <h4 class="marquee-text font-bold text-white text-base">${escapeHtml(track.title)}</h4>
                             </div>
                             <div class="flex flex-col">
                                 <div class="flex items-center gap-2">
@@ -2112,6 +2113,12 @@ Ready?`
                     </div>
                 `;}).join('');
             }
+
+            // Apply marquee checks after rendering
+            setTimeout(() => {
+                const elements = document.querySelectorAll('.marquee-text');
+                elements.forEach(el => checkMarquee(el));
+            }, 50);
         }
 
         function getTimeAgo(ts) {
@@ -2177,6 +2184,7 @@ Ready?`
         async function toggleLyrics() {
             const overlay = document.getElementById('lyrics-overlay');
             const btn = document.getElementById('lyrics-btn');
+            const mobileBtn = document.getElementById('mobile-lyrics-btn');
             if (!overlay) return;
 
             lyricsVisible = !lyricsVisible;
@@ -2186,12 +2194,22 @@ Ready?`
                 overlay.offsetHeight;
                 overlay.classList.add('show');
                 btn?.classList.add('text-[#1db954]');
+                mobileBtn?.classList.add('text-blue-500');
+                document.body.style.overflow = 'hidden';
                 
                 const track = tracks[currentTrackIndex];
                 await fetchLyrics(track);
             } else {
                 overlay.classList.remove('show');
                 btn?.classList.remove('text-[#1db954]');
+                mobileBtn?.classList.remove('text-blue-500');
+                
+                // Only restore scroll if mobile player is not open
+                const mobilePlayer = document.getElementById('mobile-fullscreen-player');
+                if (!mobilePlayer || mobilePlayer.classList.contains('hidden')) {
+                    document.body.style.overflow = '';
+                }
+
                 setTimeout(() => {
                     if (!lyricsVisible) {
                         overlay.style.display = 'none';
@@ -2460,6 +2478,7 @@ Ready?`
 
             if (playerImg) playerImg.src = track.img;
             if (playerTitle) {
+                // Reset text before checking marquee to avoid capturing old song's text
                 playerTitle.innerText = track.title;
                 checkMarquee(playerTitle);
             }
@@ -2480,6 +2499,7 @@ Ready?`
 
             if (mobileFullImg) mobileFullImg.src = track.img;
             if (mobileFullTitle) {
+                // Reset text before checking marquee
                 mobileFullTitle.innerText = track.title;
                 checkMarquee(mobileFullTitle);
             }
@@ -2526,17 +2546,18 @@ Ready?`
             const container = element.parentElement;
             if (!container || !container.classList.contains('marquee-container')) return;
 
-            // Reset
+            // Reset state
             element.classList.remove('marquee-text-active');
             element.style.animationDuration = '0s';
             
+            // ALWAYS refresh originalText with the current content (which was just set by updateUI or renderTracks)
+            const currentText = element.innerText;
+            element.dataset.originalText = currentText;
+
             // Check overflow
             if (element.scrollWidth > container.clientWidth) {
                 // Duplicate text for seamless loop
-                if (!element.dataset.originalText) {
-                    element.dataset.originalText = element.innerText;
-                }
-                element.innerText = element.dataset.originalText + " \u00A0\u00A0\u00A0\u00A0 " + element.dataset.originalText;
+                element.innerText = currentText + " \u00A0\u00A0\u00A0\u00A0 " + currentText;
                 
                 element.classList.add('marquee-text');
                 const duration = Math.max(8, element.scrollWidth / 40);
@@ -2547,9 +2568,9 @@ Ready?`
                     element.classList.add('marquee-text-active');
                 }
             } else {
-                if (element.dataset.originalText) {
-                    element.innerText = element.dataset.originalText;
-                }
+                // If it doesn't overflow, just keep original text
+                element.innerText = currentText;
+                element.classList.remove('marquee-text');
             }
         }
 
