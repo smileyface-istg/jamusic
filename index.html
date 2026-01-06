@@ -365,16 +365,14 @@
         #lyrics-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(2, 6, 23, 0.98);
-            backdrop-filter: blur(60px);
-            -webkit-backdrop-filter: blur(60px);
+            background: #003e54; /* Exact dark teal from user image */
             z-index: 2000;
             display: none;
             flex-direction: column;
-            padding: 40px 20px;
+            padding: 0;
             opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.4s cubic-bezier(0.3, 0, 0, 1), transform 0.4s cubic-bezier(0.3, 0, 0, 1);
+            transform: translateY(100%);
+            transition: opacity 0.5s cubic-bezier(0.3, 0, 0, 1), transform 0.5s cubic-bezier(0.3, 0, 0, 1);
         }
 
         #lyrics-overlay.show {
@@ -383,52 +381,72 @@
             transform: translateY(0);
         }
 
+        #lyrics-close {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            font-size: 40px;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            z-index: 2002;
+            transition: color 0.2s;
+        }
+
+        #lyrics-close:hover {
+            color: #fff;
+        }
+
         .lyrics-container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             width: 100%;
             height: 100%;
             overflow-y: auto;
             scrollbar-width: none;
-            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
-            -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
-            padding: 20vh 0;
+            -ms-overflow-style: none;
+            mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 25%, black 75%, transparent);
+            padding: 40vh 40px;
             scroll-behavior: smooth;
         }
 
         .lyrics-container::-webkit-scrollbar { display: none; }
 
         .lyric-line {
-            font-size: 2.5rem;
-            font-weight: 800;
-            line-height: 1.4;
-            padding: 12px 0;
-            color: rgba(255, 255, 255, 0.4); /* Standard grey for inactive */
-            transition: all 0.4s cubic-bezier(0.3, 0, 0, 1);
+            font-size: 3rem;
+            line-height: 1.2;
+            font-weight: 900;
+            padding: 16px 0;
+            color: rgba(255, 255, 255, 0.3);
+            transition: all 0.6s cubic-bezier(0.3, 0, 0, 1);
             cursor: pointer;
             transform-origin: left;
-            will-change: transform, color;
-            position: relative;
+            letter-spacing: -0.03em;
+            text-align: left;
+            will-change: transform, color, opacity;
         }
 
         .lyric-line.active {
-            color: #ffffff; /* Pure white when active */
-            transform: scale(1.05);
-            text-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
+            color: #ffffff;
+            transform: scale(1.03);
+            opacity: 1;
         }
 
         .lyric-line.passed {
-            color: rgba(255, 255, 255, 0.8); /* Slightly lighter grey/white for passed */
+            color: rgba(255, 255, 255, 0.2);
         }
 
         .lyric-line:hover {
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding-left: 15px;
         }
 
         @media (max-width: 768px) {
-            .lyric-line { font-size: 1.75rem; }
+            .lyric-line { font-size: 1.8rem; padding: 12px 0; }
             #lyrics-close { top: 20px; right: 20px; width: 40px; height: 40px; }
-            .lyrics-container { padding: 30vh 20px; }
+            .lyrics-container { padding: 40vh 24px; }
         }
 
         /* Full text mode for Genius lyrics */
@@ -1109,7 +1127,8 @@
          ***********************/
         async function fetchLyricsFromGenius(track) {
             if (!GENIUS_ACCESS_TOKEN) {
-                if (track.title === 'Never Gonna Give You Up' || track.title === 'End of Beginning') {
+                const mockTracks = ['Never Gonna Give You Up', 'End of Beginning', 'Heat Waves'];
+                if (mockTracks.includes(track.title)) {
                     return fetchMockLyrics(track);
                 }
                 throw new Error("No Genius API token found. Please add one in settings.");
@@ -1219,24 +1238,64 @@
         }
 
         async function fetchMockLyrics(track) {
-            await new Promise(r => setTimeout(r, 1000)); 
+            await new Promise(r => setTimeout(r, 800)); 
             
-            let mockData = null;
             if (track.title === 'Never Gonna Give You Up') {
-                mockData = {
-                    type: 'full',
-                    content: `[Verse 1]\nWe're no strangers to love\nYou know the rules and so do I (do I)\nA full commitment's what I'm thinking of\nYou wouldn't get this from any other guy\n\n[Pre-Chorus]\nI just wanna tell you how I'm feeling\nGotta make you understand\n\n[Chorus]\nNever gonna give you up\nNever gonna let you down\nNever gonna run around and desert you\nNever gonna make you cry\nNever gonna say goodbye\nNever gonna tell a lie and hurt you\n\n[Verse 2]\nWe've known each other for so long\nYour heart's been aching, but you're too shy to say it (say it)\nInside, we both know what's been going on (going on)\nWe know the game and we're gonna play it\n\n[Pre-Chorus]\nAnd if you ask me how I'm feeling\nDon't tell me you're too blind to see\n\n[Chorus]\nNever gonna give you up\nNever gonna let you down\nNever gonna run around and desert you\nNever gonna make you cry\nNever gonna say goodbye\nNever gonna tell a lie and hurt you\n\n[Bridge]\n(Ooh, give you up)\n(Ooh, give you up)\n(Ooh) Never gonna give, never gonna give (give you up)\n(Ooh) Never gonna give, never gonna give (give you up)\n\n[Outro]\nNever gonna give you up\nNever gonna let you down\nNever gonna run around and desert you\nNever gonna make you cry\nNever gonna say goodbye\nNever gonna tell a lie and hurt you`,
-                    metadata: { title: 'Never Gonna Give You Up', artist: 'Rick Astley' }
-                };
+                return [
+                    { time: 0, content: "[Intro]" },
+                    { time: 18.5, content: "We're no strangers to love" },
+                    { time: 22.5, content: "You know the rules and so do I" },
+                    { time: 27.0, content: "A full commitment's what I'm thinkin' of" },
+                    { time: 31.0, content: "You wouldn't get this from any other guy" },
+                    { time: 35.0, content: "I just wanna tell you how I'm feeling" },
+                    { time: 40.0, content: "Gotta make you understand" },
+                    { time: 43.0, content: "Never gonna give you up" },
+                    { time: 47.0, content: "Never gonna let you down" },
+                    { time: 51.0, content: "Never gonna run around and desert you" },
+                    { time: 55.0, content: "Never gonna make you cry" },
+                    { time: 59.0, content: "Never gonna say goodbye" },
+                    { time: 63.0, content: "Never gonna tell a lie and hurt you" },
+                    { time: 67.0, content: "We've known each other for so long" },
+                    { time: 71.0, content: "Your heart's been aching, but you're too shy to say it" },
+                    { time: 76.0, content: "Inside, we both know what's been going on" },
+                    { time: 80.0, content: "We know the game and we're gonna play it" },
+                    { time: 84.0, content: "And if you ask me how I'm feeling" },
+                    { time: 89.0, content: "Don't tell me you're too blind to see" },
+                    { time: 92.0, content: "Never gonna give you up" },
+                    { time: 96.0, content: "Never gonna let you down" }
+                ];
             } else if (track.title === 'End of Beginning') {
-                mockData = {
-                    type: 'full',
-                    content: `[Verse 1]\nJust like that, I'm back in the city\nThe wind is cold and the lights are pretty\nIt's been a while, but I still remember\nHow it felt in the late November\n\n[Pre-Chorus]\nAnd I know, I know\nThat I'm not the same as I was before\nBut I'm home, I'm home\nAnd I'm not running anymore\n\n[Chorus]\nAnd when I'm back in Chicago, I feel it\nAnother version of me, I was in it\nI wave goodbye to the end of beginning\n(Goodbye, goodbye, goodbye)\n\n[Verse 2]\nThe streets are loud but the air is quiet\nI'm caught between the peace and the riot\nI see the ghosts of the things I wanted\nIn every corner, I'm being haunted\n\n[Chorus]\nAnd when I'm back in Chicago, I feel it\nAnother version of me, I was in it\nI wave goodbye to the end of beginning\n(Goodbye, goodbye, goodbye)`,
-                    metadata: { title: 'End of Beginning', artist: 'Djo' }
-                };
+                return [
+                    { time: 0, content: "[Intro]" },
+                    { time: 10.0, content: "Just like that, I'm back in the city" },
+                    { time: 14.0, content: "The wind is cold and the lights are pretty" },
+                    { time: 18.0, content: "It's been a while, but I still remember" },
+                    { time: 22.0, content: "How it felt in the late November" },
+                    { time: 26.0, content: "And I know, I know" },
+                    { time: 30.0, content: "That I'm not the same as I was before" },
+                    { time: 34.0, content: "But I'm home, I'm home" },
+                    { time: 38.0, content: "And I'm not running anymore" },
+                    { time: 42.0, content: "And when I'm back in Chicago, I feel it" },
+                    { time: 46.0, content: "Another version of me, I was in it" },
+                    { time: 50.0, content: "I wave goodbye to the end of beginning" }
+                ];
+            } else if (track.title === 'Heat Waves') {
+                return [
+                    { time: 0, content: "(Road shimmer wigglin' the vision)" },
+                    { time: 2.5, content: "(Heat waves, I'm swimming in a mirror)" },
+                    { time: 5.0, content: "(Road shimmer wigglin' the vision)" },
+                    { time: 7.5, content: "(Heat waves, I'm swimming in a mirror)" },
+                    { time: 11.0, content: "Sometimes, all I think about is you" },
+                    { time: 15.0, content: "Late nights in the middle of June" },
+                    { time: 19.0, content: "Heat waves been faking me out" },
+                    { time: 23.0, content: "Can't make you happier now" },
+                    { time: 27.0, content: "Sometimes, all I think about is you" },
+                    { time: 31.0, content: "Late nights in the middle of June" },
+                    { time: 35.0, content: "Heat waves been faking me out" },
+                    { time: 39.0, content: "Can't make you happier now" }
+                ];
             }
             
-            if (mockData) return mockData;
             throw new Error("Complete lyrics not available for this track yet.");
         }
 
@@ -1501,41 +1560,40 @@
 
         function renderLyrics(lyricsData) {
             const contentDiv = document.getElementById('lyrics-content');
-            const container = document.querySelector('.lyrics-container');
+            const container = document.getElementById('lyrics-container');
             
-            // Clear previous state
-            container.classList.remove('full-text-mode');
+            // Reset
             currentLyrics = [];
+            container.classList.remove('full-text-mode');
 
-            if (lyricsData && lyricsData.type === 'full') {
+            // Determine if data is synchronized (array) or full text (object with type: 'full')
+            if (Array.isArray(lyricsData)) {
+                currentLyrics = lyricsData;
+                contentDiv.innerHTML = currentLyrics.map((l, i) => `
+                    <div class="lyric-line" 
+                         id="lyric-${i}" 
+                         onclick="seekToLyric(${l.time})">
+                        ${escapeHtml(l.content)}
+                    </div>
+                `).join('');
+            } else if (lyricsData && lyricsData.type === 'full') {
                 container.classList.add('full-text-mode');
                 const lines = lyricsData.content.split('\n');
                 contentDiv.innerHTML = lines.map(line => {
                     const trimmed = line.trim();
                     if (!trimmed) return '<div class="h-6"></div>';
                     if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-                        return `<div class="lyric-section-header animate-spotify" style="animation-delay: 100ms">${escapeHtml(trimmed)}</div>`;
+                        return `<div class="lyric-section-header">${escapeHtml(trimmed)}</div>`;
                     }
-                    return `<div class="lyric-line animate-spotify">${escapeHtml(trimmed)}</div>`;
+                    return `<div class="lyric-line">${escapeHtml(trimmed)}</div>`;
                 }).join('');
-                
-                // Reset scroll for full text
-                container.scrollTo({ top: 0, behavior: 'instant' });
-            } else {
-                // Legacy synchronized format
-                currentLyrics = Array.isArray(lyricsData) ? lyricsData : (lyricsData.lines || []);
-                contentDiv.innerHTML = currentLyrics.map((l, i) => `
-                    <div class="lyric-line" 
-                         id="lyric-${i}" 
-                         onclick="seekToLyric(${l.time})" 
-                         role="button" 
-                         tabindex="0" 
-                         onkeydown="if(event.key==='Enter') seekToLyric(${l.time})"
-                         aria-label="Seek to ${formatTime(l.time)}: ${escapeHtml(l.content)}">
-                        ${escapeHtml(l.content)}
-                    </div>
-                `).join('');
+            } else if (lyricsData && lyricsData.type === 'selecting') {
+                // Keep the selection UI
+                return;
             }
+
+            // Scroll to top on load
+            container.scrollTo({ top: 0, behavior: 'instant' });
         }
 
         function toggleLyrics() {
@@ -1545,24 +1603,33 @@
             if (lyricsVisible) {
                 overlay.style.display = 'flex';
                 document.body.classList.add('no-scroll');
-                requestAnimationFrame(() => overlay.classList.add('show'));
+                // Force reflow for animation
+                overlay.offsetHeight;
+                overlay.classList.add('show');
                 
                 const track = tracks[currentTrackIndex];
                 if (track) fetchLyrics(track);
             } else {
                 overlay.classList.remove('show');
                 document.body.classList.remove('no-scroll');
-                setTimeout(() => overlay.style.display = 'none', 400);
+                setTimeout(() => {
+                    if (!lyricsVisible) overlay.style.display = 'none';
+                }, 500);
             }
         }
 
         function seekToLyric(time) {
             audio.currentTime = time;
             if (audio.paused) audio.play();
+            
+            // Immediate UI update for responsiveness
+            lastActiveIndex = -1; // Reset to force update
+            updateLyricsSync();
         }
 
+        let lastActiveIndex = -1;
         function updateLyricsSync() {
-            if (!lyricsVisible || !Array.isArray(currentLyrics) || currentLyrics.length === 0) return;
+            if (!lyricsVisible || !currentLyrics || currentLyrics.length === 0) return;
 
             const currentTime = audio.currentTime;
             let activeIndex = -1;
@@ -1575,7 +1642,8 @@
                 }
             }
 
-            if (activeIndex !== -1) {
+            if (activeIndex !== -1 && activeIndex !== lastActiveIndex) {
+                lastActiveIndex = activeIndex;
                 const lines = document.querySelectorAll('.lyric-line');
                 const container = document.getElementById('lyrics-container');
                 
@@ -1590,7 +1658,7 @@
                     const lineOffset = activeLine.offsetTop;
                     const lineHeight = activeLine.offsetHeight;
                     
-                    // Smoothly scroll to center the active line
+                    // Buttery smooth centering scroll
                     container.scrollTo({
                         top: lineOffset - (containerHeight / 2) + (lineHeight / 2),
                         behavior: 'smooth'
