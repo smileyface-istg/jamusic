@@ -649,7 +649,7 @@
 </head>
 <body class="selection:bg-blue-500/30">
     <!-- Top Error Notification -->
-    <div id="auth-error-notif" class="fixed top-0 left-0 right-0 z-[9999] p-4 pointer-events-none flex justify-center opacity-0 translate-y-[-100%]">
+    <div id="auth-error-notif" class="fixed top-0 left-0 right-0 z-[10001] p-4 pointer-events-none flex justify-center opacity-0 translate-y-[-100%]">
         <div class="glass border border-red-500/30 bg-red-500/10 backdrop-blur-xl px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-md w-full pointer-events-auto">
             <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
                 <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
@@ -2532,7 +2532,7 @@ Ready?`
         };
 
         function toggleAuthMode(mode){
-            authMode = mode;
+            window.authMode = mode;
             const loginTab = document.getElementById('login-tab');
             const signupTab = document.getElementById('signup-tab');
             if (loginTab && signupTab) {
@@ -2894,9 +2894,17 @@ Ready?`
          * DOM wiring on ready
          ***********************/
         document.addEventListener('DOMContentLoaded', () => {
-            // restore saved user if present
+            // Restore saved user optimistically for better UX
+            // We'll let onAuthStateChanged handle the final authority, 
+            // but this helps prevent a flash of login screen.
             const savedUser = localStorage.getItem('jamusic_user');
-            if (savedUser) showApp(JSON.parse(savedUser));
+            if (savedUser) {
+                try {
+                    showApp(JSON.parse(savedUser));
+                } catch(e) {
+                    localStorage.removeItem('jamusic_user');
+                }
+            }
 
             // settings wiring
             const settingsBtn = document.getElementById('account-settings-btn');
@@ -3145,13 +3153,17 @@ Ready?`
 
             // Show loading state
             const originalText = submitBtn.innerText;
-            submitBtn.innerText = authMode === 'login' ? 'Signing In...' : 'Creating Account...';
+            const currentMode = window.authMode || 'login';
+            submitBtn.innerText = currentMode === 'login' ? 'Signing In...' : 'Creating Account...';
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.7';
 
+            // Clear any existing error notifications
+            hideAuthError();
+
             try {
                 let userCredential;
-                if (authMode === 'login') {
+                if (currentMode === 'login') {
                     userCredential = await signInWithEmailAndPassword(auth, email, pass);
                 } else {
                     userCredential = await createUserWithEmailAndPassword(auth, email, pass);
@@ -3160,7 +3172,10 @@ Ready?`
                 const user = userCredential.user;
                 const userData = { email: user.email, name: user.email.split('@')[0], uid: user.uid };
                 
-                if (remember) localStorage.setItem('jamusic_user', JSON.stringify(userData));
+                // If remember me is NOT checked, we still store in localStorage for the session
+                // but Firebase persistence is already set to LOCAL by default.
+                // We'll update the global app state.
+                localStorage.setItem('jamusic_user', JSON.stringify(userData));
                 window.showApp(userData);
             } catch (error) {
                 console.error("Auth error:", error.code, error.message);
@@ -3176,6 +3191,8 @@ Ready?`
                     friendlyMsg = "This email is already registered. Try logging in instead!";
                 } else if (error.code === 'auth/weak-password') {
                     friendlyMsg = "Password should be at least 6 characters.";
+                } else if (error.code === 'auth/network-request-failed') {
+                    friendlyMsg = "Network error. Please check your internet connection.";
                 } else {
                     friendlyMsg += "Please check your connection or try again.";
                 }
@@ -3195,6 +3212,7 @@ Ready?`
                 location.reload();
             } catch (error) {
                 console.error("Logout error:", error);
+                localStorage.removeItem('jamusic_user');
                 location.reload(); // Fallback
             }
         };
@@ -3215,23 +3233,39 @@ Ready?`
                 notif.classList.add('notif-slide-down');
             });
 
-            // Auto hide after 5 seconds
+            // Auto hide after 6 seconds
             if (window.authNotifTimeout) clearTimeout(window.authNotifTimeout);
             window.authNotifTimeout = setTimeout(() => {
-                notif.classList.remove('notif-slide-down');
-                notif.classList.add('notif-slide-up');
-                setTimeout(() => {
-                    notif.style.display = 'none';
-                    notif.classList.remove('notif-slide-up');
-                }, 500);
-            }, 5000);
+                hideAuthError();
+            }, 6000);
         }
 
-        // Check for persisted user on load
+        function hideAuthError() {
+            const notif = document.getElementById('auth-error-notif');
+            if (!notif || !notif.classList.contains('notif-slide-down')) return;
+
+            notif.classList.remove('notif-slide-down');
+            notif.classList.add('notif-slide-up');
+            setTimeout(() => {
+                notif.style.display = 'none';
+                notif.classList.remove('notif-slide-up');
+            }, 500);
+        }
+
+        // Check for persisted user on load and handle session changes
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 const userData = { email: user.email, name: user.email.split('@')[0], uid: user.uid };
+                localStorage.setItem('jamusic_user', JSON.stringify(userData));
                 window.showApp(userData);
+                hideAuthError(); // Hide error if user is successfully authenticated
+            } else {
+                // If no Firebase user, but we have local data, it might be an expired session
+                const localUser = localStorage.getItem('jamusic_user');
+                if (localUser) {
+                    localStorage.removeItem('jamusic_user');
+                    location.reload(); // Force clean state
+                }
             }
         });
     </script>
