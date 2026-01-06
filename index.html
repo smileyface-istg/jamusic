@@ -9,7 +9,7 @@
 
     <style>
         :root {
-            --bg-dark: #020617;
+            --bg-dark: #00081C;
             --accent: #38bdf8;
             --accent-glow: rgba(56, 189, 248, 0.3);
             --card-bg: rgba(15, 23, 42, 0.6);
@@ -125,7 +125,7 @@
             position: fixed;
             inset: 0;
             z-index: 10000;
-            background: radial-gradient(circle at top right, #0f172a, #020617);
+            background: radial-gradient(circle at top right, #0f172a, #00081C);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -595,6 +595,77 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Discord-style Loading Screen */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background-color: #00081C;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loading-icon-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
+        }
+
+        .loading-icon {
+            width: 100%;
+            height: 100%;
+            color: var(--accent);
+            animation: discord-spin 2s linear infinite;
+        }
+
+        @keyframes discord-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-tips-container {
+            text-align: center;
+            max-width: 80%;
+            padding: 0 20px;
+        }
+
+        .loading-tip-title {
+            color: white;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 14px;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        .loading-tip-text {
+            color: #94a3b8;
+            font-size: 15px;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .loading-icon-wrapper {
+                width: 64px;
+                height: 64px;
+            }
+            .loading-tip-text {
+                font-size: 14px;
+            }
+        }
+
         .animate-spotify {
             animation: spotify-fade-in 0.6s cubic-bezier(0.3, 0, 0, 1) forwards;
         }
@@ -654,6 +725,20 @@
     </style>
 </head>
 <body class="selection:bg-blue-500/30">
+    <!-- Discord-style Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-icon-wrapper">
+            <svg class="loading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+            </svg>
+        </div>
+        <div class="loading-tips-container">
+            <h4 class="loading-tip-title">Did you know?</h4>
+            <p id="loading-tip-text" class="loading-tip-text">Loading fresh beats just for you...</p>
+        </div>
+    </div>
     <!-- Notifications Container -->
     <div id="notif-container" class="fixed top-0 left-0 right-0 z-[10001] p-4 pointer-events-none flex flex-col items-center gap-3"></div>
 
@@ -1106,6 +1191,45 @@
     </div>
 
     <script>
+        /***********************
+         * Loading Screen Logic
+         ***********************/
+        (function() {
+            const tips = [
+                "You can toggle lyrics by clicking the microphone icon!",
+                "Try searching for 'offline' to see how the app handles network issues.",
+                "JaMusic v2 is optimized for both desktop and mobile devices.",
+                "Double-tap a song to start playing it instantly.",
+                "Your search history is saved locally for quick access.",
+                "The visualizer reacts to the rhythm of the music.",
+                "Check your inbox for the latest updates from the JaMusic team.",
+                "Did you know? You can change your display name in account settings.",
+                "Hover over a song card to see the quick-play button!",
+                "Keep the beats going by enabling the repeat mode in the player."
+            ];
+
+            const tipTextEl = document.getElementById('loading-tip-text');
+            const loadingScreen = document.getElementById('loading-screen');
+            
+            if (tipTextEl) {
+                const randomTip = tips[Math.floor(Math.random() * tips.length)];
+                tipTextEl.innerText = randomTip;
+            }
+
+            // Show for 3 seconds, then fade out
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    if (loadingScreen) {
+                        loadingScreen.classList.add('hidden');
+                        // Optional: Remove from DOM after transition
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                        }, 500);
+                    }
+                }, 3000);
+            });
+        })();
+
         /********************************************************************
          * Full single-file app:
          * - keeps your original UI & scripts
