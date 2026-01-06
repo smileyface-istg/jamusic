@@ -1311,11 +1311,27 @@
                     const r = h.result || {};
                     const title = norm(r.title || '');
                     const artist = norm(r.artist_names || (r.primary_artist && r.primary_artist.name) || '');
+                    
+                    // Relaxed matching: if the Genius title contains our title OR vice versa, it's a candidate
                     let score = 0;
-                    if (title.includes(targetTitle) || targetTitle.includes(title)) score += 0.6;
-                    if (artist.includes(targetArtist) || targetArtist.includes(artist)) score += 0.4;
-                    if (r.url && score > bestScore) { best = { url: r.url, title: r.title, artist: r.artist_names || (r.primary_artist && r.primary_artist.name) }; bestScore = score; }
+                    if (title.includes(targetTitle) || targetTitle.includes(title)) score += 0.5;
+                    if (artist.includes(targetArtist) || targetArtist.includes(artist)) score += 0.5;
+                    
+                    // If we have a very strong match, prioritize it
+                    if (title === targetTitle && artist === targetArtist) score += 1;
+
+                    if (r.url && score > bestScore) { 
+                        best = { url: r.url, title: r.title, artist: r.artist_names || (r.primary_artist && r.primary_artist.name) }; 
+                        bestScore = score; 
+                    }
                 }
+                
+                // If no good match found, just take the first result as a desperate fallback
+                if (!best && hits.length > 0) {
+                    const r = hits[0].result;
+                    best = { url: r.url, title: r.title, artist: r.artist_names };
+                }
+
                 return best;
             } catch (err) {
                 clearTimeout(id);
@@ -1325,24 +1341,50 @@
         }
 
         async function fetchGeniusLyricsFromUrl(url) {
-            const path = url.replace(/^https?:\/\/(www\.)?genius\.com\//, '');
-            const proxy = `https://r.jina.ai/http://genius.com/${path}`;
+            // Use a different proxy. allorigins is often more reliable for raw HTML.
+            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
             
-            // Add a timeout to the fetch
             const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), 15000); // 15s timeout
+            const id = setTimeout(() => controller.abort(), 15000); 
             
             try {
                 const res = await fetch(proxy, { signal: controller.signal });
                 clearTimeout(id);
-                if (!res.ok) throw new Error(`Fetch lyrics page failed (${res.status})`);
-                const txt = await res.text();
-                return extractLyricsFromText(txt);
+                if (!res.ok) throw new Error(`Proxy failed (${res.status})`);
+                
+                const data = await res.json();
+                const html = data.contents;
+                if (!html) throw new Error('Proxy returned no content');
+                
+                return extractLyricsFromHTML(html);
             } catch (err) {
                 clearTimeout(id);
-                if (err.name === 'AbortError') throw new Error('Request timed out while fetching lyrics');
+                console.error('[Lyrics] Fetch error:', err);
                 throw err;
             }
+        }
+
+        function extractLyricsFromHTML(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Genius uses different container classes depending on the version of the page
+            // Try the most common one first (Lyrics__Container)
+            let containers = doc.querySelectorAll('[class^="Lyrics__Container"], .lyrics');
+            
+            if (containers.length > 0) {
+                let fullLyrics = '';
+                containers.forEach(c => {
+                    // Replace <br> with newlines
+                    c.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+                    fullLyrics += c.innerText + '\n\n';
+                });
+                return fullLyrics.trim();
+            }
+            
+            // Fallback: search for any text that looks like lyrics
+            const allText = doc.body.innerText;
+            return extractLyricsFromText(allText);
         }
 
         function extractLyricsFromText(txt) {
