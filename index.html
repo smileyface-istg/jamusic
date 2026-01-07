@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JaMusic v2 | Free forever!</title>
+    <title>JaMusic v2 | Premium Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -1217,7 +1217,7 @@
         let currentTrackIndex = 0;
         let isPlaying = false;
         let authMode = 'login';
-        let repeatTracks = false; 
+        let repeatTracks = 0; // 0: Off, 1: Repeat All, 2: Repeat One 
         let currentView = 'home'; // 'home', 'search', 'trending'
         let searchTimeout = null;
         let currentLyrics = [];
@@ -2517,8 +2517,22 @@ Ready?`
             // Repeat status
             const repeatBtn = document.getElementById('repeat-btn');
             const mobileRepeatBtn = document.getElementById('mobile-repeat-btn');
-            if (repeatBtn) repeatBtn.classList.toggle('text-[#1db954]', repeatTracks);
-            if (mobileRepeatBtn) mobileRepeatBtn.classList.toggle('text-blue-500', repeatTracks);
+            
+            const repeatAllIcon = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"></path></svg>';
+            const repeatOneIcon = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z M13 15V9h-1l-1.2 1.2.8.8.4-.4V15h1z"></path></svg>';
+            const mobileRepeatAllIcon = '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"></path></svg>';
+            const mobileRepeatOneIcon = '<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z M13 15V9h-1l-1.2 1.2.8.8.4-.4V15h1z"></path></svg>';
+
+            if (repeatBtn) {
+                repeatBtn.classList.toggle('text-[#1db954]', repeatTracks > 0);
+                repeatBtn.classList.toggle('text-slate-400', repeatTracks === 0);
+                repeatBtn.innerHTML = repeatTracks === 2 ? repeatOneIcon : repeatAllIcon;
+            }
+            if (mobileRepeatBtn) {
+                mobileRepeatBtn.classList.toggle('text-blue-500', repeatTracks > 0);
+                mobileRepeatBtn.classList.toggle('text-slate-500', repeatTracks === 0);
+                mobileRepeatBtn.innerHTML = repeatTracks === 2 ? mobileRepeatOneIcon : mobileRepeatAllIcon;
+            }
 
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({
@@ -2669,10 +2683,16 @@ Ready?`
 
         // When track ends, either repeat or next
         audio.onended = () => {
-            if (repeatTracks) {
+            if (repeatTracks === 2) { // Repeat One
                 audio.currentTime = 0;
                 audio.play().catch(()=>{});
+            } else if (repeatTracks === 1) { // Repeat All
+                nextTrack();
             } else {
+                // Off: standard behavior is usually nextTrack or stop
+                // User asked for "loop queues in the library" for 🔁, 
+                // and "repeat only song" for 🔂.
+                // If it's OFF, we can either stop or go next. Most players go next.
                 nextTrack();
             }
         };
@@ -2905,9 +2925,10 @@ Ready?`
          * Repeat toggle
          ***********************/
         function toggleRepeat(){
-            repeatTracks = !repeatTracks;
-            updateUI(); // This handles highlighting both desktop and mobile buttons
-            alertBox(repeatTracks ? 'Repeat ON' : 'Repeat OFF');
+            repeatTracks = (repeatTracks + 1) % 3;
+            updateUI(); 
+            const labels = ['Repeat OFF', 'Repeat All', 'Repeat One'];
+            alertBox(labels[repeatTracks]);
         }
 
         /***********************
