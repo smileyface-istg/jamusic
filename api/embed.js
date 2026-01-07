@@ -120,6 +120,11 @@ module.exports = async (req, res) => {
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            border: none;
+        }
+        .play-btn:hover {
+            transform: scale(1.05);
         }
         .play-btn i { font-size: 20px; margin-left: 4px; }
         .play-btn.playing i { margin-left: 0; }

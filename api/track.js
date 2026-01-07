@@ -28,14 +28,13 @@ module.exports = async (req, res) => {
     <title>${track.title} - JaMusic v2</title>
     <link rel="alternate" type="application/json+oembed" href="${oembedUrl}">
 
-    <meta name="theme-color" content="#0d4f5b">
+    <meta name="theme-color" content="#1DB954">
     <meta property="og:site_name" content="Spotify"> 
     <meta property="og:title" content="${track.title}">
     <meta property="og:description" content="${track.artist}">
-    <meta property="og:image" content="${track.img}">
     
     <!-- Force Custom Iframe Player -->
-    <meta property="og:type" content="video.other">
+    <meta property="og:type" content="music.song">
     <meta property="og:video" content="${embedUrl}">
     <meta property="og:video:secure_url" content="${embedUrl}">
     <meta property="og:video:type" content="text/html">
@@ -46,7 +45,6 @@ module.exports = async (req, res) => {
     <meta name="twitter:player" content="${embedUrl}">
     <meta name="twitter:player:width" content="500">
     <meta name="twitter:player:height" content="150">
-    <meta name="twitter:image" content="${track.img}">
 
     <script>window.location.href = "/#track/${track.id}";</script>
 </head>
