@@ -442,6 +442,39 @@
             transform: translateY(0);
         }
 
+        /* Offline Notification */
+        #offline-notification {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            bottom: 20px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f8fafc;
+            padding: 12px 20px;
+            border-radius: 16px;
+            z-index: 10000;
+            transition: transform 0.6s cubic-bezier(0.3, 0, 0, 1);
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            width: max-content;
+            max-width: 90%;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        #offline-notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Adjust for mobile navigation */
+        @media (max-width: 768px) {
+            #offline-notification {
+                bottom: 80px; /* Above the mobile bottom nav */
+            }
+        }
+
         #lyrics-close {
             position: absolute;
             top: 40px;
@@ -1039,10 +1072,7 @@
 
             <div id="settings-zoom" class="hidden">
                 <p class="font-semibold text-sm text-slate-400 mb-2">Page Zoom</p>
-                <div class="flex items-center gap-4">
-                    <input type="range" id="settings-zoom-slider" min="0.6" max="1.4" step="0.05" value="1" class="flex-1">
-                    <button id="zoom-reset-btn" class="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-bold rounded-lg transition-colors">Reset</button>
-                </div>
+                <input type="range" id="settings-zoom-slider" min="0.6" max="1.4" step="0.05" value="1" class="w-full">
                 <p class="text-xs text-slate-500 mt-2">Adjust the page scale for readability on mobile or desktop.</p>
             </div>
         </div>
@@ -1184,21 +1214,75 @@
 
             const tipTextEl = document.getElementById('loading-tip-text');
             const loadingScreen = document.getElementById('loading-screen');
+            const offlineNotif = document.getElementById('offline-notification');
+            let offlineTimer = null;
+            let isAppLoaded = false;
             
             if (tipTextEl) {
                 const randomTip = tips[Math.floor(Math.random() * tips.length)];
                 tipTextEl.innerText = randomTip;
             }
 
-            // Show for 3 seconds, then fade out
-            window.addEventListener('load', () => {
-                setTimeout(() => {
-                    if (loadingScreen) {
-                        loadingScreen.classList.add('hidden');
-                        // Optional: Remove from DOM after transition
-                        setTimeout(() => {
+            function showOfflineState() {
+                if (loadingScreen) {
+                    loadingScreen.style.display = 'flex';
+                    loadingScreen.classList.remove('hidden');
+                }
+                if (offlineNotif) {
+                    offlineNotif.classList.add('show');
+                }
+            }
+
+            function hideOfflineState() {
+                if (offlineNotif) {
+                    offlineNotif.classList.remove('show');
+                }
+                if (isAppLoaded && loadingScreen) {
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => {
+                        if (loadingScreen.classList.contains('hidden')) {
                             loadingScreen.style.display = 'none';
-                        }, 500);
+                        }
+                    }, 500);
+                }
+            }
+
+            function checkConnection() {
+                if (!navigator.onLine) {
+                    if (!offlineTimer) {
+                        offlineTimer = setTimeout(() => {
+                            if (!navigator.onLine) {
+                                showOfflineState();
+                            }
+                        }, 3000);
+                    }
+                } else {
+                    if (offlineTimer) {
+                        clearTimeout(offlineTimer);
+                        offlineTimer = null;
+                    }
+                    hideOfflineState();
+                }
+            }
+
+            window.addEventListener('online', checkConnection);
+            window.addEventListener('offline', checkConnection);
+
+            // Initial Load Logic
+            window.addEventListener('load', () => {
+                checkConnection(); // Initial check
+                
+                setTimeout(() => {
+                    isAppLoaded = true;
+                    if (navigator.onLine) {
+                        if (loadingScreen) {
+                            loadingScreen.classList.add('hidden');
+                            setTimeout(() => {
+                                loadingScreen.style.display = 'none';
+                            }, 500);
+                        }
+                    } else {
+                        showOfflineState();
                     }
                 }, 3000);
             });
@@ -2018,120 +2102,6 @@ Ready?`
             saveStats();
         }
 
-        /***********************
-         * Sync & Cloud
-         ***********************/
-        async function syncUserData(key, value) {
-            const user = getCurrentUser();
-            if (!user || !user.uid) return;
-            
-            // Save to localStorage as fallback/cache
-            try {
-                if (typeof value === 'object') {
-                    localStorage.setItem(key, JSON.stringify(value));
-                } else {
-                    localStorage.setItem(key, value);
-                }
-            } catch(e) {}
-
-            // Save to Firebase Cloud
-            if (window.dbSet && window.dbRefPath) {
-                const dataRef = window.dbRefPath(window.db, `users/${user.uid}/settings/${key}`);
-                try {
-                    await window.dbSet(dataRef, value);
-                } catch (err) {
-                    console.error("Cloud sync error:", err);
-                }
-            }
-        }
-
-        async function fetchCloudData() {
-            const user = getCurrentUser();
-            if (!user || !user.uid) return;
-
-            if (window.dbGet && window.dbRefPath) {
-                const dataRef = window.dbRefPath(window.db, `users/${user.uid}/settings`);
-                try {
-                    const snapshot = await window.dbGet(dataRef);
-                    if (snapshot.exists()) {
-                        const cloudData = snapshot.val();
-                        
-                        // Apply Favorites
-                        if (cloudData.jamusic_favorites) {
-                            favorites = cloudData.jamusic_favorites;
-                            localStorage.setItem('jamusic_favorites', JSON.stringify(favorites));
-                        }
-
-                        // Apply Zoom
-                        if (cloudData.jamusic_zoom) {
-                            const zoom = cloudData.jamusic_zoom;
-                            document.body.style.zoom = zoom;
-                            localStorage.setItem('jamusic_zoom', zoom);
-                            const zoomSlider = document.getElementById('settings-zoom-slider');
-                            if (zoomSlider) zoomSlider.value = zoom;
-                        }
-
-                        // Apply Theme
-                        if (cloudData.jamusic_theme) {
-                            const theme = cloudData.jamusic_theme;
-                            localStorage.setItem('jamusic_theme', theme);
-                            if (theme === 'light') { 
-                                document.body.style.backgroundColor = '#f8fafc'; 
-                                document.body.style.color = '#020617'; 
-                            } else { 
-                                document.body.style.backgroundColor = 'var(--bg-dark)'; 
-                                document.body.style.color = '#f8fafc'; 
-                            }
-                        }
-
-                        // Apply Repeat
-                        if (cloudData.jamusic_repeat !== undefined) {
-                            repeatTracks = parseInt(cloudData.jamusic_repeat);
-                            localStorage.setItem('jamusic_repeat', repeatTracks);
-                        }
-
-                        // Apply Volume
-                        if (cloudData.jamusic_volume !== undefined) {
-                            const vol = parseInt(cloudData.jamusic_volume);
-                            audio.volume = vol / 100;
-                            localStorage.setItem('jamusic_volume', vol);
-                            const volSlider = document.getElementById('volume-slider');
-                            const settingsVol = document.getElementById('settings-volume');
-                            const volFill = document.getElementById('volume-bar-fill');
-                            if (volSlider) volSlider.value = vol;
-                            if (settingsVol) settingsVol.value = vol;
-                            if (volFill) volFill.style.width = `${vol}%`;
-                            updateVolumeIcon(vol);
-                        }
-
-                        // Apply Display Name if updated in cloud
-                        if (cloudData.jamusic_display_name) {
-                            const newName = cloudData.jamusic_display_name;
-                            const userDisplay = document.getElementById('user-display');
-                            const ddn = document.getElementById('dropdown-name');
-                            if (userDisplay) userDisplay.innerText = newName;
-                            if (ddn) ddn.innerText = newName;
-                            
-                            const su = localStorage.getItem('jamusic_user');
-                            if (su) {
-                                const obj = JSON.parse(su);
-                                obj.name = newName;
-                                localStorage.setItem('jamusic_user', JSON.stringify(obj));
-                            }
-                        }
-
-                        // Refresh UI
-                        updateUI();
-                        if (currentView === 'favorites') {
-                            renderTracks(tracks.filter(t => favorites.includes(t.id)));
-                        }
-                    }
-                } catch (err) {
-                    console.error("Cloud fetch error:", err);
-                }
-            }
-        }
-
         let favorites = [];
         try {
             const savedFavs = localStorage.getItem('jamusic_favorites');
@@ -2139,7 +2109,7 @@ Ready?`
         } catch(e) { favorites = []; }
 
         function saveFavorites() {
-            syncUserData('jamusic_favorites', favorites);
+            localStorage.setItem('jamusic_favorites', JSON.stringify(favorites));
         }
 
         function toggleFavoriteCurrent() {
@@ -2936,9 +2906,6 @@ Ready?`
                     if (volFill) volFill.style.width = `${val}%`;
                     updateVolumeIcon(val);
                 };
-                vol.onchange = (e) => {
-                    syncUserData('jamusic_volume', e.target.value);
-                };
             }
 
             const muteBtn = document.getElementById('mute-btn');
@@ -3061,7 +3028,6 @@ Ready?`
             if (mDropdownName) mDropdownName.innerText = user.name;
             if (mDropdownEmail) mDropdownEmail.innerText = user.email;
 
-            fetchCloudData(); // Sync from cloud on app show
             updateViewMode();
             
             renderTracks(tracks);
@@ -3140,7 +3106,6 @@ Ready?`
             updateUI(); 
             const labels = ['Repeat OFF', 'Repeat All', 'Repeat One'];
             alertBox(labels[repeatTracks]);
-            syncUserData('jamusic_repeat', repeatTracks);
         }
 
         /***********************
@@ -3209,9 +3174,6 @@ Ready?`
                     const mainVol = document.getElementById('volume-slider');
                     if (mainVol) mainVol.value = e.target.value;
                 });
-                vslider.addEventListener('change', (e) => {
-                    syncUserData('jamusic_volume', e.target.value);
-                });
             }
             const mainVol = document.getElementById('volume-slider');
             if (mainVol) mainVol.addEventListener('input', (e) => {
@@ -3221,22 +3183,13 @@ Ready?`
 
             // zoom slider
             const zoomSlider = document.getElementById('settings-zoom-slider');
-            const zoomResetBtn = document.getElementById('zoom-reset-btn');
             if (zoomSlider) {
                 const saved = localStorage.getItem('jamusic_zoom');
                 if (saved) document.body.style.zoom = saved;
                 zoomSlider.value = document.body.style.zoom || 1;
                 zoomSlider.addEventListener('input', (e) => {
                     document.body.style.zoom = e.target.value;
-                    syncUserData('jamusic_zoom', e.target.value);
-                });
-            }
-            if (zoomResetBtn) {
-                zoomResetBtn.addEventListener('click', () => {
-                    document.body.style.zoom = 1;
-                    if (zoomSlider) zoomSlider.value = 1;
-                    syncUserData('jamusic_zoom', 1);
-                    alertBox("Zoom reset to default.");
+                    try { localStorage.setItem('jamusic_zoom', e.target.value); } catch(e){}
                 });
             }
 
@@ -3250,16 +3203,8 @@ Ready?`
                     else { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; }
                 }
             } catch(e){}
-            if (themeLightBtn) themeLightBtn.addEventListener('click', () => { 
-                document.body.style.backgroundColor = '#f8fafc'; 
-                document.body.style.color = '#020617'; 
-                syncUserData('jamusic_theme', 'light');
-            });
-            if (themeDarkBtn) themeDarkBtn.addEventListener('click', () => { 
-                document.body.style.backgroundColor = 'var(--bg-dark)'; 
-                document.body.style.color = '#f8fafc'; 
-                syncUserData('jamusic_theme', 'dark');
-            });
+            if (themeLightBtn) themeLightBtn.addEventListener('click', () => { document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; try{ localStorage.setItem('jamusic_theme', 'light'); }catch(e){} });
+            if (themeDarkBtn) themeDarkBtn.addEventListener('click', () => { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; try{ localStorage.setItem('jamusic_theme', 'dark'); }catch(e){} });
 
             // display name wiring
             const displayNameBtn = document.getElementById('display-name-btn');
@@ -3308,15 +3253,14 @@ Ready?`
                 const ddn = document.getElementById('dropdown-name');
                 if (userDisplay) userDisplay.innerText = val;
                 if (ddn) ddn.innerText = val;
-                
-                syncUserData('jamusic_display_name', val);
-
                 try {
                     const su = localStorage.getItem('jamusic_user');
                     if (su) {
                         const obj = JSON.parse(su);
                         obj.name = val;
                         localStorage.setItem('jamusic_user', JSON.stringify(obj));
+                    } else {
+                        localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
                     }
                 } catch(e){}
                 if (dnModal) dnModal.classList.remove('show');
@@ -3461,5 +3405,8 @@ Ready?`
             }
         });
     </script>
+    <div id="offline-notification">
+        Having network issues? Reach out to us to JaMusic team if you think this was a mistake.
+    </div>
 </body>
 </html>
