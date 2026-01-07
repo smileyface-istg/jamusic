@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             display: flex;
             align-items: center;
-            height: 150px;
+            height: 100vh;
             margin: 0;
             padding: 0;
             -webkit-font-smoothing: antialiased;
@@ -31,14 +31,14 @@ module.exports = async (req, res) => {
             height: 100%;
             display: flex;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 40px;
             position: relative;
         }
         .art-container {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             flex-shrink: 0;
-            margin-right: 16px;
+            margin-right: 24px;
             position: relative;
         }
         .art-container img {
@@ -56,9 +56,9 @@ module.exports = async (req, res) => {
             justify-content: center;
         }
         .track-title {
-            font-size: 20px;
+            font-size: 28px;
             font-weight: 700;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -66,20 +66,20 @@ module.exports = async (req, res) => {
             letter-spacing: -0.02em;
         }
         .track-artist {
-            font-size: 14px;
+            font-size: 18px;
             color: #a7c8cd;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             font-weight: 500;
         }
         .preview-badge {
             background: #000000;
             color: #ffffff;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 700;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 4px;
             text-transform: uppercase;
             width: fit-content;
@@ -88,12 +88,12 @@ module.exports = async (req, res) => {
         .controls-container {
             display: flex;
             align-items: center;
-            gap: 24px;
-            margin-left: 20px;
+            gap: 32px;
+            margin-left: 40px;
         }
         .play-btn {
-            width: 56px;
-            height: 56px;
+            width: 72px;
+            height: 72px;
             background: #ffffff;
             color: #0d4f5b;
             border-radius: 50%;
@@ -105,7 +105,7 @@ module.exports = async (req, res) => {
             box-shadow: 0 8px 24px rgba(0,0,0,0.3);
         }
         .play-btn:hover { transform: scale(1.06); }
-        .play-btn i { font-size: 24px; margin-left: 4px; }
+        .play-btn i { font-size: 32px; margin-left: 6px; }
         .play-btn.playing i { margin-left: 0; }
         
         .spotify-logo {

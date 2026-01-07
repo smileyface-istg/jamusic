@@ -1,4 +1,3 @@
-
 const tracks = require('./tracks.js');
 
 module.exports = async (req, res) => {
@@ -18,11 +17,11 @@ module.exports = async (req, res) => {
         title: track.title,
         author_name: track.artist,
         thumbnail_url: track.img,
-        thumbnail_width: 512,
-        thumbnail_height: 512,
-        html: `<iframe src="${embedUrl}" width="500" height="150" frameborder="0" scrolling="no" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`,
-        width: 500,
-        height: 150
+        thumbnail_width: 1200,
+        thumbnail_height: 630,
+        html: `<iframe src="${embedUrl}" width="1200" height="400" frameborder="0" scrolling="no" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`,
+        width: 1200,
+        height: 400
     };
 
     res.status(200).json(oembedResponse);
