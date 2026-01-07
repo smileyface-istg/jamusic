@@ -21,18 +21,18 @@ module.exports = async (req, res) => {
     const embedUrl = `${baseUrl}/embed/${track.id}`;
 
     const oembedResponse = {
-        type: "video",
+        type: "rich",
         version: "1.0",
         provider_name: "JaMusic v2",
         provider_url: baseUrl,
         title: track.title,
         author_name: track.artist,
         thumbnail_url: track.img,
-        thumbnail_width: 1200,
-        thumbnail_height: 400,
-        html: `<iframe src="${embedUrl}" width="1200" height="400" frameborder="0" scrolling="no" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`,
-        width: 1200,
-        height: 400
+        thumbnail_width: 500,
+        thumbnail_height: 150,
+        html: `<iframe src="${embedUrl}" width="500" height="150" frameborder="0" scrolling="no" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`,
+        width: 500,
+        height: 150
     };
 
     res.status(200).json(oembedResponse);

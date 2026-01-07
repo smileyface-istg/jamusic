@@ -66,31 +66,31 @@ module.exports = async (req, res) => {
             justify-content: center;
         }
         .track-title {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             color: #ffffff;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.01em;
         }
         .track-artist {
-            font-size: 18px;
+            font-size: 16px;
             color: #a7c8cd;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             font-weight: 500;
         }
         .preview-badge {
-            background: #000000;
+            background: rgba(0,0,0,0.3);
             color: #ffffff;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 700;
-            padding: 3px 10px;
-            border-radius: 4px;
+            padding: 2px 8px;
+            border-radius: 3px;
             text-transform: uppercase;
             width: fit-content;
             letter-spacing: 0.05em;
@@ -98,12 +98,12 @@ module.exports = async (req, res) => {
         .controls-container {
             display: flex;
             align-items: center;
-            gap: 32px;
-            margin-left: 40px;
+            gap: 20px;
+            margin-left: 20px;
         }
         .play-btn {
-            width: 72px;
-            height: 72px;
+            width: 56px;
+            height: 56px;
             background: #ffffff;
             color: #0d4f5b;
             border-radius: 50%;
@@ -112,10 +112,10 @@ module.exports = async (req, res) => {
             justify-content: center;
             cursor: pointer;
             transition: transform 0.2s, background-color 0.2s;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         .play-btn:hover { transform: scale(1.06); }
-        .play-btn i { font-size: 32px; margin-left: 6px; }
+        .play-btn i { font-size: 24px; margin-left: 4px; }
         .play-btn.playing i { margin-left: 0; }
         
         .progress-bar-container {

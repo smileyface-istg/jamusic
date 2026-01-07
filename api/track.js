@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
     const baseUrl = `${protocol}://${host}`;
     
     const oembedUrl = `${baseUrl}/api/oembed?id=${track.id}${v ? `&v=${v}` : ''}`;
-    const embedUrl = `${baseUrl}/embed/${track.id}`;
+    const embedUrl = `${baseUrl}/embed/${track.id}${v ? `?v=${v}` : ''}`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
     <meta name="theme-color" content="#0d4f5b">
     <meta property="og:site_name" content="JaMusic v2">
     <meta property="og:title" content="${track.title}">
-    <meta property="og:description" content="${track.artist} • JaMusic v2">
+    <meta property="og:description" content="Artist: ${track.artist} • Play now on JaMusic">
     <meta property="og:image" content="${track.img}">
     
     <!-- Large Card Triggers -->
@@ -39,13 +39,14 @@ module.exports = async (req, res) => {
     <meta property="og:video" content="${embedUrl}">
     <meta property="og:video:secure_url" content="${embedUrl}">
     <meta property="og:video:type" content="text/html">
-    <meta property="og:video:width" content="1200">
-    <meta property="og:video:height" content="400">
+    <meta property="og:video:width" content="500">
+    <meta property="og:video:height" content="150">
 
     <meta name="twitter:card" content="player">
     <meta name="twitter:player" content="${embedUrl}">
-    <meta name="twitter:player:width" content="1200">
-    <meta name="twitter:player:height" content="400">
+    <meta name="twitter:player:width" content="500">
+    <meta name="twitter:player:height" content="150">
+    <meta name="twitter:image" content="${track.img}">
 
     <script>window.location.href = "/#track/${track.id}";</script>
 </head>
