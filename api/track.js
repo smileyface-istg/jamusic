@@ -28,27 +28,29 @@ module.exports = async (req, res) => {
     <title>${track.title} - JaMusic v2</title>
     <link rel="alternate" type="application/json+oembed" href="${oembedUrl}">
 
-    <meta name="theme-color" content="#0d4f5b">
-    <meta property="og:site_name" content="JaMusic v2">
+    <meta name="theme-color" content="#1DB954"> <!-- Spotify Teal/Green -->
+    <meta property="og:site_name" content="Spotify"> <!-- Trick Discord into using custom player layout -->
     <meta property="og:title" content="${track.title}">
-    <meta property="og:description" content="Artist: ${track.artist} • Click to Play">
+    <meta property="og:description" content="${track.artist}">
     <meta property="og:image" content="${track.img}">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
     
-    <!-- Video Player Triggers -->
-    <meta property="og:type" content="video.other">
+    <!-- Custom Media Player Metadata -->
+    <meta property="og:type" content="music.song">
+    <meta property="music:musician" content="${track.artist}">
+    <meta property="music:duration" content="180">
+    
+    <!-- Native Play Bar -->
+    <meta property="og:audio" content="${track.src}">
+    <meta property="og:audio:type" content="audio/mpeg">
+
+    <!-- The "Custom Shit" Player (Iframe) -->
     <meta property="og:video" content="${embedUrl}">
     <meta property="og:video:secure_url" content="${embedUrl}">
     <meta property="og:video:type" content="text/html">
     <meta property="og:video:width" content="500">
     <meta property="og:video:height" content="150">
 
-    <!-- Twitter Player Card -->
     <meta name="twitter:card" content="player">
-    <meta name="twitter:title" content="${track.title}">
-    <meta name="twitter:description" content="Artist: ${track.artist} • Play on JaMusic">
-    <meta name="twitter:image" content="${track.img}">
     <meta name="twitter:player" content="${embedUrl}">
     <meta name="twitter:player:width" content="500">
     <meta name="twitter:player:height" content="150">

@@ -23,13 +23,13 @@ module.exports = async (req, res) => {
     const oembedResponse = {
         type: "video",
         version: "1.0",
-        provider_name: "JaMusic v2",
-        provider_url: baseUrl,
+        provider_name: "Spotify",
+        provider_url: "https://spotify.com",
         title: track.title,
         author_name: track.artist,
         thumbnail_url: track.img,
-        thumbnail_width: 1200,
-        thumbnail_height: 630,
+        thumbnail_width: 500,
+        thumbnail_height: 500,
         html: `<iframe src="${embedUrl}" width="500" height="150" frameborder="0" scrolling="no" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`,
         width: 500,
         height: 150
