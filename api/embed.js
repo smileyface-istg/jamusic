@@ -24,7 +24,7 @@ module.exports = async (req, res) => {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { 
-            background: #0d4f5b; 
+            background: transparent; 
             color: white; 
             overflow: hidden; 
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -35,28 +35,28 @@ module.exports = async (req, res) => {
             padding: 0;
             -webkit-font-smoothing: antialiased;
         }
-        .spotify-container {
+        .spotify-card {
             background: #0d4f5b;
             width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
-            padding: 0 40px;
+            padding: 0 16px;
             position: relative;
+            border-radius: 12px;
+            box-sizing: border-box;
         }
         .art-container {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             flex-shrink: 0;
-            margin-right: 24px;
-            position: relative;
+            margin-right: 16px;
         }
         .art-container img {
             width: 100%;
             height: 100%;
-            border-radius: 4px;
+            border-radius: 8px;
             object-fit: cover;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
         }
         .info-container {
             flex-grow: 1;
@@ -66,44 +66,52 @@ module.exports = async (req, res) => {
             justify-content: center;
         }
         .track-title {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 700;
             margin-bottom: 2px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             color: #ffffff;
-            letter-spacing: -0.01em;
         }
         .track-artist {
-            font-size: 16px;
+            font-size: 14px;
             color: #a7c8cd;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             margin-bottom: 8px;
-            font-weight: 500;
+        }
+        .badge-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .preview-badge {
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.4);
             color: #ffffff;
             font-size: 10px;
             font-weight: 700;
             padding: 2px 8px;
-            border-radius: 3px;
+            border-radius: 4px;
             text-transform: uppercase;
-            width: fit-content;
-            letter-spacing: 0.05em;
         }
-        .controls-container {
+        .controls-right {
             display: flex;
             align-items: center;
-            gap: 20px;
-            margin-left: 20px;
+            gap: 16px;
+            margin-left: 12px;
         }
+        .icon-btn {
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        .icon-btn:hover { opacity: 1; }
         .play-btn {
-            width: 56px;
-            height: 56px;
+            width: 48px;
+            height: 48px;
             background: #ffffff;
             color: #0d4f5b;
             border-radius: 50%;
@@ -111,13 +119,19 @@ module.exports = async (req, res) => {
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
-        .play-btn:hover { transform: scale(1.06); }
-        .play-btn i { font-size: 24px; margin-left: 4px; }
+        .play-btn i { font-size: 20px; margin-left: 4px; }
         .play-btn.playing i { margin-left: 0; }
         
+        .spotify-logo {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 20px;
+            color: #ffffff;
+            opacity: 0.9;
+        }
         .progress-bar-container {
             position: absolute;
             bottom: 0;
@@ -130,19 +144,11 @@ module.exports = async (req, res) => {
             height: 100%;
             background: #ffffff;
             width: 0%;
-            transition: width 0.1s linear;
-        }
-        .spotify-logo {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 24px;
-            color: rgba(255,255,255,0.5);
         }
     </style>
 </head>
 <body>
-    <div class="spotify-container">
+    <div class="spotify-card">
         <i class="fa-brands fa-spotify spotify-logo"></i>
         <div class="art-container">
             <img src="${track.img}" alt="Art">
@@ -150,9 +156,13 @@ module.exports = async (req, res) => {
         <div class="info-container">
             <div class="track-title">${track.title}</div>
             <div class="track-artist">${track.artist}</div>
-            <div class="preview-badge">Preview</div>
+            <div class="badge-row">
+                <div class="preview-badge">Preview</div>
+            </div>
         </div>
-        <div class="controls-container">
+        <div class="controls-right">
+            <i class="fa-regular fa-square-plus icon-btn"></i>
+            <i class="fa-solid fa-ellipsis icon-btn"></i>
             <div id="playBtn" class="play-btn">
                 <i class="fa-solid fa-play"></i>
             </div>
