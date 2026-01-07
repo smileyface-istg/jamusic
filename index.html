@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JaMusic v2 | Premium Dashboard</title>
+    
+    <!-- Social Media Previews (Open Graph) -->
+    <meta property="og:title" content="JaMusic v2 - Premium Audio Experience">
+    <meta property="og:description" content="Listen to your favorite tracks with high-quality audio, lyrics, and more.">
+    <meta property="og:image" content="https://images-ext-1.discordapp.net/external/WOYp8j1c23Y1WXeLYlNDjovYqVEhD6tKVc3tuOL-FxI/%3Fcrop%3D0px%252C455px%252C4808px%252C2699px%26resize%3D2000%252C1126/https/www.hollywoodreporter.com/wp-content/uploads/2025/06/RA_001-By-Chris-Turner-HQ.jpg?format=webp&width=1376&height=775">
+    <meta property="og:url" content="https://jamusic.vercel.app/">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="twitter:card" content="summary_large_image">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -559,6 +568,40 @@
             font-size: 0.875rem;
             font-weight: 600;
         }
+
+        /* Share Toast Notification */
+        #share-toast {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #share-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast-icon {
+            color: #10b981;
+        }
+
         .follow-btn-mobile {
             padding: 0.5rem 1.5rem;
             border-radius: 9999px;
@@ -1207,7 +1250,7 @@
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
                 </button>
                 <div class="flex items-center gap-6">
-                    <button class="text-slate-400 hover:text-white transition-colors">
+                    <button onclick="shareTrack()" class="text-slate-400 hover:text-white transition-colors active:scale-90 transition-transform">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                     </button>
                     <button class="text-slate-400 hover:text-white transition-colors">
@@ -1249,6 +1292,14 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Share Toast -->
+    <div id="share-toast">
+        <svg class="toast-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span>Link copied to clipboard</span>
     </div>
 
     <script>
@@ -2410,6 +2461,65 @@ Ready?`
         }
 
         /***********************
+         * Sharing & Deep Linking
+         ***********************/
+        function shareTrack() {
+            const track = tracks[currentTrackIndex];
+            if (!track) return;
+
+            const shareUrl = `${window.location.origin}${window.location.pathname}#track/${track.id}`;
+            const shareTitle = `Listen to ${track.title} by ${track.artist} on JaMusic v2`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: shareTitle,
+                    url: shareUrl
+                }).catch(() => {
+                    // Fallback to clipboard if share cancelled or failed
+                    copyToClipboard(shareUrl);
+                });
+            } else {
+                copyToClipboard(shareUrl);
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showShareToast();
+            });
+        }
+
+        function showShareToast() {
+            const toast = document.getElementById('share-toast');
+            if (!toast) return;
+            
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function checkDeepLink() {
+            const hash = window.location.hash;
+            if (hash && hash.startsWith('#track/')) {
+                const trackId = hash.replace('#track/', '');
+                const trackIndex = tracks.findIndex(t => t.id === trackId);
+                
+                if (trackIndex !== -1) {
+                    // Small delay to ensure everything is ready
+                    setTimeout(() => {
+                        playTrack(trackIndex);
+                        
+                        // On mobile, automatically open the player
+                        if (window.innerWidth <= 768) {
+                            openMobilePlayer();
+                        }
+                    }, 500);
+                }
+            }
+        }
+
+        /***********************
          * Lyrics Logic (Genius API Integration)
          ***********************/
         async function fetchLyrics(track) {
@@ -3384,6 +3494,12 @@ Ready?`
             if (accountBtn && profileDropdown) {
                 accountBtn.addEventListener('click', () => profileDropdown.classList.remove('active'));
             }
+
+            // Check for deep links on initial load
+            checkDeepLink();
+            
+            // Listen for hash changes to support deep linking while app is open
+            window.addEventListener('hashchange', checkDeepLink);
         });
 
     </script>
