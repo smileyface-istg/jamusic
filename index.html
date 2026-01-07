@@ -1039,7 +1039,10 @@
 
             <div id="settings-zoom" class="hidden">
                 <p class="font-semibold text-sm text-slate-400 mb-2">Page Zoom</p>
-                <input type="range" id="settings-zoom-slider" min="0.6" max="1.4" step="0.05" value="1" class="w-full">
+                <div class="flex items-center gap-4">
+                    <input type="range" id="settings-zoom-slider" min="0.6" max="1.4" step="0.05" value="1" class="flex-1">
+                    <button id="zoom-reset-btn" class="px-3 py-1 bg-white/5 hover:bg-white/10 text-xs font-bold rounded-lg transition-colors">Reset</button>
+                </div>
                 <p class="text-xs text-slate-500 mt-2">Adjust the page scale for readability on mobile or desktop.</p>
             </div>
         </div>
@@ -1211,13 +1214,22 @@
            Core player + app variables
         ------------------------- */
         const audio = new Audio();
+        try {
+            const savedVol = localStorage.getItem('jamusic_volume');
+            if (savedVol) audio.volume = parseInt(savedVol) / 100;
+        } catch(e) {}
         // PASTE YOUR GENIUS TOKEN BELOW
         const HARDCODED_GENIUS_TOKEN = ''; 
 
         let currentTrackIndex = 0;
         let isPlaying = false;
         let authMode = 'login';
-        let repeatTracks = 0; // 0: Off, 1: Repeat All, 2: Repeat One 
+        let repeatTracks = 0; 
+        try {
+            const savedRepeat = localStorage.getItem('jamusic_repeat');
+            if (savedRepeat) repeatTracks = parseInt(savedRepeat);
+        } catch(e) {}
+        // 0: Off, 1: Repeat All, 2: Repeat One 
         let currentView = 'home'; // 'home', 'search', 'favorites'
         let searchTimeout = null;
         let currentLyrics = [];
@@ -2006,6 +2018,120 @@ Ready?`
             saveStats();
         }
 
+        /***********************
+         * Sync & Cloud
+         ***********************/
+        async function syncUserData(key, value) {
+            const user = getCurrentUser();
+            if (!user || !user.uid) return;
+            
+            // Save to localStorage as fallback/cache
+            try {
+                if (typeof value === 'object') {
+                    localStorage.setItem(key, JSON.stringify(value));
+                } else {
+                    localStorage.setItem(key, value);
+                }
+            } catch(e) {}
+
+            // Save to Firebase Cloud
+            if (window.dbSet && window.dbRefPath) {
+                const dataRef = window.dbRefPath(window.db, `users/${user.uid}/settings/${key}`);
+                try {
+                    await window.dbSet(dataRef, value);
+                } catch (err) {
+                    console.error("Cloud sync error:", err);
+                }
+            }
+        }
+
+        async function fetchCloudData() {
+            const user = getCurrentUser();
+            if (!user || !user.uid) return;
+
+            if (window.dbGet && window.dbRefPath) {
+                const dataRef = window.dbRefPath(window.db, `users/${user.uid}/settings`);
+                try {
+                    const snapshot = await window.dbGet(dataRef);
+                    if (snapshot.exists()) {
+                        const cloudData = snapshot.val();
+                        
+                        // Apply Favorites
+                        if (cloudData.jamusic_favorites) {
+                            favorites = cloudData.jamusic_favorites;
+                            localStorage.setItem('jamusic_favorites', JSON.stringify(favorites));
+                        }
+
+                        // Apply Zoom
+                        if (cloudData.jamusic_zoom) {
+                            const zoom = cloudData.jamusic_zoom;
+                            document.body.style.zoom = zoom;
+                            localStorage.setItem('jamusic_zoom', zoom);
+                            const zoomSlider = document.getElementById('settings-zoom-slider');
+                            if (zoomSlider) zoomSlider.value = zoom;
+                        }
+
+                        // Apply Theme
+                        if (cloudData.jamusic_theme) {
+                            const theme = cloudData.jamusic_theme;
+                            localStorage.setItem('jamusic_theme', theme);
+                            if (theme === 'light') { 
+                                document.body.style.backgroundColor = '#f8fafc'; 
+                                document.body.style.color = '#020617'; 
+                            } else { 
+                                document.body.style.backgroundColor = 'var(--bg-dark)'; 
+                                document.body.style.color = '#f8fafc'; 
+                            }
+                        }
+
+                        // Apply Repeat
+                        if (cloudData.jamusic_repeat !== undefined) {
+                            repeatTracks = parseInt(cloudData.jamusic_repeat);
+                            localStorage.setItem('jamusic_repeat', repeatTracks);
+                        }
+
+                        // Apply Volume
+                        if (cloudData.jamusic_volume !== undefined) {
+                            const vol = parseInt(cloudData.jamusic_volume);
+                            audio.volume = vol / 100;
+                            localStorage.setItem('jamusic_volume', vol);
+                            const volSlider = document.getElementById('volume-slider');
+                            const settingsVol = document.getElementById('settings-volume');
+                            const volFill = document.getElementById('volume-bar-fill');
+                            if (volSlider) volSlider.value = vol;
+                            if (settingsVol) settingsVol.value = vol;
+                            if (volFill) volFill.style.width = `${vol}%`;
+                            updateVolumeIcon(vol);
+                        }
+
+                        // Apply Display Name if updated in cloud
+                        if (cloudData.jamusic_display_name) {
+                            const newName = cloudData.jamusic_display_name;
+                            const userDisplay = document.getElementById('user-display');
+                            const ddn = document.getElementById('dropdown-name');
+                            if (userDisplay) userDisplay.innerText = newName;
+                            if (ddn) ddn.innerText = newName;
+                            
+                            const su = localStorage.getItem('jamusic_user');
+                            if (su) {
+                                const obj = JSON.parse(su);
+                                obj.name = newName;
+                                localStorage.setItem('jamusic_user', JSON.stringify(obj));
+                            }
+                        }
+
+                        // Refresh UI
+                        updateUI();
+                        if (currentView === 'favorites') {
+                            renderTracks(tracks.filter(t => favorites.includes(t.id)));
+                        }
+                    }
+                } catch (err) {
+                    console.error("Cloud fetch error:", err);
+                }
+            }
+        }
+
         let favorites = [];
         try {
             const savedFavs = localStorage.getItem('jamusic_favorites');
@@ -2013,7 +2139,7 @@ Ready?`
         } catch(e) { favorites = []; }
 
         function saveFavorites() {
-            localStorage.setItem('jamusic_favorites', JSON.stringify(favorites));
+            syncUserData('jamusic_favorites', favorites);
         }
 
         function toggleFavoriteCurrent() {
@@ -2810,6 +2936,9 @@ Ready?`
                     if (volFill) volFill.style.width = `${val}%`;
                     updateVolumeIcon(val);
                 };
+                vol.onchange = (e) => {
+                    syncUserData('jamusic_volume', e.target.value);
+                };
             }
 
             const muteBtn = document.getElementById('mute-btn');
@@ -2932,6 +3061,7 @@ Ready?`
             if (mDropdownName) mDropdownName.innerText = user.name;
             if (mDropdownEmail) mDropdownEmail.innerText = user.email;
 
+            fetchCloudData(); // Sync from cloud on app show
             updateViewMode();
             
             renderTracks(tracks);
@@ -3010,6 +3140,7 @@ Ready?`
             updateUI(); 
             const labels = ['Repeat OFF', 'Repeat All', 'Repeat One'];
             alertBox(labels[repeatTracks]);
+            syncUserData('jamusic_repeat', repeatTracks);
         }
 
         /***********************
@@ -3078,6 +3209,9 @@ Ready?`
                     const mainVol = document.getElementById('volume-slider');
                     if (mainVol) mainVol.value = e.target.value;
                 });
+                vslider.addEventListener('change', (e) => {
+                    syncUserData('jamusic_volume', e.target.value);
+                });
             }
             const mainVol = document.getElementById('volume-slider');
             if (mainVol) mainVol.addEventListener('input', (e) => {
@@ -3087,13 +3221,22 @@ Ready?`
 
             // zoom slider
             const zoomSlider = document.getElementById('settings-zoom-slider');
+            const zoomResetBtn = document.getElementById('zoom-reset-btn');
             if (zoomSlider) {
                 const saved = localStorage.getItem('jamusic_zoom');
                 if (saved) document.body.style.zoom = saved;
                 zoomSlider.value = document.body.style.zoom || 1;
                 zoomSlider.addEventListener('input', (e) => {
                     document.body.style.zoom = e.target.value;
-                    try { localStorage.setItem('jamusic_zoom', e.target.value); } catch(e){}
+                    syncUserData('jamusic_zoom', e.target.value);
+                });
+            }
+            if (zoomResetBtn) {
+                zoomResetBtn.addEventListener('click', () => {
+                    document.body.style.zoom = 1;
+                    if (zoomSlider) zoomSlider.value = 1;
+                    syncUserData('jamusic_zoom', 1);
+                    alertBox("Zoom reset to default.");
                 });
             }
 
@@ -3107,8 +3250,16 @@ Ready?`
                     else { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; }
                 }
             } catch(e){}
-            if (themeLightBtn) themeLightBtn.addEventListener('click', () => { document.body.style.backgroundColor = '#f8fafc'; document.body.style.color = '#020617'; try{ localStorage.setItem('jamusic_theme', 'light'); }catch(e){} });
-            if (themeDarkBtn) themeDarkBtn.addEventListener('click', () => { document.body.style.backgroundColor = 'var(--bg-dark)'; document.body.style.color = '#f8fafc'; try{ localStorage.setItem('jamusic_theme', 'dark'); }catch(e){} });
+            if (themeLightBtn) themeLightBtn.addEventListener('click', () => { 
+                document.body.style.backgroundColor = '#f8fafc'; 
+                document.body.style.color = '#020617'; 
+                syncUserData('jamusic_theme', 'light');
+            });
+            if (themeDarkBtn) themeDarkBtn.addEventListener('click', () => { 
+                document.body.style.backgroundColor = 'var(--bg-dark)'; 
+                document.body.style.color = '#f8fafc'; 
+                syncUserData('jamusic_theme', 'dark');
+            });
 
             // display name wiring
             const displayNameBtn = document.getElementById('display-name-btn');
@@ -3157,14 +3308,15 @@ Ready?`
                 const ddn = document.getElementById('dropdown-name');
                 if (userDisplay) userDisplay.innerText = val;
                 if (ddn) ddn.innerText = val;
+                
+                syncUserData('jamusic_display_name', val);
+
                 try {
                     const su = localStorage.getItem('jamusic_user');
                     if (su) {
                         const obj = JSON.parse(su);
                         obj.name = val;
                         localStorage.setItem('jamusic_user', JSON.stringify(obj));
-                    } else {
-                        localStorage.setItem('jamusic_user', JSON.stringify({ name: val, email: '' }));
                     }
                 } catch(e){}
                 if (dnModal) dnModal.classList.remove('show');
