@@ -1224,20 +1224,22 @@
             }
 
             function showOfflineState() {
-                if (loadingScreen) {
-                    loadingScreen.style.display = 'flex';
-                    loadingScreen.classList.remove('hidden');
-                }
-                if (offlineNotif) {
-                    offlineNotif.classList.add('show');
+                if (!navigator.onLine) {
+                    if (loadingScreen) {
+                        loadingScreen.style.display = 'flex';
+                        loadingScreen.classList.remove('hidden');
+                    }
+                    if (offlineNotif) {
+                        offlineNotif.classList.add('show');
+                    }
                 }
             }
 
             function hideOfflineState() {
+                // If we are online, we MUST hide the notification and loading screen
                 if (offlineNotif) {
                     offlineNotif.classList.remove('show');
                 }
-                // Always try to hide loading screen if we are back online
                 if (loadingScreen) {
                     loadingScreen.classList.add('hidden');
                     setTimeout(() => {
@@ -1248,8 +1250,14 @@
                 }
             }
 
-            function checkConnection() {
-                if (!navigator.onLine) {
+            function syncConnectionUI() {
+                if (navigator.onLine) {
+                    if (offlineTimer) {
+                        clearTimeout(offlineTimer);
+                        offlineTimer = null;
+                    }
+                    hideOfflineState();
+                } else {
                     if (!offlineTimer) {
                         offlineTimer = setTimeout(() => {
                             if (!navigator.onLine) {
@@ -1257,34 +1265,31 @@
                             }
                         }, 3000);
                     }
-                } else {
-                    if (offlineTimer) {
-                        clearTimeout(offlineTimer);
-                        offlineTimer = null;
-                    }
-                    hideOfflineState();
                 }
             }
 
-            window.addEventListener('online', checkConnection);
-            window.addEventListener('offline', checkConnection);
+            window.addEventListener('online', () => {
+                console.log("App is online");
+                syncConnectionUI();
+            });
+            window.addEventListener('offline', () => {
+                console.log("App is offline");
+                syncConnectionUI();
+            });
 
             // Initial Load Logic
             window.addEventListener('load', () => {
-                checkConnection(); // Initial check
+                // Check immediately on load
+                if (navigator.onLine) {
+                    hideOfflineState();
+                } else {
+                    syncConnectionUI();
+                }
                 
+                // After the 3s "Did you know" period
                 setTimeout(() => {
                     isAppLoaded = true;
-                    if (navigator.onLine) {
-                        if (loadingScreen) {
-                            loadingScreen.classList.add('hidden');
-                            setTimeout(() => {
-                                loadingScreen.style.display = 'none';
-                            }, 500);
-                        }
-                    } else {
-                        showOfflineState();
-                    }
+                    syncConnectionUI();
                 }, 3000);
             });
         })();
