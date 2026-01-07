@@ -23,7 +23,7 @@ async function test() {
     
     const criticalTags = [
         'type="application/json+oembed"',
-        'property="og:type" content="music.song"',
+        'property="og:type" content="video.other"',
         'property="og:video"',
         'property="og:video:type" content="text/html"',
         'property="og:image"',

@@ -12,206 +12,122 @@ const tracks = [
 ];
 
 module.exports = async (req, res) => {
-    const { id } = req.query;
-    const track = tracks.find(t => t.id === id) || tracks[0];
-    
-    const html = `<!DOCTYPE html>
+    try {
+        const { id } = req.query;
+        const track = tracks.find(t => t.id === id) || tracks[0];
+
+        const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JaMusic v2 Player</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>JaMusic Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { 
-            background: transparent; 
-            color: white; 
-            overflow: hidden; 
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            display: flex;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            -webkit-font-smoothing: antialiased;
+        body, html {
+            margin: 0; padding: 0; width: 500px; height: 150px; overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #0d4f5b; color: white;
         }
-        .spotify-card {
-            background: #0d4f5b;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            position: relative;
-            border-radius: 12px;
-            box-sizing: border-box;
+        .player-container {
+            display: flex; align-items: center; padding: 16px; gap: 16px;
+            width: 500px; height: 150px; box-sizing: border-box; position: relative;
         }
-        .art-container {
-            width: 80px;
-            height: 80px;
-            flex-shrink: 0;
-            margin-right: 16px;
+        .album-art {
+            width: 118px; height: 118px; border-radius: 4px; flex-shrink: 0;
+            background-size: cover; background-position: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
-        .art-container img {
-            width: 100%;
-            height: 100%;
-            border-radius: 8px;
-            object-fit: cover;
-        }
-        .info-container {
-            flex-grow: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .track-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: #ffffff;
-        }
-        .track-artist {
-            font-size: 14px;
-            color: #a7c8cd;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-bottom: 8px;
-        }
-        .badge-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .preview-badge {
-            background: rgba(0,0,0,0.4);
-            color: #ffffff;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 4px;
-            text-transform: uppercase;
-        }
-        .controls-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-left: 12px;
-        }
-        .icon-btn {
-            color: #ffffff;
-            font-size: 18px;
-            cursor: pointer;
-            opacity: 0.8;
-        }
-        .icon-btn:hover { opacity: 1; }
+        .info { flex-grow: 1; min-width: 0; }
+        .track-title { font-size: 18px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .artist-name { font-size: 14px; opacity: 0.8; margin-bottom: 12px; }
+        .controls { display: flex; align-items: center; gap: 16px; }
         .play-btn {
-            width: 48px;
-            height: 48px;
-            background: #ffffff;
-            color: #0d4f5b;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            transition: transform 0.1s;
-            border: none;
+            width: 42px; height: 42px; background: white; color: black; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            border: none; transition: transform 0.1s;
         }
-        .play-btn:hover {
-            transform: scale(1.05);
-        }
-        .play-btn i { font-size: 20px; margin-left: 4px; }
-        .play-btn.playing i { margin-left: 0; }
-        
-        .spotify-logo {
-            position: absolute;
-            top: 12px;
-            right: 16px;
-            font-size: 20px;
-            color: #ffffff;
-            opacity: 0.9;
-        }
-        .progress-bar-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: rgba(255,255,255,0.1);
-        }
-        .progress-bar {
-            height: 100%;
-            background: #ffffff;
-            width: 0%;
+        .play-btn:hover { transform: scale(1.05); }
+        .play-btn i { font-size: 18px; margin-left: 2px; }
+        .progress-container { flex-grow: 1; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; position: relative; cursor: pointer; }
+        .progress-bar { height: 100%; background: white; border-radius: 2px; width: 0%; }
+        .spotify-badge { position: absolute; top: 12px; right: 12px; opacity: 0.8; font-size: 20px; }
+        #error-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none; flex-direction: column;
+            justify-content: center; align-items: center; padding: 10px; text-align: center;
+            z-index: 100; color: #ff5555; font-size: 12px;
         }
     </style>
 </head>
 <body>
-    <div class="spotify-card">
-        <i class="fa-brands fa-spotify spotify-logo"></i>
-        <div class="art-container">
-            <img src="${track.img}" alt="Art">
-        </div>
-        <div class="info-container">
+    <div id="error-overlay">
+        <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 8px;"></i>
+        <div id="error-msg"></div>
+    </div>
+    <div class="player-container">
+        <div class="album-art" style="background-image: url('${track.img}')"></div>
+        <div class="info">
             <div class="track-title">${track.title}</div>
-            <div class="track-artist">${track.artist}</div>
-            <div class="badge-row">
-                <div class="preview-badge">Preview</div>
+            <div class="artist-name">${track.artist}</div>
+            <div class="controls">
+                <button class="play-btn" id="playBtn"><i class="fas fa-play"></i></button>
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
             </div>
         </div>
-        <div class="controls-right">
-            <i class="fa-regular fa-square-plus icon-btn"></i>
-            <i class="fa-solid fa-ellipsis icon-btn"></i>
-            <div id="playBtn" class="play-btn">
-                <i class="fa-solid fa-play"></i>
-            </div>
-        </div>
-        <div class="progress-bar-container">
-            <div id="progress" class="progress-bar"></div>
-        </div>
+        <i class="fab fa-spotify spotify-badge"></i>
     </div>
     <audio id="audio" src="${track.src}"></audio>
+
     <script>
         const audio = document.getElementById('audio');
         const playBtn = document.getElementById('playBtn');
-        const progress = document.getElementById('progress');
-        let isPlaying = false;
-        
+        const progressBar = document.getElementById('progressBar');
+        const progressContainer = document.getElementById('progressContainer');
+        const errorOverlay = document.getElementById('error-overlay');
+        const errorMsg = document.getElementById('error-msg');
+
+        function showError(msg, err) {
+            console.error(msg, err);
+            errorOverlay.style.display = 'flex';
+            errorMsg.innerText = msg + (err ? ': ' + err.message : '');
+        }
+
         playBtn.addEventListener('click', () => {
-            if (isPlaying) {
-                audio.pause();
-                playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-                playBtn.classList.remove('playing');
+            if (audio.paused) {
+                audio.play().then(() => {
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                }).catch(err => showError('Playback failed. Check your browser permissions or audio source.', err));
             } else {
-                audio.play().catch(console.error);
-                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-                playBtn.classList.add('playing');
+                audio.pause();
+                playBtn.innerHTML = '<i class="fas fa-play"></i>';
             }
-            isPlaying = !isPlaying;
         });
-        
+
         audio.addEventListener('timeupdate', () => {
-            if (audio.duration) {
-                progress.style.width = (audio.currentTime / audio.duration) * 100 + '%';
-            }
+            const percent = (audio.currentTime / audio.duration) * 100;
+            progressBar.style.width = percent + '%';
         });
+
+        audio.addEventListener('error', (e) => showError('Audio source error. The file might be missing or inaccessible.', audio.error));
         
-        audio.addEventListener('ended', () => {
-            isPlaying = false;
-            playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-            playBtn.classList.remove('playing');
-            progress.style.width = '0%';
+        progressContainer.addEventListener('click', (e) => {
+            const rect = progressContainer.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            audio.currentTime = pos * audio.duration;
         });
+
+        console.log('Player initialized for track: ${track.title}');
     </script>
 </body>
 </html>`;
-    
-    res.setHeader('Content-Type', 'text/html');
-    res.status(200).send(html);
+
+        res.setHeader('Content-Type', 'text/html');
+        res.status(200).send(html);
+    } catch (error) {
+        console.error("EMBED_API_ERROR:", error);
+        res.status(500).send(`<h1>Player Error</h1><pre>${error.stack}</pre>`);
+    }
 };
