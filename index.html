@@ -5,13 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JaMusic v2 | Premium Dashboard</title>
     
-    <!-- Social Media Previews (Open Graph) -->
+    <!-- Social Media Previews (Open Graph & Twitter Player) -->
+    <meta property="og:type" content="music.song">
     <meta property="og:title" content="JaMusic v2 - Premium Audio Experience">
-    <meta property="og:description" content="Listen to your favorite tracks with high-quality audio, lyrics, and more.">
+    <meta property="og:description" content="Listen to your favorite tracks with high-quality audio and lyrics.">
     <meta property="og:image" content="https://images-ext-1.discordapp.net/external/WOYp8j1c23Y1WXeLYlNDjovYqVEhD6tKVc3tuOL-FxI/%3Fcrop%3D0px%252C455px%252C4808px%252C2699px%26resize%3D2000%252C1126/https/www.hollywoodreporter.com/wp-content/uploads/2025/06/RA_001-By-Chris-Turner-HQ.jpg?format=webp&width=1376&height=775">
     <meta property="og:url" content="https://jamusic.vercel.app/">
+    
+    <!-- Twitter Player Card (Triggers the Play button in Discord) -->
+    <meta name="twitter:card" content="player">
+    <meta name="twitter:title" content="Now Playing on JaMusic">
+    <meta name="twitter:description" content="Click play to start the vibe instantly.">
+    <meta name="twitter:image" content="https://images-ext-1.discordapp.net/external/WOYp8j1c23Y1WXeLYlNDjovYqVEhD6tKVc3tuOL-FxI/%3Fcrop%3D0px%252C455px%252C4808px%252C2699px%26resize%3D2000%252C1126/https/www.hollywoodreporter.com/wp-content/uploads/2025/06/RA_001-By-Chris-Turner-HQ.jpg?format=webp&width=1376&height=775">
+    <meta name="twitter:player" content="https://jamusic.vercel.app/">
+    <meta name="twitter:player:width" content="480">
+    <meta name="twitter:player:height" content="150">
+    
     <meta name="theme-color" content="#3b82f6">
-    <meta name="twitter:card" content="summary_large_image">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2467,7 +2477,7 @@ Ready?`
             const track = tracks[currentTrackIndex];
             if (!track) return;
 
-            const shareUrl = `${window.location.origin}${window.location.pathname}#track/${track.id}`;
+            const shareUrl = `${window.location.origin}/track/${track.id}`;
             const shareTitle = `Listen to ${track.title} by ${track.artist} on JaMusic v2`;
             
             if (navigator.share) {
@@ -2500,9 +2510,20 @@ Ready?`
         }
 
         function checkDeepLink() {
+            const path = window.location.pathname;
             const hash = window.location.hash;
-            if (hash && hash.startsWith('#track/')) {
-                const trackId = hash.replace('#track/', '');
+            let trackId = null;
+
+            // Check for /track/ID format
+            if (path.includes('/track/')) {
+                trackId = path.split('/track/')[1];
+            } 
+            // Fallback for old #track/ID format
+            else if (hash && hash.startsWith('#track/')) {
+                trackId = hash.replace('#track/', '');
+            }
+            
+            if (trackId) {
                 const trackIndex = tracks.findIndex(t => t.id === trackId);
                 
                 if (trackIndex !== -1) {
