@@ -615,7 +615,7 @@
         }
 
         /* Smooth page transitions */
-        #homeView, #searchView, #trendingView {
+        #homeView, #searchView, #favoritesView {
             transition: opacity 0.4s cubic-bezier(0.3, 0, 0, 1), transform 0.4s cubic-bezier(0.3, 0, 0, 1);
         }
 
@@ -756,9 +756,9 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                         Discover
                     </button>
-                    <button onclick="switchView('trending')" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-semibold transition-all">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                        Trending
+                    <button onclick="switchView('favorites')" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 font-semibold transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                        Favorites
                     </button>
                 </nav>
 
@@ -917,9 +917,9 @@
                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                  <span class="text-[10px] font-bold">Search</span>
              </button>
-             <button onclick="switchView('trending')" class="flex flex-col items-center gap-1 p-2 rounded-xl text-slate-500 hover:text-slate-300">
-                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                 <span class="text-[10px] font-bold">Trending</span>
+             <button onclick="switchView('favorites')" class="flex flex-col items-center gap-1 p-2 rounded-xl text-slate-500 hover:text-slate-300">
+                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                 <span class="text-[10px] font-bold">Favorites</span>
              </button>
         </div>
     </div>
@@ -1218,7 +1218,7 @@
         let isPlaying = false;
         let authMode = 'login';
         let repeatTracks = 0; // 0: Off, 1: Repeat All, 2: Repeat One 
-        let currentView = 'home'; // 'home', 'search', 'trending'
+        let currentView = 'home'; // 'home', 'search', 'favorites'
         let searchTimeout = null;
         let currentLyrics = [];
         let lyricsVisible = false;
@@ -2006,12 +2006,53 @@ Ready?`
             saveStats();
         }
 
-        function getTrendingTracks() {
-            return [...tracks].sort((a, b) => {
-                const statA = trackStats[a.id] || { playCount: 0 };
-                const statB = trackStats[b.id] || { playCount: 0 };
-                return statB.playCount - statA.playCount;
+        let favorites = [];
+        try {
+            const savedFavs = localStorage.getItem('jamusic_favorites');
+            if (savedFavs) favorites = JSON.parse(savedFavs);
+        } catch(e) { favorites = []; }
+
+        function saveFavorites() {
+            localStorage.setItem('jamusic_favorites', JSON.stringify(favorites));
+        }
+
+        function toggleFavorite(trackId, e) {
+            if (e) e.stopPropagation();
+            const index = favorites.indexOf(trackId);
+            const track = tracks.find(t => t.id === trackId);
+            
+            if (index === -1) {
+                favorites.push(trackId);
+                showFavoriteNotification(`Succesfully favorited the song: ${track ? track.title : 'Unknown'}`);
+            } else {
+                favorites.splice(index, 1);
+            }
+            saveFavorites();
+            renderTracks(currentView === 'favorites' ? tracks.filter(t => favorites.includes(t.id)) : 
+                        (currentView === 'search' ? searchTracks : tracks));
+        }
+
+        function showFavoriteNotification(msg) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-0 left-1/2 -translate-x-1/2 z-[9999] p-4 pointer-events-none';
+            notification.innerHTML = `
+                <div class="bg-blue-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transform -translate-y-full transition-transform duration-500 ease-out" id="fav-notif-body">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <span class="font-bold">${msg}</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            const body = notification.querySelector('#fav-notif-body');
+            // Trigger animation
+            requestAnimationFrame(() => {
+                body.classList.remove('-translate-y-full');
             });
+            
+            setTimeout(() => {
+                body.classList.add('-translate-y-full');
+                setTimeout(() => notification.remove(), 500);
+            }, 2500);
         }
 
         /***********************
@@ -2043,6 +2084,16 @@ Ready?`
             const mobileList = document.getElementById('mobileMusicList');
 
             if(grid) {
+                if (data.length === 0 && currentView === 'favorites') {
+                    grid.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-20 text-slate-500">
+                            <svg class="w-20 h-20 mb-6 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                            <h3 class="text-xl font-bold text-slate-400">You don't have any favorited songs right now.</h3>
+                            <p class="mt-2">Heart some songs to see them here!</p>
+                        </div>
+                    `;
+                    return;
+                }
                 grid.classList.remove('animate-spotify');
                 void grid.offsetWidth; // trigger reflow
                 grid.classList.add('animate-spotify');
@@ -2050,12 +2101,18 @@ Ready?`
                 grid.innerHTML = data.map((track) => {
                     const originalIndex = tracks.findIndex(t => t.id === track.id);
                     const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0 };
-                    const trendingBadge = stats.playCount > 5 ? `<div class="absolute top-4 right-4 bg-blue-500 text-white text-[10px] font-black px-2 py-1 rounded-lg z-20 shadow-lg">HOT</div>` : '';
                     const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
+                    const isFavorited = favorites.includes(track.id);
                     
                     return `
                     <div class="music-card glass p-6 rounded-[2rem] cursor-pointer group animate-fade-in relative" onclick="playTrack(${originalIndex})">
-                        ${trendingBadge}
+                        <div class="absolute top-4 right-4 z-20">
+                            <button onclick="toggleFavorite('${track.id}', event)" class="w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:scale-110 transition-transform ${isFavorited ? 'text-red-500' : 'text-white/70 hover:text-white'}">
+                                <svg class="w-5 h-5" fill="${isFavorited ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                </svg>
+                            </button>
+                        </div>
                         <div class="relative overflow-hidden rounded-2xl mb-5">
                             <img src="${track.img}" alt="${track.title}" class="w-full aspect-square object-cover group-hover:scale-110 transition-transform duration-700">
                             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -2081,17 +2138,31 @@ Ready?`
             }
 
             if (mobileList) {
+                if (data.length === 0 && currentView === 'favorites') {
+                    mobileList.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-20 text-slate-500 text-center px-6">
+                            <svg class="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                            <h3 class="text-lg font-bold text-slate-400">You don't have any favorited songs right now.</h3>
+                            <p class="mt-1 text-sm">Heart some songs to see them here!</p>
+                        </div>
+                    `;
+                    return;
+                }
                 mobileList.innerHTML = data.map((track) => {
-                    // ... same logic as before ...
                     const originalIndex = tracks.findIndex(t => t.id === track.id);
                     const stats = trackStats[track.id] || { playCount: 0, lastPlayed: 0 };
                     const lastPlayedText = stats.lastPlayed ? getTimeAgo(stats.lastPlayed) : '';
+                    const isFavorited = favorites.includes(track.id);
                     
                     return `
                     <div class="flex items-center gap-4 p-3 bg-white/5 rounded-2xl active:scale-95 transition-transform border border-white/5" onclick="playTrack(${originalIndex})">
                         <div class="relative">
                             <img src="${track.img}" class="w-16 h-16 rounded-xl object-cover shadow-md">
-                            ${stats.playCount > 5 ? `<div class="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-black flex items-center justify-center"><div class="w-1.5 h-1.5 bg-white rounded-full"></div></div>` : ''}
+                            <button onclick="toggleFavorite('${track.id}', event)" class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 flex items-center justify-center ${isFavorited ? 'text-red-500' : 'text-white/70'}">
+                                <svg class="w-3.5 h-3.5" fill="${isFavorited ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                </svg>
+                            </button>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="marquee-container">
@@ -2396,15 +2467,14 @@ Ready?`
                 if (mobileWelcomeBanner) mobileWelcomeBanner.style.display = 'block';
                 if (mobileSearchContainer) mobileSearchContainer.style.display = 'none';
                 renderTracks(tracks);
-            } else if (view === 'trending') {
-                if (gridTitle) gridTitle.innerText = 'Trending Now (Global)';
-                if (mobileGridTitle) mobileGridTitle.innerHTML = '<span class="w-1 h-6 bg-blue-500 rounded-full"></span>Trending Now (Global)';
+            } else if (view === 'favorites') {
+                if (gridTitle) gridTitle.innerText = 'Your Favorites';
+                if (mobileGridTitle) mobileGridTitle.innerHTML = '<span class="w-1 h-6 bg-blue-500 rounded-full"></span>Your Favorites';
                 if (mobileWelcomeBanner) mobileWelcomeBanner.style.display = 'none';
                 if (mobileSearchContainer) mobileSearchContainer.style.display = 'none';
                 
-                // Fetch latest global stats before rendering trending
-                await fetchGlobalStats();
-                renderTracks(getTrendingTracks());
+                const favTracks = tracks.filter(t => favorites.includes(t.id));
+                renderTracks(favTracks);
             } else if (view === 'search') {
                 if (gridTitle) gridTitle.innerText = 'Search Results';
                 if (mobileGridTitle) mobileGridTitle.innerHTML = '<span class="w-1 h-6 bg-blue-500 rounded-full"></span>Search Results';
@@ -2428,7 +2498,7 @@ Ready?`
                 
                 const text = item.innerText.toLowerCase();
                 if ((view === 'home' && text.includes('discover')) || 
-                    (view === 'trending' && text.includes('trending'))) {
+                    (view === 'favorites' && text.includes('favorites'))) {
                     item.classList.add('nav-active', 'text-white');
                     item.classList.remove('text-slate-400');
                 }
@@ -2505,7 +2575,7 @@ Ready?`
             }
             if (mobileFullArtist) mobileFullArtist.innerText = track.artist;
             if (mobileViewName) {
-                mobileViewName.innerText = currentView === 'trending' ? 'Trending' : 
+                mobileViewName.innerText = currentView === 'favorites' ? 'Favorites' : 
                                          currentView === 'search' ? 'Search Results' : 'All Tracks';
             }
 
