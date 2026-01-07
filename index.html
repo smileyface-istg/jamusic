@@ -1215,83 +1215,62 @@
             const tipTextEl = document.getElementById('loading-tip-text');
             const loadingScreen = document.getElementById('loading-screen');
             const offlineNotif = document.getElementById('offline-notification');
-            let offlineTimer = null;
-            let isAppLoaded = false;
             
+            let offlineCount = 0;
+            let initialLoadPassed = false;
+
             if (tipTextEl) {
                 const randomTip = tips[Math.floor(Math.random() * tips.length)];
                 tipTextEl.innerText = randomTip;
             }
 
-            function showOfflineState() {
-                if (!navigator.onLine) {
-                    if (loadingScreen) {
-                        loadingScreen.style.display = 'flex';
-                        loadingScreen.classList.remove('hidden');
-                    }
-                    if (offlineNotif) {
-                        offlineNotif.classList.add('show');
-                    }
-                }
-            }
-
-            function hideOfflineState() {
-                // If we are online, we MUST hide the notification and loading screen
-                if (offlineNotif) {
-                    offlineNotif.classList.remove('show');
-                }
-                if (loadingScreen) {
-                    loadingScreen.classList.add('hidden');
-                    setTimeout(() => {
-                        if (loadingScreen.classList.contains('hidden')) {
-                            loadingScreen.style.display = 'none';
-                        }
-                    }, 500);
-                }
-            }
+            // Mark initial 3s period as passed
+            setTimeout(() => { 
+                initialLoadPassed = true; 
+                syncConnectionUI(); 
+            }, 3000);
 
             function syncConnectionUI() {
-                if (navigator.onLine) {
-                    if (offlineTimer) {
-                        clearTimeout(offlineTimer);
-                        offlineTimer = null;
-                    }
-                    hideOfflineState();
-                } else {
-                    if (!offlineTimer) {
-                        offlineTimer = setTimeout(() => {
-                            if (!navigator.onLine) {
-                                showOfflineState();
+                const isOnline = navigator.onLine;
+
+                if (isOnline) {
+                    // RESET & FORCE HIDE
+                    offlineCount = 0;
+                    if (offlineNotif) offlineNotif.classList.remove('show');
+                    
+                    // Only hide loading screen if we're past the initial 3s "Did you know" period
+                    if (initialLoadPassed && loadingScreen) {
+                        loadingScreen.classList.add('hidden');
+                        setTimeout(() => {
+                            if (navigator.onLine && loadingScreen.classList.contains('hidden')) {
+                                loadingScreen.style.display = 'none';
                             }
-                        }, 3000);
+                        }, 500);
+                    }
+                } else {
+                    offlineCount++;
+                    // Show offline state only after ~3 seconds of continuous offline status (6 * 500ms)
+                    if (offlineCount >= 6) {
+                        if (loadingScreen) {
+                            loadingScreen.style.display = 'flex';
+                            loadingScreen.classList.remove('hidden');
+                        }
+                        if (offlineNotif) {
+                            offlineNotif.classList.add('show');
+                        }
                     }
                 }
             }
 
-            window.addEventListener('online', () => {
-                console.log("App is online");
-                syncConnectionUI();
-            });
-            window.addEventListener('offline', () => {
-                console.log("App is offline");
-                syncConnectionUI();
-            });
+            // Heartbeat check every 500ms to ensure UI is ALWAYS in sync with connection
+            setInterval(syncConnectionUI, 500);
 
-            // Initial Load Logic
-            window.addEventListener('load', () => {
-                // Check immediately on load
-                if (navigator.onLine) {
-                    hideOfflineState();
-                } else {
-                    syncConnectionUI();
-                }
-                
-                // After the 3s "Did you know" period
-                setTimeout(() => {
-                    isAppLoaded = true;
-                    syncConnectionUI();
-                }, 3000);
-            });
+            // Immediate response to events
+            window.addEventListener('online', syncConnectionUI);
+            window.addEventListener('offline', syncConnectionUI);
+            
+            // Extra check on load
+            window.addEventListener('load', syncConnectionUI);
         })();
 
         /********************************************************************
