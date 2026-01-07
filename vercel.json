@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/oembed",
+      "destination": "/api/oembed"
+    },
+    {
       "source": "/track/:id",
       "destination": "/api/track?id=:id"
     },

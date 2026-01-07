@@ -2,7 +2,6 @@
 export default async function handler(req, res) {
     const { id } = req.query;
     
-    // Full track data from index.html
     const tracks = [
         { id: '1', title: 'Never Gonna Give You Up', artist: 'Rick Astley', img: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPCuAC8hFa8nHMv1kf61oWZXQVLXLDhEuW1g&s', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Rick%20Astley%20-%20Never%20Gonna%20Give%20You%20Up%20(Official%20Video)%20(4K%20Remaster).mp3' },
         { id: '2', title: 'End of Beginning', artist: 'Djo', img: 'https://images.genius.com/00875ec415993c9cf0e554666bf16b45.1000x1000x1.png', src: 'https://github.com/smileyface-istg/JaMusic-v2/raw/refs/heads/main/Djo%20-%20End%20Of%20Beginning%20(Official%20Audio).mp3' },
@@ -17,7 +16,8 @@ export default async function handler(req, res) {
     ];
 
     const track = tracks.find(t => t.id === id) || tracks[0];
-    const embedUrl = `https://jamusic.vercel.app/embed/${track.id}?src=${encodeURIComponent(track.src)}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}&img=${encodeURIComponent(track.img)}`;
+    const baseUrl = `https://${req.headers.host}`;
+    const oembedUrl = `${baseUrl}/api/oembed?id=${track.id}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}&img=${encodeURIComponent(track.img)}&src=${encodeURIComponent(track.src)}`;
 
     const html = `
 <!DOCTYPE html>
@@ -26,37 +26,39 @@ export default async function handler(req, res) {
     <meta charset="UTF-8">
     <title>${track.title} - JaMusic v2</title>
     
+    <!-- OEmbed Discovery (THE KEY TO LARGE PLAYABLE CARDS) -->
+    <link rel="alternate" type="application/json+oembed" href="${oembedUrl}" title="${track.title} on JaMusic v2">
+
     <!-- Open Graph for Discord Preview -->
+    <meta property="og:site_name" content="JaMusic v2">
     <meta property="og:type" content="music.song">
     <meta property="og:title" content="${track.title}">
-    <meta property="og:description" content="${track.artist} • JaMusic v2">
+    <meta property="og:description" content="${track.artist}">
     <meta property="og:image" content="${track.img}">
-    <meta property="og:url" content="https://jamusic.vercel.app/track/${track.id}">
-    
-    <!-- Large Playable Embed Magic -->
-    <meta property="og:video" content="${embedUrl}">
-    <meta property="og:video:secure_url" content="${embedUrl}">
+    <meta property="og:url" content="${baseUrl}/track/${track.id}">
+    <meta property="og:video" content="${baseUrl}/embed/${track.id}?src=${encodeURIComponent(track.src)}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}&img=${encodeURIComponent(track.img)}">
+    <meta property="og:video:secure_url" content="${baseUrl}/embed/${track.id}?src=${encodeURIComponent(track.src)}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}&img=${encodeURIComponent(track.img)}">
     <meta property="og:video:type" content="text/html">
     <meta property="og:video:width" content="500">
-    <meta property="og:video:height" content="120">
-
-    <!-- Twitter Card for fallback -->
+    <meta property="og:video:height" content="150">
+    
+    <!-- Twitter Player (Backup for Discord) -->
     <meta name="twitter:card" content="player">
     <meta name="twitter:title" content="${track.title}">
-    <meta name="twitter:description" content="Listen to ${track.artist} on JaMusic v2">
+    <meta name="twitter:description" content="${track.artist}">
     <meta name="twitter:image" content="${track.img}">
-    <meta name="twitter:player" content="${embedUrl}">
+    <meta name="twitter:player" content="${baseUrl}/embed/${track.id}?src=${encodeURIComponent(track.src)}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}&img=${encodeURIComponent(track.img)}">
     <meta name="twitter:player:width" content="500">
-    <meta name="twitter:player:height" content="120">
-    
-    <meta name="theme-color" content="#1e293b">
+    <meta name="twitter:player:height" content="150">
+
+    <meta name="theme-color" content="#0d4f5b">
 
     <!-- Redirect real people to the main site -->
     <script>
         window.location.href = "/#track/${track.id}";
     </script>
 </head>
-<body style="background: #0f172a; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh;">
+<body style="background: #0d4f5b; color: white; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh;">
     <p>Redirecting to JaMusic v2...</p>
 </body>
 </html>
