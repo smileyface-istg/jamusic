@@ -5,56 +5,184 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JaMusic v2 Embed</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background: #00081C; color: white; overflow: hidden; font-family: 'Inter', sans-serif; }
-        .spotify-gradient { background: linear-gradient(180deg, rgba(59, 130, 246, 0.2) 0%, #00081C 100%); }
+        body { 
+            background: #121212; 
+            color: white; 
+            overflow: hidden; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0 12px;
+        }
+        .spotify-container {
+            background: #181818;
+            border-radius: 8px;
+            width: 100%;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: background 0.2s;
+        }
+        .spotify-container:hover {
+            background: #282828;
+        }
+        .art-container {
+            width: 56px;
+            height: 56px;
+            flex-shrink: 0;
+            margin-right: 12px;
+            position: relative;
+        }
+        .art-container img {
+            width: 100%;
+            height: 100%;
+            border-radius: 4px;
+            object-cover: cover;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .info-container {
+            flex-grow: 1;
+            min-width: 0;
+            margin-right: 12px;
+        }
+        .track-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .track-artist {
+            font-size: 12px;
+            color: #b3b3b3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .controls-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .play-btn {
+            width: 32px;
+            height: 32px;
+            background: #fff;
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .play-btn:hover {
+            transform: scale(1.05);
+        }
+        .play-btn i {
+            font-size: 14px;
+            margin-left: 2px;
+        }
+        .play-btn.playing i {
+            margin-left: 0;
+        }
+        .progress-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+        }
+        .progress-bar {
+            height: 100%;
+            background: #1db954;
+            width: 0%;
+        }
+        .logo-spotify {
+            color: #1db954;
+            font-size: 20px;
+            margin-left: 8px;
+        }
     </style>
 </head>
-<body class="spotify-gradient h-screen flex items-center px-6">
-    <div class="flex items-center gap-6 w-full">
-        <!-- Album Art -->
-        <div class="relative group">
-            <img id="art" class="w-24 h-24 rounded-lg shadow-2xl object-cover border border-white/10" src="" alt="">
-            <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all rounded-lg"></div>
+<body>
+    <div class="spotify-container relative">
+        <div class="art-container">
+            <img id="art" src="" alt="">
         </div>
-
-        <!-- Info & Controls -->
-        <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1">
-                <span class="bg-blue-500/20 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Now Playing</span>
+        
+        <div class="info-container">
+            <div id="title" class="track-title">Loading...</div>
+            <div id="artist" class="track-artist">Loading...</div>
+            <div class="flex items-center gap-2 mt-1">
+                <span class="text-[10px] font-bold text-[#1db954] uppercase tracking-wider bg-[#1db9541a] px-1.5 py-0.5 rounded">Preview</span>
             </div>
-            <h1 id="title" class="font-bold text-xl text-white truncate leading-tight">Loading...</h1>
-            <p id="artist" class="text-slate-400 text-sm mb-3 truncate"></p>
-            
-            <!-- Audio Element -->
-            <audio id="player" class="w-full h-8" controls></audio>
         </div>
 
-        <!-- Logo -->
-        <div class="hidden sm:block opacity-20">
-            <svg class="w-12 h-12" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-            </svg>
+        <div class="controls-container">
+            <div id="playBtn" class="play-btn">
+                <i class="fa-solid fa-play"></i>
+            </div>
+            <i class="fa-brands fa-spotify logo-spotify"></i>
+        </div>
+
+        <div class="progress-container">
+            <div id="progress" class="progress-bar"></div>
         </div>
     </div>
 
+    <audio id="audio"></audio>
+
     <script>
-        // Extract data from URL params
         const params = new URLSearchParams(window.location.search);
-        
         const title = params.get('title');
         const artist = params.get('artist');
         const img = params.get('img');
         const src = params.get('src');
 
+        const audio = document.getElementById('audio');
+        const playBtn = document.getElementById('playBtn');
+        const progress = document.getElementById('progress');
+
         if (title) document.getElementById('title').innerText = decodeURIComponent(title);
         if (artist) document.getElementById('artist').innerText = decodeURIComponent(artist);
         if (img) document.getElementById('art').src = decodeURIComponent(img);
-        if (src) document.getElementById('player').src = decodeURIComponent(src);
+        if (src) audio.src = decodeURIComponent(src);
 
-        // Auto-play might be blocked by browser, but we try
-        const audio = document.getElementById('player');
-        audio.volume = 0.5;
+        let isPlaying = false;
+
+        playBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                audio.pause();
+                playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                playBtn.classList.remove('playing');
+            } else {
+                audio.play();
+                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                playBtn.classList.add('playing');
+            }
+            isPlaying = !isPlaying;
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            const percent = (audio.currentTime / audio.duration) * 100;
+            progress.style.width = percent + '%';
+        });
+
+        audio.addEventListener('ended', () => {
+            isPlaying = false;
+            playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            playBtn.classList.remove('playing');
+            progress.style.width = '0%';
+        });
     </script>
 </body>
 </html>
