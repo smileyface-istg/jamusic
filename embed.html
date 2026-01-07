@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JaMusic v2 Embed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #00081C; color: white; overflow: hidden; font-family: 'Inter', sans-serif; }
+        .spotify-gradient { background: linear-gradient(180deg, rgba(59, 130, 246, 0.2) 0%, #00081C 100%); }
+    </style>
+</head>
+<body class="spotify-gradient h-screen flex items-center px-6">
+    <div class="flex items-center gap-6 w-full">
+        <!-- Album Art -->
+        <div class="relative group">
+            <img id="art" class="w-24 h-24 rounded-lg shadow-2xl object-cover border border-white/10" src="" alt="">
+            <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all rounded-lg"></div>
+        </div>
+
+        <!-- Info & Controls -->
+        <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="bg-blue-500/20 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Now Playing</span>
+            </div>
+            <h1 id="title" class="font-bold text-xl text-white truncate leading-tight">Loading...</h1>
+            <p id="artist" class="text-slate-400 text-sm mb-3 truncate"></p>
+            
+            <!-- Audio Element -->
+            <audio id="player" class="w-full h-8" controls></audio>
+        </div>
+
+        <!-- Logo -->
+        <div class="hidden sm:block opacity-20">
+            <svg class="w-12 h-12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        // Extract data from URL params
+        const params = new URLSearchParams(window.location.search);
+        
+        const title = params.get('title');
+        const artist = params.get('artist');
+        const img = params.get('img');
+        const src = params.get('src');
+
+        if (title) document.getElementById('title').innerText = decodeURIComponent(title);
+        if (artist) document.getElementById('artist').innerText = decodeURIComponent(artist);
+        if (img) document.getElementById('art').src = decodeURIComponent(img);
+        if (src) document.getElementById('player').src = decodeURIComponent(src);
+
+        // Auto-play might be blocked by browser, but we try
+        const audio = document.getElementById('player');
+        audio.volume = 0.5;
+    </script>
+</body>
+</html>
