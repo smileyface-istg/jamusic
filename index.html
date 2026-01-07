@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JaMusic v2 | Premium Dashboard</title>
+    <title>JaMusic v2 | Free forever!</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -966,7 +966,7 @@
                     </button>
 
                     <button id="repeat-btn" onclick="toggleRepeat()" title="Repeat" class="text-slate-400 hover:text-white transition-colors hidden sm:block">
-                        <svg id="repeat-icon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7v4h10V7l4 4-4 4v-4H5V7z"></path></svg>
+                        <svg id="repeat-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"></path></svg>
                     </button>
                 </div>
                 <div class="flex items-center gap-2 w-full max-w-[600px]">
@@ -2906,11 +2906,7 @@ Ready?`
          ***********************/
         function toggleRepeat(){
             repeatTracks = !repeatTracks;
-            const el = document.getElementById('repeat-icon');
-            if (el) {
-                if (repeatTracks) el.style.color = 'var(--accent)';
-                else el.style.color = '';
-            }
+            updateUI(); // This handles highlighting both desktop and mobile buttons
             alertBox(repeatTracks ? 'Repeat ON' : 'Repeat OFF');
         }
 
