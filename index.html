@@ -516,6 +516,63 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Mobile Artist Card */
+        .artist-card-mobile {
+            background: #1e293b;
+            border-radius: 24px;
+            overflow: hidden;
+            margin-top: 2rem;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .artist-banner-mobile {
+            width: 100%;
+            height: 200px;
+            object-cover: cover;
+            position: relative;
+        }
+        .artist-banner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+            color: white;
+            font-weight: 800;
+            font-size: 1rem;
+        }
+        .artist-info-mobile {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .artist-details-mobile h3 {
+            color: white;
+            font-weight: 900;
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .artist-details-mobile p {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .follow-btn-mobile {
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            font-weight: 700;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .follow-btn-mobile:active {
+            scale: 0.95;
+            background: rgba(255,255,255,0.1);
+        }
+
         /* Discord-style Loading Screen */
         #loading-screen {
             position: fixed;
@@ -1073,9 +1130,9 @@
     </div>
 
     <!-- MOBILE FULLSCREEN PLAYER OVERLAY -->
-    <div id="mobile-fullscreen-player" class="fixed inset-0 z-[5000] bg-[#00081C] hidden flex-col transition-all duration-500 transform translate-y-full overflow-hidden">
+    <div id="mobile-fullscreen-player" class="fixed inset-0 z-[5000] bg-[#00081C] hidden flex-col transition-all duration-500 transform translate-y-full overflow-y-auto pb-10">
         <!-- Header -->
-        <div class="flex items-center justify-between p-6 shrink-0">
+        <div class="flex items-center justify-between p-6 shrink-0 flex-none">
             <button onclick="closeMobilePlayer()" class="text-white p-2">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
@@ -1089,14 +1146,14 @@
         </div>
 
         <!-- Artwork -->
-        <div class="flex-1 flex items-center justify-center p-8 min-h-0">
+        <div class="flex-none flex items-center justify-center p-8 min-h-0">
             <div class="w-full aspect-square max-w-[85vw] max-h-[40vh] rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/20 transition-transform duration-500 flex items-center justify-center bg-white/5" id="mobile-full-art-container">
                 <img id="mobile-full-img" src="" class="w-full h-full object-cover">
             </div>
         </div>
 
         <!-- Info & Controls -->
-        <div class="p-8 pb-24 space-y-8 shrink-0 pb-safe">
+        <div class="p-8 space-y-8 flex-none">
             <div class="flex items-center justify-between">
                 <div class="min-w-0 flex-1 pr-4">
                     <div class="marquee-container">
@@ -1142,6 +1199,23 @@
                 <button id="mobile-lyrics-btn" onclick="toggleLyrics()" class="text-slate-500 transition-colors p-2">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
                 </button>
+            </div>
+
+            <!-- About the Artist Section -->
+            <div id="mobile-about-artist" class="hidden">
+                <div class="artist-card-mobile">
+                    <div class="relative h-[200px]">
+                        <img id="mobile-artist-banner" src="" class="w-full h-full object-cover">
+                        <div class="artist-banner-overlay">About the artist</div>
+                    </div>
+                    <div class="artist-info-mobile">
+                        <div class="artist-details-mobile">
+                            <h3 id="mobile-artist-name">Artist Name</h3>
+                            <p id="mobile-artist-listeners">0 monthly listeners</p>
+                        </div>
+                        <button class="follow-btn-mobile">Follow</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1256,6 +1330,24 @@
         let searchTimeout = null;
         let currentLyrics = [];
         let lyricsVisible = false;
+
+        /***********************
+         * Artist Data
+         ***********************/
+        const Artists = [
+            { 
+                id: '1', 
+                artist: 'Rick Astley', 
+                artistbanner: 'https://images.A-list.com/images/Rick_Astley_banner.jpg', 
+                monthlylistener: '15.2M' 
+            },
+            { 
+                id: '2', 
+                artist: 'Lets be Friends', 
+                artistbanner: 'https://i.scdn.co/image/ab6761610000e5ebc585b467e4949a7c36a6e87a', 
+                monthlylistener: '23.2K' 
+            }
+        ];
 
         /***********************
          * Track Data
@@ -2609,6 +2701,24 @@ Ready?`
             if (mobileFullPlayIcon && mobileFullPauseIcon) {
                 mobileFullPlayIcon.classList.toggle('hidden', isPlaying);
                 mobileFullPauseIcon.classList.toggle('hidden', !isPlaying);
+            }
+
+            // About the Artist Section Update
+            const mobileAboutArtist = document.getElementById('mobile-about-artist');
+            const mobileArtistBanner = document.getElementById('mobile-artist-banner');
+            const mobileArtistName = document.getElementById('mobile-artist-name');
+            const mobileArtistListeners = document.getElementById('mobile-artist-listeners');
+
+            if (mobileAboutArtist) {
+                const artistMatch = Artists.find(a => a.artist.toLowerCase() === track.artist.toLowerCase());
+                if (artistMatch) {
+                    mobileAboutArtist.classList.remove('hidden');
+                    if (mobileArtistBanner) mobileArtistBanner.src = artistMatch.artistbanner;
+                    if (mobileArtistName) mobileArtistName.innerText = artistMatch.artist;
+                    if (mobileArtistListeners) mobileArtistListeners.innerText = `${artistMatch.monthlylistener} monthly listeners`;
+                } else {
+                    mobileAboutArtist.classList.add('hidden');
+                }
             }
 
             // Repeat status
