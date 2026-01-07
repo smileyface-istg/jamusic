@@ -2473,7 +2473,7 @@ Ready?`
             const track = tracks[currentTrackIndex];
             if (!track) return;
 
-            const shareUrl = `${window.location.origin}/track/${track.id}`;
+            const shareUrl = `${window.location.origin}/#track/${track.id}`;
             const shareTitle = `Listen to ${track.title} by ${track.artist} on JaMusic v2`;
             
             if (navigator.share) {
@@ -2510,14 +2510,14 @@ Ready?`
             const hash = window.location.hash;
             let trackId = null;
 
-            // Check for /track/ID format
-            if (path.includes('/track/')) {
-                trackId = path.split('/track/')[1];
-            } 
-            // Fallback for old #track/ID format
-            else if (hash && hash.startsWith('#track/')) {
+            // Prioritize hash-based linking for static site stability
+            if (hash && hash.startsWith('#track/')) {
                 trackId = hash.replace('#track/', '');
             }
+            // Fallback for path-based linking (only works if server config allows)
+            else if (path.includes('/track/')) {
+                trackId = path.split('/track/')[1];
+            } 
             
             if (trackId) {
                 const trackIndex = tracks.findIndex(t => t.id === trackId);
