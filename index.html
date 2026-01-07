@@ -6,16 +6,16 @@
     <title>JaMusic v2 | Premium Dashboard</title>
     
     <!-- Social Media Previews (Standard Discord Embed) -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="JaMusic v2 - Premium Audio Experience">
-    <meta property="og:description" content="Listen to your favorite tracks with high-quality audio and lyrics.">
-    <meta property="og:image" content="https://images-ext-1.discordapp.net/external/WOYp8j1c23Y1WXeLYlNDjovYqVEhD6tKVc3tuOL-FxI/%3Fcrop%3D0px%252C455px%252C4808px%252C2699px%26resize%3D2000%252C1126/https/www.hollywoodreporter.com/wp-content/uploads/2025/06/RA_001-By-Chris-Turner-HQ.jpg?format=webp&width=1376&height=775">
+    <meta property="og:type" content="music.song">
+    <meta property="og:title" id="meta-title" content="Song Title">
+    <meta property="og:description" id="meta-desc" content="Artist Name • JaMusic v2">
+    <meta property="og:image" id="meta-image" content="https://images-ext-1.discordapp.net/external/WOYp8j1c23Y1WXeLYlNDjovYqVEhD6tKVc3tuOL-FxI/%3Fcrop%3D0px%252C455px%252C4808px%252C2699px%26resize%3D2000%252C1126/https/www.hollywoodreporter.com/wp-content/uploads/2025/06/RA_001-By-Chris-Turner-HQ.jpg?format=webp&width=1376&height=775">
     <meta property="og:url" content="https://jamusic.vercel.app/">
-    
+    <meta name="theme-color" content="#3b82f6">
+
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="JaMusic v2">
-    <meta name="twitter:description" content="Click to listen to the vibe.">
-    <meta name="twitter:image" content="https://images-ext-1.discordapp.net/external/WOYp8j1c23Y1WXeLYlNDjovYqVEhD6tKVc3tuOL-FxI/%3Fcrop%3D0px%252C455px%252C4808px%252C2699px%26resize%3D2000%252C1126/https/www.hollywoodreporter.com/wp-content/uploads/2025/06/RA_001-By-Chris-Turner-HQ.jpg?format=webp&width=1376&height=775">
+    <meta name="twitter:title" id="tw-title" content="Song Title">
+    <meta name="twitter:description" id="tw-desc" content="Artist Name • JaMusic v2">
     
     <meta name="theme-color" content="#3b82f6">
 
@@ -2490,7 +2490,10 @@ Ready?`
         }
 
         function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
+            const track = tracks[currentTrackIndex];
+            const fullText = track ? `${track.title} • ${track.artist}\n${text}` : text;
+            
+            navigator.clipboard.writeText(fullText).then(() => {
                 showShareToast();
             });
         }
@@ -2943,11 +2946,26 @@ Ready?`
                  if (svg) svg.setAttribute('fill', isFavorited ? 'currentColor' : 'none');
              }
              if (mobileFullscreenHeartBtn) {
-                 const svg = mobileFullscreenHeartBtn.querySelector('svg');
-                 mobileFullscreenHeartBtn.classList.toggle('text-red-500', isFavorited);
-                 mobileFullscreenHeartBtn.classList.toggle('text-slate-500', !isFavorited);
-                 if (svg) svg.setAttribute('fill', isFavorited ? 'currentColor' : 'none');
-             }
+                const svg = mobileFullscreenHeartBtn.querySelector('svg');
+                mobileFullscreenHeartBtn.classList.toggle('text-red-500', isFavorited);
+                mobileFullscreenHeartBtn.classList.toggle('text-slate-500', !isFavorited);
+                if (svg) svg.setAttribute('fill', isFavorited ? 'currentColor' : 'none');
+            }
+
+            // Update Page Metadata
+            document.title = `${track.title} • ${track.artist} | JaMusic v2`;
+            
+            const metaTitle = document.getElementById('meta-title');
+            const metaDesc = document.getElementById('meta-desc');
+            const metaImage = document.getElementById('meta-image');
+            const twTitle = document.getElementById('tw-title');
+            const twDesc = document.getElementById('tw-desc');
+
+            if (metaTitle) metaTitle.content = track.title;
+            if (metaDesc) metaDesc.content = `${track.artist} • JaMusic v2`;
+            if (metaImage) metaImage.content = track.img;
+            if (twTitle) twTitle.content = track.title;
+            if (twDesc) twDesc.content = `${track.artist} • JaMusic v2`;
 
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({
