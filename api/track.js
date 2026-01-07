@@ -32,7 +32,14 @@ module.exports = async (req, res) => {
     <meta property="og:site_name" content="Spotify"> 
     <meta property="og:title" content="${track.title}">
     <meta property="og:description" content="${track.artist}">
+    <meta property="og:image" content="${track.img}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     
+    <!-- Audio Fallback -->
+    <meta property="og:audio" content="${track.src}">
+    <meta property="og:audio:type" content="audio/mpeg">
+
     <!-- Force Custom Iframe Player -->
     <meta property="og:type" content="music.song">
     <meta property="og:video" content="${embedUrl}">
@@ -41,7 +48,11 @@ module.exports = async (req, res) => {
     <meta property="og:video:width" content="500">
     <meta property="og:video:height" content="150">
 
+    <!-- Twitter Player Card -->
     <meta name="twitter:card" content="player">
+    <meta name="twitter:title" content="${track.title}">
+    <meta name="twitter:description" content="${track.artist}">
+    <meta name="twitter:image" content="${track.img}">
     <meta name="twitter:player" content="${embedUrl}">
     <meta name="twitter:player:width" content="500">
     <meta name="twitter:player:height" content="150">

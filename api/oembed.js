@@ -27,6 +27,9 @@ module.exports = async (req, res) => {
         provider_url: "https://spotify.com",
         title: track.title,
         author_name: track.artist,
+        thumbnail_url: track.img,
+        thumbnail_width: 1200,
+        thumbnail_height: 630,
         html: `<iframe src="${embedUrl}" width="500" height="150" frameborder="0" scrolling="no" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`,
         width: 500,
         height: 150
