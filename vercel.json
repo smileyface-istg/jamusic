@@ -10,7 +10,7 @@
     },
     {
       "source": "/embed/:id",
-      "destination": "/embed.html"
+      "destination": "/api/embed?id=:id"
     },
     {
       "source": "/(.*)",

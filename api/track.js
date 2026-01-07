@@ -35,8 +35,8 @@ module.exports = async (req, res) => {
     <meta property="og:site_name" content="JaMusic v2">
 
     <!-- Video / Player (The Playable Part) -->
-    <meta property="og:video" content="${baseUrl}/embed/${track.id}?src=${encodeURIComponent(track.src)}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}&img=${encodeURIComponent(track.img)}">
-    <meta property="og:video:secure_url" content="${baseUrl}/embed/${track.id}?src=${encodeURIComponent(track.src)}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}&img=${encodeURIComponent(track.img)}">
+    <meta property="og:video" content="${baseUrl}/embed/${track.id}">
+    <meta property="og:video:secure_url" content="${baseUrl}/embed/${track.id}">
     <meta property="og:video:type" content="text/html">
     <meta property="og:video:width" content="500">
     <meta property="og:video:height" content="150">
@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
     <meta name="twitter:title" content="${track.title}">
     <meta name="twitter:description" content="${track.artist}">
     <meta name="twitter:image" content="${track.img}">
-    <meta name="twitter:player" content="${baseUrl}/embed/${track.id}?src=${encodeURIComponent(track.src)}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}&img=${encodeURIComponent(track.img)}">
+    <meta name="twitter:player" content="${baseUrl}/embed/${track.id}">
     <meta name="twitter:player:width" content="500">
     <meta name="twitter:player:height" content="150">
 

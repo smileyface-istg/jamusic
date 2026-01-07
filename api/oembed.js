@@ -8,10 +8,10 @@ module.exports = async (req, res) => {
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const baseUrl = `${protocol}://${host}`;
 
-    const embedUrl = `${baseUrl}/embed/${track.id}?src=${encodeURIComponent(track.src)}&title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}&img=${encodeURIComponent(track.img)}`;
+    const embedUrl = `${baseUrl}/embed/${track.id}`;
 
     const oembedResponse = {
-        type: "rich",
+        type: "video",
         version: "1.0",
         provider_name: "JaMusic v2",
         provider_url: baseUrl,
