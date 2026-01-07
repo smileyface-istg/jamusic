@@ -1237,7 +1237,8 @@
                 if (offlineNotif) {
                     offlineNotif.classList.remove('show');
                 }
-                if (isAppLoaded && loadingScreen) {
+                // Always try to hide loading screen if we are back online
+                if (loadingScreen) {
                     loadingScreen.classList.add('hidden');
                     setTimeout(() => {
                         if (loadingScreen.classList.contains('hidden')) {
