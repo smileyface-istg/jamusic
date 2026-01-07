@@ -12,73 +12,32 @@ const tracks = [
 ];
 
 module.exports = async (req, res) => {
-    try {
-        const { id, v, debug } = req.query;
-        const track = tracks.find(t => t.id === id) || tracks[0];
-        const host = req.headers.host;
-        const protocol = req.headers['x-forwarded-proto'] || 'https';
-        const baseUrl = `${protocol}://${host}`;
-        
-        const oembedUrl = `${baseUrl}/api/oembed?id=${track.id}${v ? `&v=${v}` : ''}`;
-        const embedUrl = `${baseUrl}/embed/${track.id}${v ? `?v=${v}` : ''}`;
+    const { id, v } = req.query;
+    const track = tracks.find(t => t.id === id) || tracks[0];
+    const host = req.headers.host;
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const baseUrl = `${protocol}://${host}`;
+    
+    const oembedUrl = `${baseUrl}/api/oembed?id=${track.id}${v ? `&v=${v}` : ''}`;
 
-        const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>${track.title} - JaMusic v2</title>
+    <title>${track.title}</title>
     <link rel="alternate" type="application/json+oembed" href="${oembedUrl}">
-
     <meta name="theme-color" content="#1DB954">
-    <meta property="og:site_name" content="Spotify"> 
     <meta property="og:title" content="${track.title}">
-    <meta property="og:description" content="Artist: ${track.artist} • Click to Play">
+    <meta property="og:description" content="${track.artist}">
     <meta property="og:image" content="${track.img}">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    
-    <!-- Audio Direct -->
-    <meta property="og:audio" content="${track.src}">
-    <meta property="og:audio:secure_url" content="${track.src}">
-    <meta property="og:audio:type" content="audio/mpeg">
-
-    <!-- FORCE VIDEO PLAYER TYPE -->
-    <meta property="og:type" content="video.other">
-    <meta property="og:video" content="${embedUrl}">
-    <meta property="og:video:secure_url" content="${embedUrl}">
-    <meta property="og:video:type" content="text/html">
-    <meta property="og:video:width" content="500">
-    <meta property="og:video:height" content="150">
-
-    <!-- Twitter Player -->
-    <meta name="twitter:card" content="player">
-    <meta name="twitter:title" content="${track.title}">
-    <meta name="twitter:description" content="${track.artist}">
-    <meta name="twitter:image" content="${track.img}">
-    <meta name="twitter:player" content="${embedUrl}">
-    <meta name="twitter:player:width" content="500">
-    <meta name="twitter:player:height" content="150">
-
-    <script>if(!window.location.search.includes('debug')) window.location.href = "/#track/${track.id}";</script>
+    <meta property="og:type" content="website">
+    <script>window.location.href = "/#track/${track.id}";</script>
 </head>
-<body style="background:#121212;color:white;font-family:sans-serif;padding:20px;">
-    <h1>${track.title}</h1>
-    <p>${track.artist}</p>
-    <hr>
-    <h3>Debug Information</h3>
-    <pre style="background:#333;padding:10px;border-radius:5px;">
-Track ID: ${track.id}
-Base URL: ${baseUrl}
-OEmbed URL: ${oembedUrl}
-Embed URL: ${embedUrl}
-    </pre>
+<body>
+    Redirecting...
 </body>
 </html>`;
 
-        res.setHeader('Content-Type', 'text/html');
-        res.status(200).send(html);
-    } catch (error) {
-        console.error("TRACK_API_ERROR:", error);
-        res.status(500).send(`<h1>500 Internal Server Error</h1><pre>${error.stack}</pre>`);
-    }
+    res.setHeader('Content-Type', 'text/html');
+    res.status(200).send(html);
 };
