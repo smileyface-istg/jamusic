@@ -31,10 +31,12 @@ module.exports = async (req, res) => {
     <meta name="theme-color" content="#0d4f5b">
     <meta property="og:site_name" content="JaMusic v2">
     <meta property="og:title" content="${track.title}">
-    <meta property="og:description" content="Artist: ${track.artist} • Play now on JaMusic">
+    <meta property="og:description" content="Artist: ${track.artist} • Click to Play">
     <meta property="og:image" content="${track.img}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     
-    <!-- Large Card Triggers -->
+    <!-- Video Player Triggers -->
     <meta property="og:type" content="video.other">
     <meta property="og:video" content="${embedUrl}">
     <meta property="og:video:secure_url" content="${embedUrl}">
@@ -42,11 +44,14 @@ module.exports = async (req, res) => {
     <meta property="og:video:width" content="500">
     <meta property="og:video:height" content="150">
 
+    <!-- Twitter Player Card -->
     <meta name="twitter:card" content="player">
+    <meta name="twitter:title" content="${track.title}">
+    <meta name="twitter:description" content="Artist: ${track.artist} • Play on JaMusic">
+    <meta name="twitter:image" content="${track.img}">
     <meta name="twitter:player" content="${embedUrl}">
     <meta name="twitter:player:width" content="500">
     <meta name="twitter:player:height" content="150">
-    <meta name="twitter:image" content="${track.img}">
 
     <script>window.location.href = "/#track/${track.id}";</script>
 </head>
