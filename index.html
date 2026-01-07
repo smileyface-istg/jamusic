@@ -442,39 +442,6 @@
             transform: translateY(0);
         }
 
-        /* Offline Notification */
-        #offline-notification {
-            position: fixed;
-            left: 50%;
-            transform: translateX(-50%) translateY(100%);
-            bottom: 20px;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #f8fafc;
-            padding: 12px 20px;
-            border-radius: 16px;
-            z-index: 100001; /* Higher than loading-screen (99999) */
-            transition: transform 0.6s cubic-bezier(0.3, 0, 0, 1);
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
-            width: max-content;
-            max-width: 90%;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-        }
-
-        #offline-notification.show {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* Adjust for mobile navigation */
-        @media (max-width: 768px) {
-            #offline-notification {
-                bottom: 80px; /* Above the mobile bottom nav */
-            }
-        }
-
         #lyrics-close {
             position: absolute;
             top: 40px;
@@ -1214,7 +1181,6 @@
 
             const tipTextEl = document.getElementById('loading-tip-text');
             const loadingScreen = document.getElementById('loading-screen');
-            const offlineNotif = document.getElementById('offline-notification');
             
             let offlineCount = 0;
             let initialLoadPassed = false;
@@ -1234,11 +1200,7 @@
                 const isOnline = navigator.onLine;
 
                 if (isOnline) {
-                    // RESET & FORCE HIDE
                     offlineCount = 0;
-                    if (offlineNotif) offlineNotif.classList.remove('show');
-                    
-                    // Only hide loading screen if we're past the initial 3s "Did you know" period
                     if (initialLoadPassed && loadingScreen) {
                         loadingScreen.classList.add('hidden');
                         setTimeout(() => {
@@ -1249,27 +1211,18 @@
                     }
                 } else {
                     offlineCount++;
-                    // Show offline state only after ~3 seconds of continuous offline status (6 * 500ms)
                     if (offlineCount >= 6) {
                         if (loadingScreen) {
                             loadingScreen.style.display = 'flex';
                             loadingScreen.classList.remove('hidden');
                         }
-                        if (offlineNotif) {
-                            offlineNotif.classList.add('show');
-                        }
                     }
                 }
             }
 
-            // Heartbeat check every 500ms to ensure UI is ALWAYS in sync with connection
             setInterval(syncConnectionUI, 500);
-
-            // Immediate response to events
             window.addEventListener('online', syncConnectionUI);
             window.addEventListener('offline', syncConnectionUI);
-            
-            // Extra check on load
             window.addEventListener('load', syncConnectionUI);
         })();
 
@@ -3390,8 +3343,5 @@ Ready?`
             }
         });
     </script>
-    <div id="offline-notification">
-        Having network issues? Reach out to us to JaMusic team if you think this was a mistake.
-    </div>
 </body>
 </html>
